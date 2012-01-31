@@ -119,6 +119,28 @@ in the JavaScript implementation of the Shovel VM.
  * `get-elt-indirect`;
  * `set-elt n`;
  * `set-elt-indirect`;
+ 
+### Exception handling notes
+
+The ("exception-name", "catch-label", "after-label",
+current-environment) tuple should be added on the control stack when
+executing "try" below. When executing "end-try", then the tuple is
+popped from the stack and the program counter jumps to "after-label".
+
+When an exception is encountered, exception handling tuples are popped
+from the control stack until the stack is empty or an exception
+handling tuple with an exception-name that matches the thrown
+exception is encountered.
+
+    "exception-name"
+    "catch-label"
+    "after-label"
+    try
+    ...instructions...
+    end-try
+    :catch-label
+    ...exception handler...
+    :after-label
 
 ## Shovel components
 
