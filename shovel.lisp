@@ -4,10 +4,6 @@
 
 (defstruct instruction opcode (arguments nil))
 
-(defstruct retaddr env pc)
-
-(defstruct value type value)
-
 (defstruct env-frame (vars nil))
 
 (defvar *label-counter* 0)
@@ -35,15 +31,26 @@
                              (gen :fn fn)
                              (unless more? (gen 'return))))))
              (:begin (compile-block (rest ast) env more?))
-             (:set! (validate-set ast)
-                    ;; To be removed when we support array/hash assignment.
-                    (validate-name (set-left-side ast))
-                    (seq (compile-ast (set-right-side ast) env t t)
-                         (compile-set (name-identifier (set-left-side ast))
-                                      env t more?)))
+             (:set! (cond ((name-p (second ast))
+                           (validate-set ast)
+                           (seq (compile-ast (set-right-side ast) env t t)
+                                (compile-set (name-identifier (set-left-side ast))
+                                             env t more?)))
+                          (t (let ((lhs (set-left-side ast)))
+                               (unless (equal '(:prim0 "svm_gref")
+                                              (first lhs))
+                                 (error "Assignment only supported for names, arrays and hashes."))
+                               (let ((array-or-hash (second lhs))
+                                     (arg (third lhs)))
+                                 (compile-ast `((:prim0 "svm_set_indexed")
+                                                ,array-or-hash
+                                                ,arg
+                                                ,(set-right-side ast))
+                                              env t more?))))))
              (:if (compile-if ast env val? more?))
              (:name (validate-name ast)
                     (gen :lget (find-name (name-identifier ast) env)))
+             (:prim0 (gen :prim0 (second ast)))
              (:prim (gen :prim (second ast)))
              (t ;; Function call.
               (compile-funcall ast env more?))))))
@@ -85,7 +92,7 @@
 
 (defun validate-name (name-ast)
   (or (name-p name-ast)
-      (error "We only support assignment to symbols for now.")))
+      (error "Invalid name ~a." name-ast)))
 
 (defun if-pred (if-ast)
   (second if-ast))
@@ -97,8 +104,8 @@
   (fourth if-ast))
 
 (defun if-p (if-ast)
-  (and (or (= 3 (length if-ast))
-           (= 2 (length if-ast)))
+  (and (or (= 4 (length if-ast))
+           (= 3 (length if-ast)))
        (eq :if (first if-ast))))
 
 (defun validate-if (if-ast)

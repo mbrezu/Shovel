@@ -111,7 +111,8 @@ The possible opcodes are:
    index *var* (see section 'Environments' above) and push the value
    on the stack;
  * LSET *frame*, *var* - store the value on the top of the stack to
-   the variable identified by *frame* and *var* (see LGET above);
+   the variable identified by *frame* and *var* (see LGET above); pop
+   the stack;
  * POP - throw away the top of the stack;
  * TJUMP *address* - jump to the address *address* if the top of the
    stack IS NOT the boolean value 'false'; pop the stack;
@@ -136,15 +137,20 @@ The possible opcodes are:
    environment and *address*) and stores it on the stack.
  * PRIM *primitive-name* - pushes a primitive on the stack; the
    primitive can be called with CALLJ or stored in a data structure;
+ * PRIM0 *primitive-name* - like PRIM, but for primitives that are
+   required to exist on every ShovelVM; see the section 'Required
+   primitives' for the list of primitives that need to be specified
+   with PRIM0;
  * NEW-FRAME *count* - extends the current environment with a frame
    containing *count* slots;
  * DROP-FRAME - removes a frame from the current environment;
 
-
 ### Required Primitives
 
 Relational operators, arithmetic operators, array and hash access,
-string access, string deconstruction and construction.
+string access, string deconstruction and construction. Required
+primitive names start with `svm_`. User defined primitives cannot use
+names already used for required primitives.
 
 ## Shript
 

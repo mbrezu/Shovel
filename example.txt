@@ -1,9 +1,11 @@
+----------------------------------------
+
 SHOVEL> (comp '(:fn ((:name "param")) (:begin
                                        (:var (:name "test") 10)
                                        (:begin
-                                        (:if ((:prim "<=") (:name "test") 10)
+                                        (:if ((:prim0 "<=") (:name "test") 10)
                                             (:set! (:name "test") 20))
-                                        ((:prim "array") 10 20 30 40))
+                                        ((:prim0 "svm_array") 10 20 30 40))
                                        (:set! (:name "test") 30))))
     NEW-FRAME 0
     ARGS 0
@@ -17,7 +19,7 @@ FN1:
     SAVE K5
     LGET 1, 0
     CONST 10
-    PRIM <=
+    PRIM0 <=
     CALLJ 2
 K5:
     FJUMP L3
@@ -31,7 +33,7 @@ L4:
     CONST 20
     CONST 30
     CONST 40
-    PRIM array
+    PRIM0 svm_array
     CALLJ 4
 K6:
     CONST 30
@@ -41,3 +43,39 @@ L2:
     FN FN1
     RETURN
 NIL
+
+
+-------------------------
+
+SHOVEL> (comp '(:begin
+                (:var (:name "test") ((:prim0 "svm_array") ((:prim0 "svm_array") 1 2) 10 20 30))
+                ((:prim0 "svm_gref") ((:prim0 "svm_gref") (:name "test") 0) 1)))
+    NEW-FRAME 0
+    ARGS 0
+    NEW-FRAME 1
+    SAVE K2
+    SAVE K1
+    CONST 1
+    CONST 2
+    PRIM0 svm_array
+    CALLJ 2
+K1:
+    CONST 10
+    CONST 20
+    CONST 30
+    PRIM0 svm_array
+    CALLJ 4
+K2:
+    LSET 0, 0
+    SAVE K3
+    LGET 0, 0
+    CONST 0
+    PRIM0 svm_gref
+    CALLJ 2
+K3:
+    CONST 1
+    PRIM0 svm_gref
+    CALLJ 2
+NIL
+
+-----------------------------------
