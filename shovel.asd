@@ -1,8 +1,7 @@
 ;;;; shovel.asd
 
 (asdf:defsystem #:shovel
-  :serial t
-  :depends-on (#:alexandria #:mbrezu-utils)
+  :depends-on (#:alexandria #:mbrezu-utils-base)
   :components ((:file "package")
-               (:file "shovel")))
+               (:file "shovel" :depends-on ("package"))))
 

@@ -36,121 +36,109 @@ display the results. This should eliminate most scenarios when it's
 necessary to make multiple calls to the server (and the actual
 sequence of calls is not known in advance).
 
-Shovel programs will be written in Shovelisp and
-ShovelScript. Shovelisp is a Scheme-like language. ShovelScript is a
-JavaScript-like language (so they are similar, only the syntax is
-different). Both Shovelisp and ShovelScript will be compiled to Shovel
-VM bytecode.
+Shovel programs will be written in Shript (which is a JavaScript-like
+language). Shovel implementation will include a Shript compiler.
+
+The Shript compiler and the Shovel VM are inspired by chapter 23 of
+'Paradigms of Artificial Intelligence Programming' by Peter Norvig.
 
 ## VM description
 
-The VM is stack based. It has the following primitive types:
+### Value types
+
+The VM is stack based. It has the following primitive scalar types:
 
  * string,
  * integer (bignum),
- * character,
- * double precision floating point,
- * date,
- * list,
- * function.
+ * double precision floating point and
+ * boolean.
+ 
+The other types allowed are:
 
+ * primitive function (defined as a name and a corresponding function
+   in the host environment),
+ * function (defined as an environment and a Shovel VM address),
+ * arrays (elements can be any primitive type, including arrays) and
+ * hashes (associative arrays, keys can be strings, values can have
+   any Shovel VM type).
+   
+### The stack
+   
+The stack can have two types of elements:
+
+ * a return address, made of an environment and a Shovel VM address
+   (the 'program counter' to return to) or
+ * a value of one of the Shovel VM primitive types.
+ 
+### Environments
+ 
 Variables are stored in environments (in the SICP sense); this gives
 easy closures.
 
-When calling a function or primitive, the arguments are found in a
-list that's on top of the stack. When the function returns, the result
-is the value on top of the stack.
+An environment is a stack of 'frames'. Frames are arrays of values. A
+variable is identified as a pair of (frame address, variable index in
+frame). The 'frame address' is the distance of the frame from the top
+of environment stack (i.e., frame address 0 means the frame on the top
+of the environment stack, frame address 1 means the one below it and
+so on). Once the frame is identified, the 'variable index' is the
+index of the variable in the frame.
 
-The VM uses the same bytecode in each host language - so a Shovelisp
+### State
+
+The VM state is defined by:
+
+ * the stack (and objects reachable from it),
+ * the current environment (and objects reachable from it) and
+ * the 'program counter' (the next instruction to be executed).
+ 
+The Shovel implementation must provide means to serialize and
+deserialize the state of the VM, and to stop and start the VM. More on
+this when describing the implementation of the VM runtime.
+
+### Opcodes
+
+The VM uses the same bytecode in each host language - so a Shript
 program compiled on a Common Lisp platform will run without problems
 in the JavaScript implementation of the Shovel VM.
 
-### VM opcodes
+The VM program is a list of opcodes. 
 
- * `load var-name` - will fetch the value of `var-name` from the
-   environment and push it on the stack;
- * `load-indirect` - similar to `load`, but will pop the `var-name`
-   from the stack;
- * `store var-name` - will pop the stack and store the value into
-   `var-name` into the environment;
- * `store-indirect` - similar to `store`, but will pop the `var-name`
-   first, then the value to store;
- * `push value` - pushes value on the stack; the value can be of any
-   Shovel type;
- * `add` - pops two values from the stack and pushes back their sum;
-   the values must be either integers or floats; if any of the values
-   is a float, the result is also a float, otherwise it is an integer;
- * `subtract` - similar to add, but subtracts the first popped number
-   from the second popped number;
- * `multiply` - multiplication, similar to `add`, but multiplies;
- * `divide` - floating point division, divides the second popped
-   number by the first popped number; same conversions as for `add`
-   apply; if both numbers are integers and the result is not an
-   integer, the result will be a float;
- * `div` - integer division, both arguments must be integers, the
-   quotient of the division is pushed back;
- * `mod` - integer modulo, both arguments must be integers, the
-   remainder of the division is the result;
- * `concatenate` - will concatenate the first popped string or list to
-   the second popped string or list; both values must be strings or
-   both values must be strings;
- * `cons` - will cons the second popped value to the first popped
-   value; the top of the stack must be a list;
- * `add-seconds`;
- * `subtract-seconds`;
- * `pop-list n`;
- * `pop-list-indirect`;
- * `call address`;
- * `call-indirect`;
- * `call-primitive primitive-name`;
- * `call-primitive-indirect`;
- * `extend-environment`;
- * `define-variable var-name`;
- * `return`;
- * `make-lambda address` - pairs the current environment with an
-   address to make a closure object which is pushed on the stack;
- * `make-lambda-indirect`;
- * `seconds-to-date`;
- * `date-to-seconds`;
- * `length`;
- * `round decimal-places`;
- * `round-indirect`;
- * `get-elt n`;
- * `get-elt-indirect`;
- * `set-elt n`;
- * `set-elt-indirect`;
- 
-### Exception handling notes
+The possible opcodes are:
 
-The ("exception-name", "catch-label", "after-label",
-current-environment) tuple should be added on the control stack when
-executing "try" below. When executing "end-try", then the tuple is
-popped from the stack and the program counter jumps to "after-label".
+ * CONST *value* - push a value on the stack; the value must be a
+   scalar value (see section 'Value types' above);
+ * LGET *frame*, *var* - get the value from frame *frame* and variable
+   index *var* (see section 'Environments' above) and push the value
+   on the stack;
+ * LSET *frame*, *var* - store the value on the top of the stack to
+   the variable identified by *frame* and *var* (see LGET above);
+ * POP - throw away the top of the stack;
+ * TJUMP *address* - jump to the address *address* if the top of the
+   stack IS NOT the boolean value 'false'; pop the stack;
+ * FJUMP *address* - jump to the address *address* if the top of the
+   stack IS the boolean value 'false'; pop the stack;
+ * JUMP *address* - unconditionally jump to address *address*;
+ * SAVE *address* - save a return address on the stack; the return
+   address is the pair (current environment, *address*);
+ * RETURN - the top of the stack is the value to be returned by the
+   current function; the 'next top' is a return address; pop the 'next
+   top' and set the current environment and program counter to the
+   ones from the return address;
+ * CALLJ *argument-count* - call the function object found on the top
+   of the stack, with the next *argument-count* elements from the
+   stack as arguments;
+ * ARGS *argument-count* - the code for every function must start with
+   an ARGS instruction; the instruction pops *argument-count* from the
+   stack, and extends the current environment with a frame containing
+   the extracted values; the top of the stack before the execution of
+   ARGS is the last value in the new frame (it has the highest
+   'variable index');
+ * FN *address* - builds a closure (as a pair of the current
+   environment and *address*) and stores it on the stack.
+   
+### Required Primitives
 
-When an exception is encountered, exception handling tuples are popped
-from the control stack until the stack is empty or an exception
-handling tuple with an exception-name that matches the thrown
-exception is encountered.
-
-    "exception-name"
-    "catch-label"
-    "after-label"
-    try
-    ...instructions...
-    end-try
-    :catch-label
-    ...exception handler...
-    :after-label
-
-## Shovel components
-
- 1. Common Lisp Shovel VM;
- 1. JavaScript Shovel VM;
- 1. C# Shovel VM;
- 1. Shovelisp compiler;
- 1. ShovelScript compiler;
+Relational operators, arithmetic operators, array and hash access,
+string access, string deconstruction and construction.
 
 
-## Shovel Status
-
-No code written yet. Shovel VM specification not written yet.
