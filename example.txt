@@ -1,0 +1,43 @@
+SHOVEL> (comp '(:fn ((:name "param")) (:begin
+                                       (:var (:name "test") 10)
+                                       (:begin
+                                        (:if ((:prim "<=") (:name "test") 10)
+                                            (:set! (:name "test") 20))
+                                        ((:prim "array") 10 20 30 40))
+                                       (:set! (:name "test") 30))))
+    NEW-FRAME 0
+    ARGS 0
+    JUMP L2
+FN1:
+    NEW-FRAME 0
+    ARGS 1
+    NEW-FRAME 1
+    CONST 10
+    LSET 0, 0
+    SAVE K5
+    LGET 1, 0
+    CONST 10
+    PRIM <=
+    CALLJ 2
+K5:
+    FJUMP L3
+    CONST 20
+    LSET 1, 0
+    JUMP L4
+L3:
+L4:
+    SAVE K6
+    CONST 10
+    CONST 20
+    CONST 30
+    CONST 40
+    PRIM array
+    CALLJ 4
+K6:
+    CONST 30
+    LSET 0, 0
+    RETURN
+L2:
+    FN FN1
+    RETURN
+NIL
