@@ -106,7 +106,8 @@ The VM program is a list of opcodes.
 The possible opcodes are:
 
  * CONST *value* - push a value on the stack; the value must belong to
-   one of the types described above (scalar type, array or hash);
+   one of the scalar types described above (scalar type, array or
+   hash);
  * LGET *frame*, *var* - get the value from frame *frame* and variable
    index *var* (see section 'Environments' above) and push the value
    on the stack;
@@ -148,9 +149,10 @@ The possible opcodes are:
 ### Required Primitives
 
 Relational operators, arithmetic operators, array and hash access,
-string access, string deconstruction and construction. Required
-primitive names start with `svm_`. User defined primitives cannot use
-names already used for required primitives.
+string access, string deconstruction and construction.
+
+Required primitive names start with `svm_`. User defined primitives
+cannot use names already used for required primitives.
 
 ## Shript
 
