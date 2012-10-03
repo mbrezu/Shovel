@@ -24,7 +24,7 @@
     (loop
        while (parse-state-tokens *parse-state*)
        do (push (parse-statement) result))
-    result))
+    (reverse result)))
 
 (defun parse-statement ()
   (cond ((tokenp :punctuation "{")
@@ -38,7 +38,7 @@
                  (parse-assignment expr)
                  expr)))))
 
-(defun tokenp (expected-type expected-content)
+(defun tokenp (expected-type &optional expected-content)
   (let ((token (current-token)))
     (when token
       (let ((type (token-type token))
@@ -94,23 +94,48 @@ token positions."
       (reverse statements))))
 
 (defun consume-token (type content)
-  (require-token type content)
+  (require-token (list type content))
   (next-token))
 
-(defun require-token (type content)
+(defun length=1 (list)
+  (and (consp list) (null (rest list))))
+
+(defun require-token (&rest possible-tokens)
   (let ((token (current-token)))
-    (unless (and token (tokenp type content))
-      (if token
-          (let ((start-pos (token-start-pos token)))
-            (error
-             "Shovel parse error at line ~d column ~d: expected '~a' but got '~a'."
-             (pos-line start-pos)
-             (pos-column start-pos)
-             content
-             (token-content token)))
-          (error
-           "Shovel parse error: expected '~a' but reached the end of input."
-           content)))))
+    (unless (and token (some (lambda (candidate)
+                               (apply #'tokenp candidate))
+                             possible-tokens))
+      (let ((error-prefix (if token
+                              (let ((start-pos (token-start-pos token)))
+                                (format nil
+                                        "Shovel parse error at line ~d column ~d"
+                                        (pos-line start-pos)
+                                        (pos-column start-pos)))
+                              "Shovel parse error at end of file"))
+            (expectation (let ((possible-contents
+                                (remove-if #'null
+                                           (mapcar #'second possible-tokens)))
+                               (possible-types (remove-duplicates
+                                                (mapcar #'first possible-tokens))))
+                           (cond
+                             ((null possible-contents)
+                              (cond
+                                ((null possible-types)
+                                 (error "Shovel internal WTF."))
+                                ((length=1 possible-types)
+                                 (format nil "expected a ~(~a~)"
+                                         (first possible-types)))
+                                (t (format nil "expected a ~{~(~a~)~^ or a ~}"
+                                           possible-types))))
+                             ((length=1 possible-contents)
+                              (format nil "expected '~a'" (first possible-contents)))
+                             (t
+                              (format nil "expected ~{'~a'~^ or ~}"
+                                      possible-contents)))))
+            (actual-input (if token
+                              (format nil "but got '~a'" (token-content token))
+                              "but reached the end of the input")))
+        (error "~a: ~a, ~a." error-prefix expectation actual-input)))))
 
 (defun parse-var-decl ()
   (with-new-parse-tree :var
@@ -127,7 +152,7 @@ token positions."
 
 (defun parse-assignment (lhs)
   (with-new-anchored-parse-tree (parse-tree-start-pos lhs) :set!
-    (consume-token :identifier "=")
+    (consume-token :punctuation "=")
     (list lhs (parse-expression))))
 
 ;; Precedence table:
@@ -148,20 +173,7 @@ token positions."
      (parse-lambda))
     ((tokenp :identifier "if") ; Handle branches.
      (parse-if))
-    (t (right-assoc #'parse-assignment-term '((:punctuation "="))))))
-
-(defun right-assoc (sub-parser operators)
-  (let ((start (funcall sub-parser)))
-    (if (some (lambda (operator) (apply #'tokenp operator)) operators)
-        (let ((operator (current-token)))
-          (with-new-anchored-parse-tree
-              (parse-tree-start-pos start) (list :prim0 (token-content operator))
-            (next-token)
-            (list start (right-assoc sub-parser operators))))
-        start)))
-
-(defun parse-assignment-term ()
-  (left-assoc #'parse-or-term '((:punctuation "||"))))
+    (t (left-assoc #'parse-or-term '((:punctuation "||"))))))
 
 (defun left-assoc (sub-parser operators)
   (labels ((iter (start)
@@ -204,8 +216,8 @@ token positions."
       (parse-unary-minus-term)))
 
 (defun parse-unary-minus-term ()
-  (cond ((tokenp :number nil) (parse-number))
-        ((tokenp :string nil) (parse-literal-string))
+  (cond ((tokenp :number) (parse-number))
+        ((tokenp :string) (parse-literal-string))
         (t (parse-identifier-or-call-or-ref))))
 
 (defun parse-identifier-or-call-or-ref (&optional forced-start)
@@ -220,13 +232,13 @@ token positions."
           ((tokenp :punctuation "(") ; Handle function call.
            (parse-identifier-or-call-or-ref
             (with-new-anchored-parse-tree (parse-tree-start-pos start) :call
-              (consume-token :punctuation "(")
-              (prog1
-                  (cons start (parse-list #'parse-expression '(:punctuation ",")))
-                (consume-token :punctuation ")")))))
+              (cons start (parse-list #'parse-expression
+                                      '(:punctuation "(")
+                                      '(:punctuation ",")
+                                      '(:punctuation ")"))))))
           ((tokenp :punctuation "[") ; Handle array or hash access.
            (parse-identifier-or-call-or-ref
-            (with-new-anchored-parse-tree 
+            (with-new-anchored-parse-tree
                 (parse-tree-start-pos start)
                 (list :prim0 "svm_gref")
               (consume-token :punctuation "[")
@@ -236,23 +248,23 @@ token positions."
           (t start))))
 
 (defun parse-parenthesized-or-name ()
-  (cond ((tokenp :punctuation "(") ; Handle parenthesized expression.
+  (cond ((tokenp :punctuation "(")  ; Handle parenthesized expression.
          (consume-token :punctuation "(")
          (prog1
              (parse-expression)
            (consume-token :punctuation ")")))
-        ((tokenp :identifier nil) (parse-name))
+        ((tokenp :identifier) (parse-name))
         (t (error "Unexpected token '~a'." (token-content (current-token))))))
 
 (defun parse-number ()
-  (require-token :number nil)
+  (require-token (list :number))
   (with-new-parse-tree :number
     (prog1
         (token-content (current-token))
       (next-token))))
 
 (defun parse-literal-string ()
-  (require-token :string nil)
+  (require-token (list :string))
   (with-new-parse-tree :string
     (prog1
         (token-content (current-token))
@@ -271,25 +283,29 @@ token positions."
       (list args body))))
 
 (defun parse-lambda-args ()
-  (if (tokenp :punctuation "(")
-      (with-new-parse-tree :list
-        (consume-token :punctuation "(")
-        (prog1
-            (parse-list #'parse-name '(:punctuation ","))
-          (consume-token :punctuation ")")))
-      (parse-name)))
+  (with-new-parse-tree :list
+    (if (tokenp :punctuation "(")
+        (parse-list #'parse-name
+                    '(:punctuation "(")
+                    '(:punctuation ",")
+                    '(:punctuation ")"))
+        (list (parse-name)))))
 
-(defun parse-list (item-parser separator)
+(defun parse-list (item-parser open-paren separator close-paren)
   (let (result)
+    (apply #'consume-token open-paren)
     (loop
-       (push (funcall item-parser) result)
-       (unless (apply #'tokenp separator)
+       (unless (apply #'tokenp close-paren)
+         (push (funcall item-parser) result))
+       (require-token separator close-paren)
+       (when (apply #'tokenp close-paren)
          (return))
        (apply #'consume-token separator))
+    (apply #'consume-token close-paren)
     (reverse result)))
 
 (defun parse-name ()
-  (require-token :identifier nil)
+  (require-token (list :identifier))
   (with-new-parse-tree :name
     (prog1
         (token-content (current-token))
