@@ -119,8 +119,6 @@ The possible opcodes are:
  * FJUMP *address* - jump to the address *address* if the top of the
    stack IS the boolean value 'false'; pop the stack;
  * JUMP *address* - unconditionally jump to address *address*;
- * SAVE *address* - save a return address on the stack; the return
-   address is the pair (current environment, *address*);
  * RETURN - the top of the stack is the value to be returned by the
    current function; the 'next top' is a return address; pop the 'next
    top' and set the current environment and program counter to the
@@ -128,6 +126,10 @@ The possible opcodes are:
  * CALLJ *argument-count* - call the function object found on the top
    of the stack, with the next *argument-count* elements from the
    stack as arguments;
+ * CALL *argument-count* - save a return address on the stack; the
+   return address is the pair (current environment, program counter
+   pointing to the instruction after the call); then do whatever
+   CALLJ does;
  * ARGS *argument-count* - the instruction pops *argument-count* from
    the stack, and stores them in the topmost frame of the environment
    in the first slots (e.g. for two arguments the top of the stack

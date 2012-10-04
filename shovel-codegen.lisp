@@ -114,16 +114,13 @@ SVM_SET_INDEXED required primitive."
                              (compile-ast ast env t t))
                            (rest children)))
          (function-code (compile-ast (first children) env t t)))
-    (let ((k (gen-label 'k)))
-      (if more?
-          (seq arg-code
-               function-code
-               (gen :save :arguments k)
-               (gen :callj :arguments (length (rest children)) :pos ast)
-               (gen :label :arguments k))
-          (seq arg-code
-               function-code
-               (gen :callj :arguments (length (rest children)) :pos ast))))))
+    (if more?
+        (seq arg-code
+             function-code
+             (gen :call :arguments (length (rest children)) :pos ast))
+        (seq arg-code
+             function-code
+             (gen :callj :arguments (length (rest children)) :pos ast)))))
 
 (defun validate-name (name-ast)
   (or (name-p name-ast)
@@ -234,7 +231,7 @@ SVM_SET_INDEXED required primitive."
       (let ((opcode (instruction-opcode instruction))
             (args (instruction-arguments instruction)))
         (case opcode
-          ((:tjump :fjump :jump :save :fn)
+          ((:tjump :fjump :jump :fn)
            (setf (aref result current)
                  (make-instruction :opcode opcode
                                    :arguments (gethash args labels-hash)))
