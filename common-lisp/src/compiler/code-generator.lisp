@@ -6,8 +6,7 @@
 (defvar *label-counter* 0)
 
 (defun gen-label (&optional (symbol 'l))
-  (intern (format nil "~a~d" symbol (incf *label-counter*))
-          (find-package :keyword)))
+  (mu-base:mksymb symbol (incf *label-counter*)))
 
 (defun compile-ast (ast env val? more?)
   (when ast
@@ -33,7 +32,9 @@
         (:if (compile-if ast env val? more?))
         (:name (validate-name ast)
                (let ((var-name (name-identifier ast)))
-                 (seq (gen :lget :arguments (find-name var-name env ast) :pos ast)
+                 (seq (gen :lget :arguments (find-name var-name env
+                                                       (parse-tree-start-pos ast))
+                           :pos ast)
                       (unless more? (gen :return)))))
         (:call (compile-funcall ast env more?))
         (:prim0 (seq (gen :prim0 :arguments (parse-tree-children ast) :pos ast)
@@ -163,7 +164,7 @@ at line ~d, column ~d."
 
 (defun generate-instructions (ast)
   (setf *label-counter* 0)
-  (compile-block ast (empty-env) nil))
+  (compile-block ast (empty-env) t))
 
 (defun last1 (list) (first (last list)))
 
@@ -252,8 +253,17 @@ initial definition at line ~d, column ~d."
   (declare (ignore env))
   (validate-atom-value ast)
   (if val?
-      (seq (gen :const :arguments (parse-tree-children ast) :pos ast)
+      (seq (gen :const
+                :arguments (compile-atom-value (parse-tree-label ast)
+                                               (parse-tree-children ast))
+                :pos ast)
            (unless more? (gen :return)))))
+
+(defun compile-atom-value (label value)
+  (case label
+    ((:string :number) (read-from-string value))
+    (:bool (string= value "true"))
+    (:void nil)))
 
 (defun validate-atom-value (ast)
   (or (and (member (parse-tree-label ast) '(:string :number :bool :void))

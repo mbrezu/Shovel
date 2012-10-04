@@ -2,7 +2,8 @@
 
 (asdf:defsystem #:shovel
   :depends-on (#:alexandria
-               #:split-sequence)
+               #:split-sequence
+               #:mbrezu-utils-base)
   :components
   ((:module
     "common-lisp"
@@ -11,11 +12,18 @@
       "src"
       :components
       ((:file "package")
+       (:file "shovel-types" :depends-on ("package"))
        (:module "compiler"
-                :depends-on ("package")
+                :depends-on ("package" "shovel-types")
                 :components ((:file "types")
                              (:file "tokenizer" :depends-on ("types"))
                              (:file "parser" :depends-on ("types"))
                              (:file "code-generator" :depends-on ("types"))
                              (:file "compiler")))
-       (:file "shovel" :depends-on ("package" "compiler"))))))))
+       (:module "vm"
+                :depends-on ("package" "shovel-types")
+                :components ((:file "vm")))
+       (:file "shovel" :depends-on ("package"
+                                    "shovel-types"
+                                    "compiler"
+                                    "vm"))))))))

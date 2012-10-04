@@ -98,3 +98,100 @@ L2:
 
 ----------------------------------------------------
 
+CL-USER> (shovel:run-code "@print(10)" (list (list "print" #'print)))
+
+10 
+10 
+; No value
+
+----------------------------------------------------
+
+CL-USER> (shovel:run-code "1 <= 2")
+
+T 
+; No value
+
+----------------------------------------------------
+
+CL-USER> (shovel:run-code "
+var fact = fn n if n == 0 1 else n * fact (n - 1) 
+fact(10)")
+
+3628800 
+; No value
+
+----------------------------------------------------
+
+CL-USER> (shovel:print-code "
+var fact = fn n if n == 0 1 else n * fact (n - 1) 
+fact(10)")
+    NEW-FRAME 1
+    JUMP L2
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1) 
+    ; line     2:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FN1:
+    NEW-FRAME 1
+    ARGS 1
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1) 
+    ; line     2:                    ^
+    LGET 0, 0
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1) 
+    ; line     2:                         ^
+    CONST 0
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1) 
+    ; line     2:                      ^^
+    PRIM0 ==
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1) 
+    ; line     2:                    ^^^^^^
+    CALL 2
+    FJUMP L3
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1) 
+    ; line     2:                           ^
+    CONST 1
+    RETURN
+L3:
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1) 
+    ; line     2:                                  ^
+    LGET 0, 0
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1) 
+    ; line     2:                                            ^
+    LGET 0, 0
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1) 
+    ; line     2:                                                ^
+    CONST 1
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1) 
+    ; line     2:                                              ^
+    PRIM0 -
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1) 
+    ; line     2:                                            ^^^^^
+    CALL 2
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1) 
+    ; line     2:                                      ^^^^
+    LGET 1, 0
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1) 
+    ; line     2:                                      ^^^^^^^^^^^^
+    CALL 1
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1) 
+    ; line     2:                                    ^
+    PRIM0 *
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1) 
+    ; line     2:                                  ^^^^^^^^^^^^^^^^
+    CALLJ 2
+L2:
+    FN FN1
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1) 
+    ; line     2: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    LSET 0, 0
+    POP
+    ; line     3: fact(10)
+    ; line     3:      ^^
+    CONST 10
+    ; line     3: fact(10)
+    ; line     3: ^^^^
+    LGET 0, 0
+    ; line     3: fact(10)
+    ; line     3: ^^^^^^^^
+    CALL 1
+    DROP-FRAME
+
+----------------------------------------------------

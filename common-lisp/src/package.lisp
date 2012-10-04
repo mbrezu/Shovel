@@ -1,12 +1,21 @@
 ;;;; package.lisp
 
-(defpackage #:shovel
-  (:use #:cl))
+(defpackage #:shovel-types
+  (:use #:cl)
+  (:export
+   :instruction
+   :make-instruction
+   :instruction-p
+   :instruction-opcode
+   :instruction-arguments
+   :instruction-start-pos
+   :instruction-end-pos
+   :instruction-comments))
 
 (defpackage #:shovel-compiler-types
   (:use #:cl)
   (:export
-   
+
    :pos
    :make-pos
    :pos-p
@@ -14,7 +23,7 @@
    :pos-line
    :pos-column
    :pos-char
-   
+
    :token
    :make-token
    :token-p
@@ -29,16 +38,7 @@
    :parse-tree-label
    :parse-tree-start-pos
    :parse-tree-end-pos
-   :parse-tree-children
-   
-   :instruction
-   :make-instruction
-   :instruction-p
-   :instruction-opcode
-   :instruction-arguments
-   :instruction-start-pos
-   :instruction-end-pos
-   :instruction-comments))
+   :parse-tree-children))
 
 (defpackage #:shovel-compiler-tokenizer
   (:use #:cl #:shovel-compiler-types)
@@ -49,13 +49,24 @@
   (:export :parse-tokens))
 
 (defpackage #:shovel-compiler-code-generator
-  (:use #:cl #:shovel-compiler-types)
+  (:use #:cl #:shovel-compiler-types #:shovel-types)
   (:export :generate-instructions))
 
 (defpackage #:shovel-compiler
-  (:use #:cl #:shovel-compiler-types)
+  (:use #:cl #:shovel-compiler-types #:shovel-types)
   (:export
    :compile-string-to-instructions
    :assemble-instructions
    :show-instructions))
+
+(defpackage #:shovel-vm
+  (:use #:cl #:shovel-types)
+  (:export
+   :run-vm))
+
+(defpackage #:shovel
+  (:use #:cl)
+  (:export
+   :print-code
+   :run-code))
 

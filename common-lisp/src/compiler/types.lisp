@@ -7,6 +7,3 @@
 
 (defstruct parse-tree label start-pos end-pos children)
 
-(defstruct instruction
-  opcode (arguments nil)
-  (start-pos nil) (end-pos nil) (comments nil))
