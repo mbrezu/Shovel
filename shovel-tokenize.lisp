@@ -59,7 +59,8 @@
   (eat-white-space)
   (let ((ch (current-char)))
     (cond ((not ch) (reverse tokens))
-          ((or (char= #\_ ch) (char= #\$ ch) (alpha-char-p ch))
+          ((or (char= #\_ ch) (char= #\$ ch) (alpha-char-p ch)
+               (char= #\@ ch))
            (tokenize (cons (tokenize-identifier)
                            tokens)))
           ((or (digit-char-p ch))
@@ -97,12 +98,17 @@
                        (setf escaped (char= #\\ ch)))))))
 
 (defun tokenize-identifier ()
-  (tokenize-pred :identifier
-                 (lambda (ch)
-                   (or (char= #\_ ch)
-                       (char= #\$ ch)
-                       (alpha-char-p ch)
-                       (digit-char-p ch)))))
+  (let ((result (tokenize-pred :identifier
+                        (lambda (ch)
+                          (or (char= #\_ ch)
+                              (char= #\$ ch)
+                              (char= #\@ ch)
+                              (alpha-char-p ch)
+                              (digit-char-p ch))))))
+    (when (char= (elt (token-content result) 0) #\@)
+      (setf (token-type result) :prim
+            (token-content result) (subseq (token-content result) 1)))
+    result))
 
 (defun tokenize-number ()
   (let (after-decimal-dot)

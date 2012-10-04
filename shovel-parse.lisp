@@ -272,6 +272,7 @@ token positions."
              (parse-expression)
            (consume-token :punctuation ")")))
         ((tokenp :identifier) (parse-name))
+        ((tokenp :prim) (parse-prim))
         (t (error "Unexpected token '~a'." (token-content (current-token))))))
 
 (defun token-as-parse-tree (label)
@@ -328,6 +329,10 @@ token positions."
     (if (member content '("array" "hash") :test #'string=)
         (token-as-parse-tree :prim0)
         (token-as-parse-tree :name))))
+
+(defun parse-prim ()
+  (require-token (list :prim))
+  (token-as-parse-tree :prim))
 
 (defun parse-name-as-string ()
   (require-token (list :identifier))
