@@ -29,7 +29,7 @@
    :parse-tree-children))
 
 (defpackage #:shovel-codegen
-  (:use #:cl #:shovel-parse)
+  (:use #:cl #:shovel-parse #:shovel-tokenize)
   (:export
    :gen-code
    :comp

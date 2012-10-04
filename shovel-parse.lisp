@@ -149,8 +149,7 @@ token positions."
 
 (defun parse-assignment (lhs)
   (with-new-anchored-parse-tree (parse-tree-start-pos lhs) :set!
-    (consume-token :punctuation "=")
-    (list lhs (parse-expression))))
+    (list lhs (token-as-parse-tree :prim0) (parse-expression))))
 
 ;; Precedence table:
 ;;
@@ -234,7 +233,9 @@ token positions."
                 (parse-tree-start-pos start)
                 :call
               (require-token (list :punctuation "."))
-              (list (make-prim0-parse-tree "svm_gref") start (parse-name)))))
+              (list (make-prim0-parse-tree "svm_gref")
+                    start
+                    (parse-name-as-string)))))
           ((tokenp :punctuation "(") ; Handle function call.
            (parse-identifier-or-call-or-ref
             (with-new-anchored-parse-tree (parse-tree-start-pos start) :call
@@ -244,13 +245,24 @@ token positions."
                                       '(:punctuation ")"))))))
           ((tokenp :punctuation "[") ; Handle array or hash access.
            (parse-identifier-or-call-or-ref
-            (with-new-anchored-parse-tree
-                (parse-tree-start-pos start)
-                :call
-              (require-token (list :punctuation "["))
-              (prog1
-                  (list (make-prim0-parse-tree "svm_gref") start (parse-expression))
-                (consume-token :punctuation "]")))))
+            (let* (gref-parse-tree
+                   gref-start-pos
+                   gref-end-pos
+                   (result (with-new-anchored-parse-tree
+                               (parse-tree-start-pos start)
+                               :call
+                             (setf gref-start-pos (get-current-start-pos))
+                             (require-token (list :punctuation "["))
+                             (prog1
+                                 (list (setf gref-parse-tree
+                                             (make-prim0-parse-tree "svm_gref"))
+                                       start
+                                       (parse-expression))
+                               (consume-token :punctuation "]")
+                               (setf gref-end-pos (get-previous-end-pos))))))
+              (setf (parse-tree-start-pos gref-parse-tree) gref-start-pos
+                    (parse-tree-end-pos gref-parse-tree) gref-end-pos)
+              result)))
           (t start))))
 
 (defun parse-parenthesized-or-name ()
@@ -312,10 +324,17 @@ token positions."
 
 (defun parse-name ()
   (require-token (list :identifier))
-  (with-new-parse-tree :name
-    (prog1
-        (token-content (current-token))
-      (next-token))))
+  (let ((content (token-content (current-token))))
+    (if (member content '("array" "hash") :test #'string=)
+        (token-as-parse-tree :prim0)
+        (token-as-parse-tree :name))))
+
+(defun parse-name-as-string ()
+  (require-token (list :identifier))
+  (let ((result (token-as-parse-tree :string)))
+    (setf (parse-tree-children result)
+          (format nil "\"~a\"" (parse-tree-children result)))
+    result))
 
 (defun parse-if ()
   (with-new-parse-tree :if

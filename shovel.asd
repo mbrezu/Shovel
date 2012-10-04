@@ -1,7 +1,9 @@
 ;;;; shovel.asd
 
 (asdf:defsystem #:shovel
-  :depends-on (#:alexandria #:mbrezu-utils-base)
+  :depends-on (#:alexandria
+               #:mbrezu-utils-base
+               #:split-sequence)
   :components ((:file "package")
                (:file "shovel-codegen" :depends-on ("package"))
                (:file "shovel-tokenize" :depends-on ("package"))

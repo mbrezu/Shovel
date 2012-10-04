@@ -41,13 +41,13 @@
 (defun next-char ()
   (let ((pos (tokenizer-state-current-pos *tokenizer-state*)))
     (copy-pos-slots pos (tokenizer-state-previous-pos *tokenizer-state*))
-    (incf (pos-char pos))
     (let ((ch (current-char)))
       (if (and ch (char= #\newline ch))
           (progn
             (incf (pos-line pos))
-            (setf (pos-column pos) 0))
-          (incf (pos-column pos))))))
+            (setf (pos-column pos) 1))
+          (incf (pos-column pos))))
+    (incf (pos-char pos))))
 
 (defun is-white-space (ch)
   (and ch (or (char= #\space ch) (char= #\newline ch) (char= #\tab ch))))
