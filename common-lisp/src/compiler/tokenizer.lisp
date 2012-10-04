@@ -1,13 +1,9 @@
 
-(in-package #:shovel-tokenize)
-
-(defstruct (pos (:copier clone-pos)) (line 1) (column 1) (char 1))
+(in-package #:shovel-compiler-tokenizer)
 
 (defstruct tokenizer-state source current-pos (previous-pos (make-pos)))
 
 (defvar *tokenizer-state*)
-
-(defstruct token type content start-pos end-pos)
 
 (defun make-pos-from-current ()
   (clone-pos (tokenizer-state-current-pos *tokenizer-state*)))

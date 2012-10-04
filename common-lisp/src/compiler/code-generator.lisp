@@ -1,16 +1,13 @@
 
-(in-package #:shovel-codegen)
-
-(defstruct instruction
-  opcode (arguments nil)
-  (start-pos nil) (end-pos nil) (comments nil))
+(in-package #:shovel-compiler-code-generator)
 
 (defstruct env-frame (vars nil))
 
 (defvar *label-counter* 0)
 
 (defun gen-label (&optional (symbol 'l))
-  (mu-base:mksymb symbol (incf *label-counter*)))
+  (intern (format nil "~a~d" symbol (incf *label-counter*))
+          (find-package :keyword)))
 
 (defun compile-ast (ast env val? more?)
   (when ast
@@ -162,93 +159,11 @@ at line ~d, column ~d."
 
 (defun set-right-side (set-ast) (third (parse-tree-children set-ast)))
 
-(defun show-bytecode (source instructions)
-  (let ((source-lines (split-sequence:split-sequence #\newline source)))
-    (dolist (instruction instructions)
-      (let ((opcode (instruction-opcode instruction))
-            (args (instruction-arguments instruction)))
-        (alexandria:when-let ((start-pos (instruction-start-pos instruction))
-                              (end-pos (instruction-end-pos instruction)))
-          (print-source-as-comment source-lines start-pos end-pos))
-        (cond ((eq :label opcode)
-               (format t "~a:" args))
-              (t (if (consp args )
-                     (format t "    ~a ~{~a~^, ~}" opcode args)
-                     (if args
-                         (format t "    ~a ~a" opcode args)
-                         (format t "    ~a" opcode)))))
-        (alexandria:when-let (comments (instruction-comments instruction))
-          (format t "~40,8T ; ~a" comments))
-        (terpri)))))
-
-(defun print-source-as-comment (source-lines start-pos end-pos)
-  (labels ((underline (start end)
-             (with-output-to-string (str)
-               (loop repeat (1- start) do (write-char #\space str))
-               (loop repeat (1+ (- end start)) do (write-char #\^ str))))
-           (first-non-blank (line)
-             (1+ (or (position-if (lambda (ch)
-                                    (and (char/= ch #\space)
-                                         (char/= ch #\tab)))
-                                  line)
-                     0))))
-    (let* ((start-line (pos-line start-pos))
-           (end-line (pos-line end-pos))
-           (add-elipsis (> end-line start-line))
-           (first-line (elt source-lines (1- start-line))))
-      (format t "    ; line ~5d: ~a" start-line first-line)
-      (when add-elipsis
-        (format t " [...content snipped...]"))
-      (terpri)
-      (format t "    ; line ~5d: ~a~%"
-              start-line
-              (underline (max (pos-column start-pos)
-                              (first-non-blank first-line))
-                         (min (length first-line)
-                              (if add-elipsis
-                                  (length first-line)
-                                  (pos-column end-pos))))))))
-
 (defun empty-env () (list (make-env-frame)))
 
-(defun comp (source)
+(defun generate-instructions (ast)
   (setf *label-counter* 0)
-  (show-bytecode source (compile-block (parse-string source) (empty-env) nil)))
-
-(defun gen-code (ast)
-  (assemble (compile-fn-body nil ast (empty-env))))
-
-(defun assemble (instructions)
-  (multiple-value-bind (length labels-hash)
-      (assemble-pass-1 instructions)
-    (assemble-pass-2 instructions length labels-hash)))
-
-(defun assemble-pass-1 (instructions)
-  (let ((length 0)
-        (labels-hash (make-hash-table)))
-    (dolist (instruction instructions)
-      (if (eq :label (instruction-opcode instruction))
-          (setf (gethash (instruction-arguments instruction) labels-hash) length)
-          (incf length)))
-    (values length labels-hash)))
-
-(defun assemble-pass-2 (instructions length labels-hash)
-  (let ((result (make-array length))
-        (current 0))
-    (dolist (instruction instructions)
-      (let ((opcode (instruction-opcode instruction))
-            (args (instruction-arguments instruction)))
-        (case opcode
-          ((:tjump :fjump :jump :fn)
-           (setf (aref result current)
-                 (make-instruction :opcode opcode
-                                   :arguments (gethash args labels-hash)))
-           (incf current))
-          (:label)
-          (t (setf (aref result current)
-                   instruction)
-             (incf current)))))
-    result))
+  (compile-block ast (empty-env) nil))
 
 (defun last1 (list) (first (last list)))
 

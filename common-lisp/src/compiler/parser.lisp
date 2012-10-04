@@ -1,9 +1,5 @@
 
-(in-package #:shovel-parse)
-
-(defun parse-string (source)
-  (let ((tokens (shovel-tokenize:tokenize-string source)))
-    (parse tokens)))
+(in-package #:shovel-compiler-parser)
 
 (defstruct parse-state tokens (previous-token nil))
 
@@ -16,9 +12,7 @@
 (defun next-token () (setf (parse-state-previous-token *parse-state*)
                            (pop (parse-state-tokens *parse-state*))))
 
-(defstruct parse-tree label start-pos end-pos children)
-
-(defun parse (tokens)
+(defun parse-tokens (tokens)
   (let ((*parse-state* (make-parse-state :tokens tokens))
         result)
     (loop

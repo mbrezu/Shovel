@@ -1,80 +1,100 @@
-
-SHOVEL-CODEGEN> (comp "
-var fact = fn n if n == 0 1 else n * fact (n - 1)
-@print(fact(3))")
+CL-USER> (shovel-compiler:show-instructions
+          (shovel-compiler:compile-string-to-instructions "
+var fib = fn (n) if n == 0 || n == 1
+                 1
+                 else fib(n - 1) + fib(n - 2)
+"))
     NEW-FRAME 1
     JUMP L2
-    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
-    ; line     2:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ; line     2: var fib = fn (n) if n == 0 || n == 1 [...content snipped...]
+    ; line     2:           ^^^^^^^^^^^^^^^^^^^^^^^^^^
 FN1:
     NEW-FRAME 1
     ARGS 1
-    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
-    ; line     2:                    ^
+    ; line     2: var fib = fn (n) if n == 0 || n == 1
+    ; line     2:                     ^
     LGET 0, 0
-    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
-    ; line     2:                         ^
+    ; line     2: var fib = fn (n) if n == 0 || n == 1
+    ; line     2:                          ^
     CONST 0
-    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
-    ; line     2:                      ^^
+    ; line     2: var fib = fn (n) if n == 0 || n == 1
+    ; line     2:                       ^^
     PRIM0 ==
-    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
-    ; line     2:                    ^^^^^^
+    ; line     2: var fib = fn (n) if n == 0 || n == 1
+    ; line     2:                     ^^^^^^
+    CALL 2
+    ; line     2: var fib = fn (n) if n == 0 || n == 1
+    ; line     2:                               ^
+    LGET 0, 0
+    ; line     2: var fib = fn (n) if n == 0 || n == 1
+    ; line     2:                                    ^
+    CONST 1
+    ; line     2: var fib = fn (n) if n == 0 || n == 1
+    ; line     2:                                 ^^
+    PRIM0 ==
+    ; line     2: var fib = fn (n) if n == 0 || n == 1
+    ; line     2:                               ^^^^^^
+    CALL 2
+    ; line     2: var fib = fn (n) if n == 0 || n == 1
+    ; line     2:                            ^^
+    PRIM0 ||
+    ; line     2: var fib = fn (n) if n == 0 || n == 1
+    ; line     2:                     ^^^^^^^^^^^^^^^^
     CALL 2
     FJUMP L3
-    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
-    ; line     2:                           ^
+    ; line     3:                  1
+    ; line     3:                  ^
     CONST 1
     RETURN
 L3:
-    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
-    ; line     2:                                  ^
+    ; line     4:                  else fib(n - 1) + fib(n - 2)
+    ; line     4:                           ^
     LGET 0, 0
-    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
-    ; line     2:                                            ^
-    LGET 0, 0
-    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
-    ; line     2:                                                ^
+    ; line     4:                  else fib(n - 1) + fib(n - 2)
+    ; line     4:                               ^
     CONST 1
-    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
-    ; line     2:                                              ^
+    ; line     4:                  else fib(n - 1) + fib(n - 2)
+    ; line     4:                             ^
     PRIM0 -
-    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
-    ; line     2:                                            ^^^^^
+    ; line     4:                  else fib(n - 1) + fib(n - 2)
+    ; line     4:                           ^^^^^
     CALL 2
-    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
-    ; line     2:                                      ^^^^
+    ; line     4:                  else fib(n - 1) + fib(n - 2)
+    ; line     4:                       ^^^
     LGET 1, 0
-    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
-    ; line     2:                                      ^^^^^^^^^^^^
+    ; line     4:                  else fib(n - 1) + fib(n - 2)
+    ; line     4:                       ^^^^^^^^^^
     CALL 1
-    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
-    ; line     2:                                    ^
-    PRIM0 *
-    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
-    ; line     2:                                  ^^^^^^^^^^^^^^^^
+    ; line     4:                  else fib(n - 1) + fib(n - 2)
+    ; line     4:                                        ^
+    LGET 0, 0
+    ; line     4:                  else fib(n - 1) + fib(n - 2)
+    ; line     4:                                            ^
+    CONST 2
+    ; line     4:                  else fib(n - 1) + fib(n - 2)
+    ; line     4:                                          ^
+    PRIM0 -
+    ; line     4:                  else fib(n - 1) + fib(n - 2)
+    ; line     4:                                        ^^^^^
+    CALL 2
+    ; line     4:                  else fib(n - 1) + fib(n - 2)
+    ; line     4:                                    ^^^
+    LGET 1, 0
+    ; line     4:                  else fib(n - 1) + fib(n - 2)
+    ; line     4:                                    ^^^^^^^^^^
+    CALL 1
+    ; line     4:                  else fib(n - 1) + fib(n - 2)
+    ; line     4:                                  ^
+    PRIM0 +
+    ; line     4:                  else fib(n - 1) + fib(n - 2)
+    ; line     4:                       ^^^^^^^^^^^^^^^^^^^^^^^
     CALLJ 2
 L2:
     FN FN1
-    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
-    ; line     2: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ; line     2: var fib = fn (n) if n == 0 || n == 1 [...content snipped...]
+    ; line     2: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     LSET 0, 0
-    POP
-    ; line     3: @print(fact(3))
-    ; line     3:             ^
-    CONST 3
-    ; line     3: @print(fact(3))
-    ; line     3:        ^^^^
-    LGET 0, 0
-    ; line     3: @print(fact(3))
-    ; line     3:        ^^^^^^^
-    CALL 1
-    ; line     3: @print(fact(3))
-    ; line     3: ^^^^^^
-    PRIM print
-    ; line     3: @print(fact(3))
-    ; line     3: ^^^^^^^^^^^^^^^
-    CALLJ 1
+    RETURN
 
 ----------------------------------------------------
 
