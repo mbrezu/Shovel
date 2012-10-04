@@ -1,7 +1,7 @@
 
 (in-package #:shovel-codegen)
 
-(defstruct instruction opcode (arguments nil))
+(defstruct instruction opcode (arguments nil) (pos nil) (comments nil))
 
 (defstruct env-frame (vars nil))
 
@@ -11,56 +11,87 @@
   (mu-base:mksymb symbol (incf *label-counter*)))
 
 (defun compile-ast (ast env val? more?)
-  (cond ((null ast) nil)
-        ((atom ast) (compile-atom ast env val? more?))
-        (t (case (first ast)
-             (:var (validate-var ast)
-                   (extend-frame env (name-identifier (var-name ast)))
-                   (seq (compile-ast (var-initializer ast) env t t)
-                        (compile-set-var (name-identifier (var-name ast))
-                                         env more?)))
-             (:fn (validate-fn ast)
-                  (if val?
-                      (let ((fn (gen-label 'fn))
-                            (l (gen-label)))
-                        (seq (gen :jump l)
-                             (gen :label fn)
-                             (compile-fn-body (fn-args ast) (fn-body ast) env)
-                             (gen :label l)
-                             (gen :fn fn)
-                             (unless more? (gen 'return))))))
-             (:begin (compile-block (rest ast) env more?))
-             (:set! (compile-set ast env more?))
-             (:if (compile-if ast env val? more?))
-             (:name (validate-name ast)
-                    (gen :lget (find-name (name-identifier ast) env)))
-             (:prim0 (gen :prim0 (second ast)))
-             (:prim (gen :prim (second ast)))
-             (t ;; Function call.
-              (compile-funcall ast env more?))))))
+  (when ast
+    (let ((label (parse-tree-label ast)))
+      (case label
+        (:var (validate-var ast)
+              (let ((var-name (name-identifier (var-name ast))))
+                (extend-frame env var-name)
+                (seq (compile-ast (var-initializer ast) env t t)
+                     (compile-set-var var-name env val? more?))))
+        (:fn (validate-fn ast)
+             (if val?
+                 (let ((fn (gen-label 'fn))
+                       (l (gen-label)))
+                   (seq (gen :jump :arguments l)
+                        (gen :label :arguments fn :pos (parse-tree-start-pos ast))
+                        (compile-fn-body (fn-args ast) (fn-body ast) env)
+                        (gen :label :arguments l)
+                        (gen :fn :arguments fn)
+                        (unless more? (gen :return))))))
+        (:begin (compile-block (parse-tree-children ast) env more?))
+        (:set! (compile-set ast env val? more?))
+        (:if (compile-if ast env val? more?))
+        (:name (validate-name ast)
+               (let ((var-name (name-identifier ast)))
+                 (gen :lget :arguments (find-name var-name env)
+                      :comments (format nil "Read variable '~a'." var-name))))
+        (:call (compile-funcall ast env more?))
+        (:prim0 (gen :prim0 :arguments (parse-tree-children ast)))
+        (:return (seq (compile-ast (parse-tree-children ast) env t more?)
+                      (when more? (gen :return))))
+        ((:number :string :bool :void) (compile-atom ast env val? more?))
+        (t (error "Shovel internal WTF."))))))
 
-(defun compile-set (ast env more?)
+(defun compile-set (ast env val? more?)
   "Compiles an assignment to a variable or an element of an array or
 hash. For the second case, it rewrites the AST to use the
 SVM_SET_INDEXED required primitive."
-  (cond ((name-p (second ast))
+  (cond ((name-p (first (parse-tree-children ast)))
          (validate-set ast)
          (seq (compile-ast (set-right-side ast) env t t)
-              (compile-set-var (name-identifier (set-left-side ast)) env more?)))
+              (compile-set-var (name-identifier (set-left-side ast))
+                               env val? more?)))
         (t (let ((lhs (set-left-side ast)))
-             (unless (equal '(:prim0 "svm_gref")
-                            (first lhs))
+             (unless (is-gref-call lhs)
                (error "Assignment only supported for names, arrays and hashes."))
-             (let ((array-or-hash (second lhs))
-                   (arg (third lhs)))
-               (compile-ast `((:prim0 "svm_set_indexed")
-                              ,array-or-hash
-                              ,arg
-                              ,(set-right-side ast))
-                            env t more?))))))
+             (let ((array-or-hash (gref-call-array-or-hash lhs))
+                   (index (gref-call-index lhs)))
+               (compile-ast (make-parse-tree
+                             :label :call
+                             :start-pos (parse-tree-start-pos ast)
+                             :end-pos (parse-tree-end-pos ast)
+                             :children (list
+                                        (make-parse-tree
+                                         :label :call
+                                         :start-pos (gref-call-start-pos lhs)
+                                         :end-pos (gref-call-end-pos lhs)
+                                         :children "svm_set_indexed")
+                                        array-or-hash
+                                        index
+                                        (set-right-side ast)))
+                            env val? more?))))))
 
-(defun compile-set-var (name env more?)
-  (seq (gen :lset (find-name name env))
+(defun is-gref-call (ast)
+  (and (eq :call (parse-tree-label ast))
+       (let ((fn (first (parse-tree-children ast))))
+         (and (eq :prim0 (parse-tree-label fn))
+              (string= "svm_gref" (parse-tree-children fn))))))
+
+(defun gref-call-array-or-hash (ast) (second (parse-tree-children ast)))
+
+(defun gref-call-index (ast) (third (parse-tree-children ast)))
+
+(defun gref-call-start-pos (ast)
+  (parse-tree-start-pos (first (parse-tree-children ast))))
+
+(defun gref-call-end-pos (ast)
+  (parse-tree-end-pos (first (parse-tree-children ast))))
+
+(defun compile-set-var (name env val? more?)
+  (seq (gen :lset :arguments (find-name name env)
+            :comments (format nil "Write variable '~a'." name))
+       (unless val? (gen :pop))
        (unless more? (gen :return))))
 
 (defun compile-if (ast env val? more?)
@@ -69,85 +100,82 @@ SVM_SET_INDEXED required primitive."
       (let ((l1 (gen-label))
             (l2 (gen-label)))
         (seq (compile-ast (if-pred ast) env t t)
-             (gen :fjump l1)
+             (gen :fjump :arguments l1)
              (compile-ast (if-then ast) env val? t)
-             (gen :jump l2)
-             (gen :label l1)
+             (gen :jump :arguments l2)
+             (gen :label :arguments l1)
              (compile-ast (if-else ast) env val? t)
-             (gen :label l2)))
+             (gen :label :arguments l2)))
       (let ((l1 (gen-label)))
         (seq (compile-ast (if-pred ast) env t t)
-             (gen :fjump l1)
+             (gen :fjump :arguments l1)
              (compile-ast (if-then ast) env val? nil)
-             (gen :label l1)
+             (gen :label :arguments l1)
              (compile-ast (if-else ast) env val? nil)))))
 
 (defun compile-funcall (ast env more?)
-  (let ((arg-code (mapcan (lambda (ast)
-                            (compile-ast ast env t t))
-                          (rest ast)))
-        (function-code (compile-ast (first ast) env t t)))
+  (let* ((children (parse-tree-children ast))
+         (arg-code (mapcan (lambda (ast)
+                             (compile-ast ast env t t))
+                           (rest children)))
+         (function-code (compile-ast (first children) env t t)))
     (if more?
         (let ((k (gen-label 'k)))
-          (seq (gen :save k)
+          (seq (gen :save :arguments k)
                arg-code
                function-code
-               (gen :callj (length (rest ast)))
-               (gen :label k)))
+               (gen :callj :arguments (length (rest children)))
+               (gen :label :arguments k)))
         (seq arg-code
              function-code
-             (gen :callj (length (rest ast)))))))
+             (gen :callj :arguments (length (rest children)))))))
 
 (defun validate-name (name-ast)
   (or (name-p name-ast)
       (error "Invalid name ~a." name-ast)))
 
-(defun if-pred (if-ast)
-  (second if-ast))
+(defun if-pred (if-ast) (first (parse-tree-children if-ast)))
 
-(defun if-then (if-ast)
-  (third if-ast))
+(defun if-then (if-ast) (second (parse-tree-children if-ast)))
 
-(defun if-else (if-ast)
-  (fourth if-ast))
+(defun if-else (if-ast) (third (parse-tree-children if-ast)))
 
 (defun if-p (if-ast)
-  (and (or (= 4 (length if-ast))
-           (= 3 (length if-ast)))
-       (eq :if (first if-ast))))
+  (and (eq :if (parse-tree-label if-ast))
+       (let ((children-count (length (parse-tree-children if-ast))))
+         (or (= 2 children-count)
+             (= 3 children-count)))))
 
 (defun validate-if (if-ast)
-  (or (if-p if-ast)
-      (error "Invalid IF ~a." if-ast)))
+  (or (if-p if-ast) (error "Invalid IF ~a." if-ast)))
 
 (defun validate-set (set-ast)
-  (or (set-p set-ast)
-      (error "Invalid SET! ~a." set-ast)))
+  (or (set-p set-ast) (error "Invalid SET! ~a." set-ast)))
 
 (defun set-p (set-ast)
-  (and (= 3 (length set-ast))
-       (eq :set! (first set-ast))))
+  (and (eq :set! (parse-tree-label set-ast))
+       (= 2 (length (parse-tree-children set-ast)))))
 
-(defun set-left-side (set-ast)
-  (second set-ast))
+(defun set-left-side (set-ast) (first (parse-tree-children set-ast)))
 
-(defun set-right-side (set-ast)
-  (third set-ast))
+(defun set-right-side (set-ast) (second (parse-tree-children set-ast)))
 
 (defun show-bytecode (instructions)
   (dolist (instruction instructions)
     (let ((opcode (instruction-opcode instruction))
           (args (instruction-arguments instruction)))
       (cond ((eq :label opcode)
-             (format t "~a:~%" args))
+             (format t "~a:" args))
             (t (if (consp args )
-                   (format t "    ~a ~{~a~^, ~}~%" opcode args)
+                   (format t "    ~a ~{~a~^, ~}" opcode args)
                    (if args
-                       (format t "    ~a ~a~%" opcode args)
-                       (format t "    ~a~%" opcode))))))))
+                       (format t "    ~a ~a" opcode args)
+                       (format t "    ~a" opcode)))))
+      (alexandria:when-let (comments (instruction-comments instruction))
+        (format t "~40,8T ; ~a" comments))
+      (terpri))))
 
-(defun empty-env ()
-  (list (make-env-frame)))
+(defun empty-env () (list (make-env-frame)))
 
 (defun comp (ast)
   (setf *label-counter* 0)
@@ -188,8 +216,7 @@ SVM_SET_INDEXED required primitive."
              (incf current)))))
     result))
 
-(defun last1 (list)
-  (first (last list)))
+(defun last1 (list) (first (last list)))
 
 (defun compile-block (ast env more?)
   (let* ((new-env (cons (make-env-frame) env))
@@ -201,21 +228,22 @@ SVM_SET_INDEXED required primitive."
                              (compile-ast value-ast new-env t more?)))
          (top-frame-count (length (env-frame-vars (car new-env)))))
     (if (> top-frame-count 0)
-        (seq (gen :new-frame top-frame-count)
+        (seq (gen :new-frame :arguments top-frame-count)
              compiled-body
              (if more?
                  (gen :drop-frame)))
         (seq compiled-body))))
 
 (defun compile-fn-body (args body env)
-  (let* ((new-env (cons (make-env-frame) env))
-         (compiled-body (compile-ast body new-env t nil))
-         (top-frame-count (length (env-frame-vars (car new-env)))))
+  (let ((new-env (cons (make-env-frame) env)))
     (dolist (arg args)
-      (extend-frame new-env (name-identifier arg)))    
-    (seq (if (> top-frame-count 0) (seq (gen :new-frame top-frame-count)
-                                        (gen :args (length args))))         
-         compiled-body)))
+      (extend-frame new-env (name-identifier arg)))
+    (let ((compiled-body (compile-ast body new-env t nil))
+          (top-frame-count (length (env-frame-vars (car new-env)))))
+      (seq (if (> top-frame-count 0)
+               (seq (gen :new-frame :arguments top-frame-count)
+                    (gen :args :arguments (length args))))
+           compiled-body))))
 
 (defun find-name (name env &optional (frame-number 0))
   (when (null env)
@@ -230,27 +258,21 @@ SVM_SET_INDEXED required primitive."
       (error "Invalid fn ~a." fn-ast)))
 
 (defun fn-p (fn-ast)
-  (and (consp fn-ast)
-       (eq :fn (first fn-ast))
-       (consp (second fn-ast))
-       (= 3 (length fn-ast))
+  (and (eq :fn (parse-tree-label fn-ast))
+       (= 2 (length (parse-tree-children fn-ast)))
        (every #'name-p (fn-args fn-ast))))
 
-(defun fn-args (fn-ast)
-  (second fn-ast))
+(defun fn-args (fn-ast) (parse-tree-children (first (parse-tree-children fn-ast))))
 
-(defun fn-body (fn-ast)
-  (third fn-ast))
+(defun fn-body (fn-ast) (second (parse-tree-children fn-ast)))
 
-(defun var-name (var-ast)
-  (second var-ast))
+(defun var-name (var-ast) (first (parse-tree-children var-ast)))
 
-(defun var-initializer (var-ast)
-  (third var-ast))
+(defun var-initializer (var-ast) (second (parse-tree-children var-ast)))
 
 (defun var-p (var-ast)
-  (and (= 3 (length var-ast))
-       (eq :var (first var-ast))
+  (and (eq :var (parse-tree-label var-ast))
+       (= 2 (length (parse-tree-children var-ast)))
        (name-p (var-name var-ast))))
 
 (defun validate-var (var-ast)
@@ -258,12 +280,10 @@ SVM_SET_INDEXED required primitive."
       (error "Invalid var declaration ~a." var-ast)))
 
 (defun name-p (name)
-  (and (consp name)
-       (eq :name (car name))
-       (stringp (second name))))
+  (and (eq :name (parse-tree-label name))
+       (stringp (parse-tree-children name))))
 
-(defun name-identifier (name)
-  (second name))
+(defun name-identifier (name) (parse-tree-children name))
 
 (defun extend-frame (env name)
   (let ((top-frame (car env)))
@@ -276,20 +296,18 @@ SVM_SET_INDEXED required primitive."
   (declare (ignore env))
   (validate-atom-value ast)
   (if val?
-      (seq (gen :const ast)
+      (seq (gen :const :arguments (parse-tree-children ast))
            (unless more? (gen :return)))))
 
 (defun validate-atom-value (ast)
-  (or (and (atom ast)
-           (or (stringp ast)
-               (numberp ast)
-               (and (symbolp ast)
-                    (or (eq ast 'true)
-                        (eq ast 'false)))))
+  (or (and (member (parse-tree-label ast) '(:string :number :bool :void))
+           (stringp (parse-tree-children ast)))
       (error "Invalid value ~a." ast)))
 
-(defun gen (opcode &optional arguments)
-  (list (make-instruction :opcode opcode :arguments arguments)))
+(defun gen (opcode &key (arguments nil) (pos nil) (comments nil))
+  (list (make-instruction :opcode opcode
+                          :arguments arguments
+                          :pos pos
+                          :comments comments)))
 
-(defun seq (&rest subsequences)
-  (apply #'append subsequences))
+(defun seq (&rest subsequences) (apply #'append subsequences))

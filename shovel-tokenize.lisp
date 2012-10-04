@@ -50,10 +50,7 @@
           (incf (pos-column pos))))))
 
 (defun is-white-space (ch)
-  (and ch
-       (or (char= #\space ch)
-           (char= #\newline ch)
-           (char= #\tab ch))))
+  (and ch (or (char= #\space ch) (char= #\newline ch) (char= #\tab ch))))
 
 (defun eat-white-space ()
   (loop while (is-white-space (current-char)) do (next-char)))

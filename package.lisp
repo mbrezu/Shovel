@@ -3,11 +3,6 @@
 (defpackage #:shovel
   (:use #:cl))
 
-(defpackage #:shovel-codegen
-  (:use #:cl)
-  (:export
-   :gen-code))
-
 (defpackage #:shovel-tokenize
   (:use #:cl)
   (:export
@@ -27,8 +22,16 @@
   (:export
    :parse-string
    :parse-tree
+   :make-parse-tree
    :parse-tree-label
    :parse-tree-start-pos
    :parse-tree-end-pos
    :parse-tree-children))
+
+(defpackage #:shovel-codegen
+  (:use #:cl #:shovel-parse)
+  (:export
+   :gen-code
+   :comp
+   :show-bytecode))
 

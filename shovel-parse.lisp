@@ -47,11 +47,9 @@
              (or (null expected-content)
                  (string= content expected-content)))))))
 
-(defun get-current-start-pos ()
-  (token-start-pos (current-token)))
+(defun get-current-start-pos () (token-start-pos (current-token)))
 
-(defun get-previous-end-pos ()
-  (token-end-pos (previous-token)))
+(defun get-previous-end-pos () (token-end-pos (previous-token)))
 
 (defmacro with-new-parse-tree (label &body body)
   "Creates a new parse tree with label LABEL and children returned by
@@ -97,8 +95,7 @@ token positions."
   (require-token (list type content))
   (next-token))
 
-(defun length=1 (list)
-  (and (consp list) (null (rest list))))
+(defun length=1 (list) (and (consp list) (null (rest list))))
 
 (defun require-token (&rest possible-tokens)
   (let ((token (current-token)))
@@ -175,20 +172,26 @@ token positions."
      (parse-if))
     (t (left-assoc #'parse-or-term '((:punctuation "||"))))))
 
+(defun make-prim0-parse-tree (primitive-name)
+  (with-new-parse-tree :prim0
+    (prog1
+        primitive-name
+      (next-token))))
+
 (defun left-assoc (sub-parser operators)
   (labels ((iter (start)
              (if (some (lambda (operator) (apply #'tokenp operator)) operators)
                  (let ((operator (current-token)))
                    (iter (with-new-anchored-parse-tree
                              (parse-tree-start-pos start)
-                             (list :prim0 (token-content operator))
-                           (next-token)
-                           (list start (funcall sub-parser)))))
+                             :call
+                           (list (make-prim0-parse-tree (token-content operator))
+                                 start
+                                 (funcall sub-parser)))))
                  start)))
     (iter (funcall sub-parser))))
 
-(defun parse-or-term ()
-  (left-assoc #'parse-and-term '((:punctuation "&&"))))
+(defun parse-or-term () (left-assoc #'parse-and-term '((:punctuation "&&"))))
 
 (defun parse-and-term ()
   (left-assoc #'parse-relational-term '((:punctuation "<")
@@ -211,13 +214,16 @@ token positions."
                                             (:punctuation "<<"))))
 
 (defun parse-multiplication-term ()
-  (if (tokenp :punctuation "-")
-      (parse-unary-minus)
-      (parse-unary-minus-term)))
+  (if (tokenp :punctuation "-") (parse-unary-minus) (parse-unary-minus-term)))
 
 (defun parse-unary-minus-term ()
   (cond ((tokenp :number) (parse-number))
         ((tokenp :string) (parse-literal-string))
+        ((or (tokenp :identifier "true")
+             (tokenp :identifier "false"))
+         (parse-bool))
+        ((tokenp :identifier "null")
+         (parse-void))
         (t (parse-identifier-or-call-or-ref))))
 
 (defun parse-identifier-or-call-or-ref (&optional forced-start)
@@ -226,9 +232,9 @@ token positions."
            (parse-identifier-or-call-or-ref
             (with-new-anchored-parse-tree
                 (parse-tree-start-pos start)
-                (list :prim0 "svm_gref")
-              (consume-token :punctuation ".")
-              (list start (parse-name)))))
+                :call
+              (require-token (list :punctuation "."))
+              (list (make-prim0-parse-tree "svm_gref") start (parse-name)))))
           ((tokenp :punctuation "(") ; Handle function call.
            (parse-identifier-or-call-or-ref
             (with-new-anchored-parse-tree (parse-tree-start-pos start) :call
@@ -240,10 +246,10 @@ token positions."
            (parse-identifier-or-call-or-ref
             (with-new-anchored-parse-tree
                 (parse-tree-start-pos start)
-                (list :prim0 "svm_gref")
-              (consume-token :punctuation "[")
+                :call
+              (require-token (list :punctuation "["))
               (prog1
-                  (list start (parse-expression))
+                  (list (make-prim0-parse-tree "svm_gref") start (parse-expression))
                 (consume-token :punctuation "]")))))
           (t start))))
 
@@ -256,24 +262,24 @@ token positions."
         ((tokenp :identifier) (parse-name))
         (t (error "Unexpected token '~a'." (token-content (current-token))))))
 
-(defun parse-number ()
-  (require-token (list :number))
-  (with-new-parse-tree :number
+(defun token-as-parse-tree (label)
+  (with-new-parse-tree label
     (prog1
         (token-content (current-token))
       (next-token))))
 
-(defun parse-literal-string ()
-  (require-token (list :string))
-  (with-new-parse-tree :string
-    (prog1
-        (token-content (current-token))
-      (next-token))))
+(defun parse-number () (token-as-parse-tree :number))
+
+(defun parse-bool () (token-as-parse-tree :bool))
+
+(defun parse-void () (token-as-parse-tree :void))
+
+(defun parse-literal-string () (token-as-parse-tree :string))
 
 (defun parse-unary-minus ()
-  (with-new-parse-tree (list "prim0" "-")
-    (consume-token :punctuation "-")
-    (parse-unary-minus-term)))
+  (with-new-parse-tree :call
+    (require-token (list :punctuation "-"))
+    (list (make-prim0-parse-tree "-") (parse-unary-minus-term))))
 
 (defun parse-lambda ()
   (with-new-parse-tree :fn
@@ -320,7 +326,11 @@ token positions."
           (progn
             (consume-token :identifier "else")
             (list pred then (parse-statement)))
-          (list pred then)))))
+          (list pred then (make-parse-tree
+                           :label :void
+                           :children "null"
+                           :start-pos nil
+                           :end-pos nil))))))
 
 (defun simplify-parse-tree (parse-tree)
   (if (parse-tree-p parse-tree)

@@ -112,8 +112,7 @@ The possible opcodes are:
    index *var* (see section 'Environments' above) and push the value
    on the stack;
  * LSET *frame*, *var* - store the value on the top of the stack to
-   the variable identified by *frame* and *var* (see LGET above); pop
-   the stack;
+   the variable identified by *frame* and *var* (see LGET above);
  * POP - throw away the top of the stack;
  * TJUMP *address* - jump to the address *address* if the top of the
    stack IS NOT the boolean value 'false'; pop the stack;

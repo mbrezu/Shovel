@@ -1,82 +1,82 @@
-----------------------------------------
 
-SHOVEL> (comp '(:fn ((:name "param")) (:begin
-                                       (:var (:name "test") 10)
-                                       (:begin
-                                        (:if ((:prim0 "<=") (:name "test") 10)
-                                            (:set! (:name "test") 20))
-                                        ((:prim0 "svm_array") 10 20 30 40))
-                                       (:set! (:name "test") 30))))
-    NEW-FRAME 0
-    ARGS 0
+SHOVEL-CODEGEN> (shovel-codegen:comp (first (parse-string "{ var x = 0 var a = fn y { x = x + 1 x + y } a }")))
+    NEW-FRAME 2
+    CONST 0
+    LSET 0, 0                            ; Write variable 'x'.
+    POP
     JUMP L2
 FN1:
-    NEW-FRAME 0
+    NEW-FRAME 1
     ARGS 1
-    NEW-FRAME 1
-    CONST 10
-    LSET 0, 0
-    SAVE K5
-    LGET 1, 0
-    CONST 10
-    PRIM0 <=
-    CALLJ 2
-K5:
-    FJUMP L3
-    CONST 20
-    LSET 1, 0
-    JUMP L4
-L3:
-L4:
-    SAVE K6
-    CONST 10
-    CONST 20
-    CONST 30
-    CONST 40
-    PRIM0 svm_array
-    CALLJ 4
-K6:
-    CONST 30
-    LSET 0, 0
-    RETURN
-L2:
-    FN FN1
-    RETURN
-NIL
-
-
--------------------------
-
-SHOVEL> (comp '(:begin
-                (:var (:name "test") ((:prim0 "svm_array") ((:prim0 "svm_array") 1 2) 10 20 30))
-                ((:prim0 "svm_gref") ((:prim0 "svm_gref") (:name "test") 0) 1)))
-    NEW-FRAME 0
-    ARGS 0
-    NEW-FRAME 1
-    SAVE K2
-    SAVE K1
-    CONST 1
-    CONST 2
-    PRIM0 svm_array
-    CALLJ 2
-K1:
-    CONST 10
-    CONST 20
-    CONST 30
-    PRIM0 svm_array
-    CALLJ 4
-K2:
-    LSET 0, 0
     SAVE K3
-    LGET 0, 0
-    CONST 0
-    PRIM0 svm_gref
+    LGET 2, 0                            ; Read variable 'x'.
+    CONST 1
+    PRIM0 +
     CALLJ 2
 K3:
-    CONST 1
-    PRIM0 svm_gref
+    LSET 2, 0                            ; Write variable 'x'.
+    POP
+    LGET 2, 0                            ; Read variable 'x'.
+    LGET 1, 0                            ; Read variable 'y'.
+    PRIM0 +
     CALLJ 2
-NIL
+L2:
+    FN FN1
+    LSET 0, 1                            ; Write variable 'a'.
+    POP
+    LGET 0, 1                            ; Read variable 'a'.
 
------------------------------------
-;;
+--------------------------------------------
+
+SHOVEL-CODEGEN> (shovel-codegen:comp (first (parse-string "{ var a = fn x x + 1 a(2) }")))
+    NEW-FRAME 1
+    JUMP L2
+FN1:
+    NEW-FRAME 1
+    ARGS 1
+    LGET 0, 0                            ; Read variable 'x'.
+    CONST 1
+    PRIM0 +
+    CALLJ 2
+L2:
+    FN FN1
+    LSET 0, 0                            ; Write variable 'a'.
+    POP
+    CONST 2
+    LGET 0, 0                            ; Read variable 'a'.
+    CALLJ 1
+
+----------------------------------------------
+
+
+SHOVEL-CODEGEN> (shovel-codegen:comp (first (parse-string "{ var a = 1 var b = 2 return if a < b a + b + 2 else 0}")))
+    NEW-FRAME 2
+    CONST 1
+    LSET 0, 0                            ; Write variable 'a'.
+    POP
+    CONST 2
+    LSET 0, 1                            ; Write variable 'b'.
+    POP
+    SAVE K2
+    LGET 0, 0                            ; Read variable 'a'.
+    LGET 0, 1                            ; Read variable 'b'.
+    PRIM0 <
+    CALLJ 2
+K2:
+    FJUMP L1
+    SAVE K3
+    LGET 0, 0                            ; Read variable 'a'.
+    LGET 0, 1                            ; Read variable 'b'.
+    PRIM0 +
+    CALLJ 2
+K3:
+    CONST 2
+    PRIM0 +
+    CALLJ 2
+L1:
+    CONST 0
+    RETURN
+
+----------------------------------------------------
+
+
