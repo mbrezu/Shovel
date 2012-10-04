@@ -36,10 +36,13 @@
         (:if (compile-if ast env val? more?))
         (:name (validate-name ast)
                (let ((var-name (name-identifier ast)))
-                 (gen :lget :arguments (find-name var-name env) :pos ast)))
+                 (seq (gen :lget :arguments (find-name var-name env) :pos ast)
+                      (unless more? (gen :return)))))
         (:call (compile-funcall ast env more?))
-        (:prim0 (gen :prim0 :arguments (parse-tree-children ast) :pos ast))
-        (:prim (gen :prim :arguments (parse-tree-children ast) :pos ast))
+        (:prim0 (seq (gen :prim0 :arguments (parse-tree-children ast) :pos ast)
+                     (unless more? (gen :return))))
+        (:prim (seq (gen :prim :arguments (parse-tree-children ast) :pos ast)
+                    (unless more? (gen :return))))
         (:return (seq (compile-ast (parse-tree-children ast) env t more?)
                       (when more? (gen :return))))
         ((:number :string :bool :void) (compile-atom ast env val? more?))
@@ -253,12 +256,10 @@ SVM_SET_INDEXED required primitive."
                                      drop-values-asts)
                              (compile-ast value-ast new-env t more?)))
          (top-frame-count (length (env-frame-vars (car new-env)))))
-    (if (> top-frame-count 0)
-        (seq (gen :new-frame :arguments top-frame-count)
-             compiled-body
-             (if more?
-                 (gen :drop-frame)))
-        (seq compiled-body))))
+    (seq (gen :new-frame :arguments top-frame-count)
+         compiled-body
+         (if more?
+             (gen :drop-frame)))))
 
 (defun compile-fn-body (args body env)
   (let ((new-env (cons (make-env-frame) env)))
@@ -266,9 +267,9 @@ SVM_SET_INDEXED required primitive."
       (extend-frame new-env (name-identifier arg)))
     (let ((compiled-body (compile-ast body new-env t nil))
           (top-frame-count (length (env-frame-vars (car new-env)))))
-      (seq (if (> top-frame-count 0)
-               (seq (gen :new-frame :arguments top-frame-count)
-                    (gen :args :arguments (length args))))
+      (seq (gen :new-frame :arguments top-frame-count)
+           (when (> (length args) 0)
+             (gen :args :arguments (length args)))
            compiled-body))))
 
 (defun find-name (name env &optional (frame-number 0))
