@@ -1,82 +1,80 @@
 
-SHOVEL-CODEGEN> (shovel-codegen:comp (first (parse-string "{ var x = 0 var a = fn y { x = x + 1 x + y } a }")))
-    NEW-FRAME 2
+SHOVEL-CODEGEN> (comp "
+var fact = fn n if n == 0 1 else n * fact (n - 1)
+@print(fact(3))")
+    NEW-FRAME 1
+    JUMP L2
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
+    ; line     2:            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FN1:
+    NEW-FRAME 1
+    ARGS 1
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
+    ; line     2:                    ^
+    LGET 0, 0
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
+    ; line     2:                         ^
     CONST 0
-    LSET 0, 0                            ; Write variable 'x'.
-    POP
-    JUMP L2
-FN1:
-    NEW-FRAME 1
-    ARGS 1
-    SAVE K3
-    LGET 2, 0                            ; Read variable 'x'.
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
+    ; line     2:                      ^^
+    PRIM0 ==
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
+    ; line     2:                    ^^^^^^
+    CALL 2
+    FJUMP L3
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
+    ; line     2:                           ^
     CONST 1
-    PRIM0 +
-    CALLJ 2
-K3:
-    LSET 2, 0                            ; Write variable 'x'.
-    POP
-    LGET 2, 0                            ; Read variable 'x'.
-    LGET 1, 0                            ; Read variable 'y'.
-    PRIM0 +
+    RETURN
+L3:
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
+    ; line     2:                                  ^
+    LGET 0, 0
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
+    ; line     2:                                            ^
+    LGET 0, 0
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
+    ; line     2:                                                ^
+    CONST 1
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
+    ; line     2:                                              ^
+    PRIM0 -
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
+    ; line     2:                                            ^^^^^
+    CALL 2
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
+    ; line     2:                                      ^^^^
+    LGET 1, 0
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
+    ; line     2:                                      ^^^^^^^^^^^^
+    CALL 1
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
+    ; line     2:                                    ^
+    PRIM0 *
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
+    ; line     2:                                  ^^^^^^^^^^^^^^^^
     CALLJ 2
 L2:
     FN FN1
-    LSET 0, 1                            ; Write variable 'a'.
+    ; line     2: var fact = fn n if n == 0 1 else n * fact (n - 1)
+    ; line     2: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    LSET 0, 0
     POP
-    LGET 0, 1                            ; Read variable 'a'.
-
---------------------------------------------
-
-SHOVEL-CODEGEN> (shovel-codegen:comp (first (parse-string "{ var a = fn x x + 1 a(2) }")))
-    NEW-FRAME 1
-    JUMP L2
-FN1:
-    NEW-FRAME 1
-    ARGS 1
-    LGET 0, 0                            ; Read variable 'x'.
-    CONST 1
-    PRIM0 +
-    CALLJ 2
-L2:
-    FN FN1
-    LSET 0, 0                            ; Write variable 'a'.
-    POP
-    CONST 2
-    LGET 0, 0                            ; Read variable 'a'.
+    ; line     3: @print(fact(3))
+    ; line     3:             ^
+    CONST 3
+    ; line     3: @print(fact(3))
+    ; line     3:        ^^^^
+    LGET 0, 0
+    ; line     3: @print(fact(3))
+    ; line     3:        ^^^^^^^
+    CALL 1
+    ; line     3: @print(fact(3))
+    ; line     3: ^^^^^^
+    PRIM print
+    ; line     3: @print(fact(3))
+    ; line     3: ^^^^^^^^^^^^^^^
     CALLJ 1
 
-----------------------------------------------
-
-
-SHOVEL-CODEGEN> (shovel-codegen:comp (first (parse-string "{ var a = 1 var b = 2 return if a < b a + b + 2 else 0}")))
-    NEW-FRAME 2
-    CONST 1
-    LSET 0, 0                            ; Write variable 'a'.
-    POP
-    CONST 2
-    LSET 0, 1                            ; Write variable 'b'.
-    POP
-    SAVE K2
-    LGET 0, 0                            ; Read variable 'a'.
-    LGET 0, 1                            ; Read variable 'b'.
-    PRIM0 <
-    CALLJ 2
-K2:
-    FJUMP L1
-    SAVE K3
-    LGET 0, 0                            ; Read variable 'a'.
-    LGET 0, 1                            ; Read variable 'b'.
-    PRIM0 +
-    CALLJ 2
-K3:
-    CONST 2
-    PRIM0 +
-    CALLJ 2
-L1:
-    CONST 0
-    RETURN
-
 ----------------------------------------------------
-
 

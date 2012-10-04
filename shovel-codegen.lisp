@@ -18,7 +18,7 @@
       (case label
         (:var (validate-var ast)
               (let ((var-name (name-identifier (var-name ast))))
-                (extend-frame env var-name)
+                (extend-frame env var-name (var-name ast))
                 (seq (compile-ast (var-initializer ast) env t t)
                      (compile-set-var var-name env val? more? ast))))
         (:fn (validate-fn ast)
@@ -36,7 +36,7 @@
         (:if (compile-if ast env val? more?))
         (:name (validate-name ast)
                (let ((var-name (name-identifier ast)))
-                 (seq (gen :lget :arguments (find-name var-name env) :pos ast)
+                 (seq (gen :lget :arguments (find-name var-name env ast) :pos ast)
                       (unless more? (gen :return)))))
         (:call (compile-funcall ast env more?))
         (:prim0 (seq (gen :prim0 :arguments (parse-tree-children ast) :pos ast)
@@ -59,7 +59,10 @@ SVM_SET_INDEXED required primitive."
                                env val? more? ast)))
         (t (let ((lhs (set-left-side ast)))
              (unless (is-gref-call lhs)
-               (error "Assignment only supported for names, arrays and hashes."))
+               (error "Assignment only supported for names, arrays and hashes ~
+at line ~d, column ~d."
+                      (pos-line (parse-tree-start-pos ast))
+                      (pos-column (parse-tree-start-pos ast))))
              (let* ((array-or-hash (gref-call-array-or-hash lhs))
                     (index (gref-call-index lhs))
                     (set-operator (set-operator ast))
@@ -88,7 +91,9 @@ SVM_SET_INDEXED required primitive."
 (defun gref-call-index (ast) (third (parse-tree-children ast)))
 
 (defun compile-set-var (name env val? more? ast-for-pos)
-  (seq (gen :lset :arguments (find-name name env) :pos ast-for-pos)
+  (seq (gen :lset
+            :arguments (find-name name env (parse-tree-start-pos ast-for-pos))
+            :pos ast-for-pos)
        (unless val? (gen :pop))
        (unless more? (gen :return))))
 
@@ -127,7 +132,7 @@ SVM_SET_INDEXED required primitive."
 
 (defun validate-name (name-ast)
   (or (name-p name-ast)
-      (error "Invalid name ~a." name-ast)))
+      (error "Internal Shovel WTF.")))
 
 (defun if-pred (if-ast) (first (parse-tree-children if-ast)))
 
@@ -142,10 +147,10 @@ SVM_SET_INDEXED required primitive."
              (= 3 children-count)))))
 
 (defun validate-if (if-ast)
-  (or (if-p if-ast) (error "Invalid IF ~a." if-ast)))
+  (or (if-p if-ast) (error "Internal Shovel WTF.")))
 
 (defun validate-set (set-ast)
-  (or (set-p set-ast) (error "Invalid SET! ~a." set-ast)))
+  (or (set-p set-ast) (error "Internal Shovel WTF.")))
 
 (defun set-p (set-ast)
   (and (eq :set! (parse-tree-label set-ast))
@@ -264,7 +269,7 @@ SVM_SET_INDEXED required primitive."
 (defun compile-fn-body (args body env)
   (let ((new-env (cons (make-env-frame) env)))
     (dolist (arg args)
-      (extend-frame new-env (name-identifier arg)))
+      (extend-frame new-env (name-identifier arg) arg))
     (let ((compiled-body (compile-ast body new-env t nil))
           (top-frame-count (length (env-frame-vars (car new-env)))))
       (seq (gen :new-frame :arguments top-frame-count)
@@ -272,17 +277,9 @@ SVM_SET_INDEXED required primitive."
              (gen :args :arguments (length args)))
            compiled-body))))
 
-(defun find-name (name env &optional (frame-number 0))
-  (when (null env)
-    (error "Undefined variable ~a." name))
-  (let ((pair (assoc name (env-frame-vars (first env)) :test #'equal)))
-    (if pair
-        (list frame-number (cdr pair))
-        (find-name name (rest env) (1+ frame-number)))))
-
 (defun validate-fn (fn-ast)
   (or (fn-p fn-ast)
-      (error "Invalid fn ~a." fn-ast)))
+      (error "Internal Shovel WTF.")))
 
 (defun fn-p (fn-ast)
   (and (eq :fn (parse-tree-label fn-ast))
@@ -304,7 +301,7 @@ SVM_SET_INDEXED required primitive."
 
 (defun validate-var (var-ast)
   (or (var-p var-ast)
-      (error "Invalid var declaration ~a." var-ast)))
+      (error "Internal Shovel WTF.")))
 
 (defun name-p (name)
   (and (eq :name (parse-tree-label name))
@@ -312,12 +309,29 @@ SVM_SET_INDEXED required primitive."
 
 (defun name-identifier (name) (parse-tree-children name))
 
-(defun extend-frame (env name)
-  (let ((top-frame (car env)))
-    (unless (assoc name (env-frame-vars top-frame) :test #'equal)
-      (setf (env-frame-vars top-frame)
-            (cons (cons name (length (env-frame-vars top-frame)))
-                  (env-frame-vars top-frame))))))
+(defun extend-frame (env name name-ast)
+  (let ((top-frame (car env))
+        (current-start-pos (parse-tree-start-pos name-ast)))
+    (alexandria:when-let
+        (var-record (assoc name (env-frame-vars top-frame) :test #'equal))
+      (error "Variable '~a' is already defined in this frame; ~
+current definition attempt at line ~d, column ~d, ~
+initial definition at line ~d, column ~d."
+             name
+             (pos-line current-start-pos) (pos-column current-start-pos)
+             (pos-line (third var-record)) (pos-column (third var-record))))
+    (setf (env-frame-vars top-frame)
+          (cons (list name (length (env-frame-vars top-frame)) current-start-pos)
+                (env-frame-vars top-frame)))))
+
+(defun find-name (name env start-pos &optional (frame-number 0))
+  (when (null env)
+    (error "Undefined variable '~a' at line ~d, column ~d."
+           name (pos-line start-pos) (pos-column start-pos)))
+  (let ((pair (assoc name (env-frame-vars (first env)) :test #'equal)))
+    (if pair
+        (list frame-number (second pair))
+        (find-name name (rest env) start-pos (1+ frame-number)))))
 
 (defun compile-atom (ast env val? more?)
   (declare (ignore env))
@@ -329,7 +343,7 @@ SVM_SET_INDEXED required primitive."
 (defun validate-atom-value (ast)
   (or (and (member (parse-tree-label ast) '(:string :number :bool :void))
            (stringp (parse-tree-children ast)))
-      (error "Invalid value ~a." ast)))
+      (error "Internal Shovel WTF.")))
 
 (defun gen (opcode &key (arguments nil) (pos nil) (comments nil))
   (list (make-instruction :opcode opcode
