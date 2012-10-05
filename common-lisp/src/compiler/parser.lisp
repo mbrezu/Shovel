@@ -1,7 +1,7 @@
 
 (in-package #:shovel-compiler-parser)
 
-(defstruct parse-state tokens (previous-token nil))
+(defstruct parse-state tokens (previous-token nil) (source nil))
 
 (defvar *parse-state* nil)
 
@@ -12,8 +12,8 @@
 (defun next-token () (setf (parse-state-previous-token *parse-state*)
                            (pop (parse-state-tokens *parse-state*))))
 
-(defun parse-tokens (tokens)
-  (let ((*parse-state* (make-parse-state :tokens tokens))
+(defun parse-tokens (tokens &key source)
+  (let ((*parse-state* (make-parse-state :tokens tokens :source source))
         result)
     (loop
        while (parse-state-tokens *parse-state*)
@@ -96,37 +96,51 @@ token positions."
     (unless (and token (some (lambda (candidate)
                                (apply #'tokenp candidate))
                              possible-tokens))
-      (let ((error-prefix (if token
-                              (let ((start-pos (token-start-pos token)))
-                                (format nil
-                                        "Shovel parse error at line ~d column ~d"
-                                        (pos-line start-pos)
-                                        (pos-column start-pos)))
-                              "Shovel parse error at end of file"))
-            (expectation (let ((possible-contents
-                                (remove-if #'null
-                                           (mapcar #'second possible-tokens)))
-                               (possible-types (remove-duplicates
-                                                (mapcar #'first possible-tokens))))
-                           (cond
-                             ((null possible-contents)
-                              (cond
-                                ((null possible-types)
-                                 (error "Shovel internal WTF."))
-                                ((length=1 possible-types)
-                                 (format nil "expected a ~(~a~)"
-                                         (first possible-types)))
-                                (t (format nil "expected a ~{~(~a~)~^ or a ~}"
-                                           possible-types))))
-                             ((length=1 possible-contents)
-                              (format nil "expected '~a'" (first possible-contents)))
-                             (t
-                              (format nil "expected ~{'~a'~^ or ~}"
-                                      possible-contents)))))
-            (actual-input (if token
-                              (format nil "but got '~a'" (token-content token))
-                              "but reached the end of the input")))
-        (error "~a: ~a, ~a." error-prefix expectation actual-input)))))
+      (let (line column at-eof pos)
+        (if token
+            (let ((start-pos (token-start-pos token)))
+              (setf pos start-pos
+                    line (pos-line pos)
+                    column (pos-column pos)))
+            (setf at-eof t))
+        (let* ((expectation
+                (let ((possible-contents
+                       (remove-if #'null (mapcar #'second possible-tokens)))
+                      (possible-types (remove-duplicates
+                                       (mapcar #'first possible-tokens))))
+                  (cond
+                    ((null possible-contents)
+                     (cond
+                       ((null possible-types)
+                        (error "Shovel internal WTF."))
+                       ((length=1 possible-types)
+                        (format nil "Expected a ~(~a~)"
+                                (first possible-types)))
+                       (t (format nil "Expected a ~{~(~a~)~^ or a ~}"
+                                  possible-types))))
+                    ((length=1 possible-contents)
+                     (format nil "Expected '~a'"
+                             (first possible-contents)))
+                    (t
+                     (format nil "Expected ~{'~a'~^ or ~}"
+                             possible-contents)))))
+               (actual-input (if token
+                                 (format nil "but got '~a'" (token-content token))
+                                 "but reached the end of the input"))
+               (message (format nil "~a, ~a." expectation actual-input)))
+          (setf message (maybe-extend-message pos message))
+          (error (make-condition 'shovel-compiler-error
+                                 :message message
+                                 :line line
+                                 :column column
+                                 :at-eof at-eof)))))))
+
+(defun maybe-extend-message (pos message)
+  (if pos
+      (alexandria:if-let (source (parse-state-source *parse-state*))
+        (format nil "~a~%~a" message (highlight-position source pos))
+        message)
+      message))
 
 (defun parse-var-decl ()
   (with-new-parse-tree :var
@@ -267,7 +281,21 @@ token positions."
            (consume-token :punctuation ")")))
         ((tokenp :identifier) (parse-name))
         ((tokenp :prim) (parse-prim))
-        (t (error "Unexpected token '~a'." (token-content (current-token))))))
+        (t (let* ((token (current-token))
+                  (message (if token
+                               (format nil "Unexpected token '~a'."
+                                       (token-content token))
+                               "Unexpected end of file."))
+                  (pos (if token (token-start-pos token)))
+                  (line (if token (pos-line pos)))
+                  (column (if token (pos-column pos)))
+                  (at-eof (not token)))
+             (setf message (maybe-extend-message pos message))
+             (error (make-condition 'shovel-compiler-error
+                                    :message message
+                                    :line line
+                                    :column column
+                                    :at-eof at-eof))))))
 
 (defun token-as-parse-tree (label)
   (with-new-parse-tree label

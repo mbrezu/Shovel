@@ -13,8 +13,9 @@
       :components
       ((:file "package")
        (:file "shovel-types" :depends-on ("package"))
+       (:file "utils" :depends-on ("package"))
        (:module "compiler"
-                :depends-on ("package" "shovel-types")
+                :depends-on ("package" "shovel-types" "utils")
                 :components ((:file "types")
                              (:file "tokenizer" :depends-on ("types"))
                              (:file "parser" :depends-on ("types"))

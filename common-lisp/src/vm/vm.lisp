@@ -5,26 +5,26 @@
   bytecode program-counter
   current-environment
   stack
-  user-primitives)
+  user-primitives
+  (last-start-pos nil)
+  (last-end-post nil)
+  (source nil))
 
 (defstruct return-address
   program-counter
   environment)
 
 (defstruct callable
-  (primitive nil)
+  (prim0 nil)
+  (prim nil)
   (program-counter nil)
   (environment nil))
 
-(defmacro def-binary-prim0 (op &key (lisp-op op) type-1 type-2)
-  `(list ,(mu-base:mkstr op)
-         (make-callable :primitive (lambda (t1 t2)
-                                     ,@(if type-1 (list '(check-type t1 number)))
-                                     ,@(if type-2 (list '(check-type t2 number)))
-                                     (,lisp-op t1 t2)))))
+(defmacro def-binary-prim0 (op &key (lisp-op op))
+  `(list ',(mu-base:mkstr op) (make-callable :prim0 ',lisp-op)))
 
 (defmacro def-binary-prim0-ar (op &key (lisp-op op))
-  `(def-binary-prim0 ,op :lisp-op ,lisp-op :type-1 'number :type-2 'number))
+  `(def-binary-prim0 ,op :lisp-op ,lisp-op))
 
 (defparameter *primitives*
   (list (def-binary-prim0-ar +)
@@ -40,21 +40,34 @@
         (def-binary-prim0 == :lisp-op eql)
         (def-binary-prim0 != :lisp-op /=)))
 
-(defun find-required-primitive (name)
+(defun raise-shovel-error (vm message)
+  (alexandria:when-let ((source (vm-source vm))
+                        (pos (vm-last-start-pos vm)))
+    (setf message (format nil "~a~%~a" message (highlight-position source pos))))
+  (error
+   (alexandria:if-let (pos (vm-last-start-pos vm))
+     (make-condition 'shovel-error
+                     :message message
+                     :line (pos-line pos)
+                     :column (pos-column pos))
+     (make-condition 'shovel-error :message message))))
+
+(defun find-required-primitive (vm name)
   (let ((primitive-record (assoc name *primitives* :test #'string=)))
     (unless primitive-record
-      (error "Shovel VM: unknown prim0 '~a'." name))
+      (raise-shovel-error vm (format nil "Unknown prim0 '~a'." name)))
     (second primitive-record)))
 
-(defun run-vm (bytecode &optional user-primitives)
+(defun run-vm (bytecode &key source user-primitives)
   (let ((vm (make-vm :bytecode bytecode
                      :program-counter 0
                      :current-environment nil
                      :stack nil
-                     :user-primitives (make-hash-table :test #'equal))))
+                     :user-primitives (make-hash-table :test #'equal)
+                     :source source)))
     (dolist (user-primitive user-primitives)
       (setf (gethash (first user-primitive) (vm-user-primitives vm))
-            (make-callable :primitive (second user-primitive))))
+            (make-callable :prim (second user-primitive))))
     (loop while (step-vm vm))
     (first (vm-stack vm))))
 
@@ -66,6 +79,10 @@
     (let* ((instruction (elt (vm-bytecode vm) (vm-program-counter vm)))
            (opcode (instruction-opcode instruction))
            (args (instruction-arguments instruction)))
+      (alexandria:when-let ((start-pos (instruction-start-pos instruction))
+                            (end-pos (instruction-end-pos instruction)))
+        (setf (vm-last-start-pos vm) start-pos
+              (vm-last-end-post vm) end-pos))
       (case opcode
         (:new-frame
          (push (make-array args) (vm-current-environment vm))
@@ -77,7 +94,7 @@
          (push args (vm-stack vm))
          (incf (vm-program-counter vm)))
         (:prim0
-         (push (find-required-primitive args) (vm-stack vm))
+         (push (find-required-primitive vm args) (vm-stack vm))
          (incf (vm-program-counter vm)))
         (:prim
          (push (find-user-primitive vm args) (vm-stack vm))
@@ -113,12 +130,14 @@
             (apply-return-address vm retaddr)
             (setf (vm-stack vm)
                   (cons result other-stack))))
-        (t (error "Shovel VM: Unknown instruction '~a'." opcode)))))
+        (t (error "Shovel internal WTF: unknown instruction '~a'." opcode)))))
   (vm-not-finished vm))
 
 (defun find-user-primitive (vm primitive-name)
   (or (gethash primitive-name (vm-user-primitives vm))
-      (error "Shovel VM: Unknown user primitive '~a'." primitive-name)))
+      (raise-shovel-error vm
+                          (format nil "Unknown user primitive '~a'." 
+                                  primitive-name))))
 
 (defun jump-if (value vm jump-address)
   (if value
@@ -142,8 +161,8 @@
 (defun handle-call (vm args save-return-address)
   (let ((callable (pop (vm-stack vm))))
     (unless (callable-p callable)
-      (error "Shovel VM: cannot call object."))
-    (if (callable-primitive callable)
+      (raise-shovel-error vm (format nil "Object is not callable.")))
+    (if (or (callable-prim callable) (callable-prim0 callable))
         (call-primitive callable vm args save-return-address)
         (call-function callable vm args save-return-address))))
 
@@ -160,7 +179,9 @@
 
 (defun call-primitive (callable vm args save-return-address)
   (let* ((arg-values (subseq (vm-stack vm) 0 args))
-         (result (apply (callable-primitive callable) (reverse arg-values))))
+         (result (apply (or (callable-prim0 callable)
+                            (callable-prim callable))
+                        (reverse arg-values))))
     (setf (vm-stack vm) (subseq (vm-stack vm) args))
     (if save-return-address
         (incf (vm-program-counter vm))

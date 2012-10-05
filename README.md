@@ -49,7 +49,9 @@ The Shript compiler and the Shovel VM are inspired by chapter 23 of
 The VM is stack based. It has the following primitive scalar types:
 
  * string,
- * integer (bignum),
+ * integer (bignum or signed 32 bit - depending on what I can get
+   working in JavaScript - https://github.com/jtobey/javascript-bignum
+   seems to provide bignums),
  * double precision floating point and
  * boolean.
 
