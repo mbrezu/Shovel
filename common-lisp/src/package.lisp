@@ -75,6 +75,31 @@
    :assemble-instructions
    :show-instructions))
 
+(defpackage #:shovel-vm-prim0
+  (:use #:cl #:shovel-types)
+  (:export
+   :*error-raiser*
+   :add
+   :subtract
+   :multiply
+   :divide
+   :shift-left
+   :shift-right
+   :less-than 
+   :greater-than
+   :less-than-or-equal
+   :greater-than-or-equal 
+   :unary-minus
+   :bitwise-and
+   :bitwise-or
+   :are-equal
+   :are-not-equal
+   :logical-and
+   :logical-or
+   :logical-not
+   :is-true
+   :is-bool))
+
 (defpackage #:shovel-vm
   (:use #:cl #:shovel-types #:shovel-utils)
   (:export

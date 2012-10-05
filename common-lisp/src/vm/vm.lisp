@@ -20,25 +20,43 @@
   (program-counter nil)
   (environment nil))
 
-(defmacro def-binary-prim0 (op &key (lisp-op op))
-  `(list ',(mu-base:mkstr op) (make-callable :prim0 ',lisp-op)))
-
-(defmacro def-binary-prim0-ar (op &key (lisp-op op))
-  `(def-binary-prim0 ,op :lisp-op ,lisp-op))
+(defmacro def-prim0 (op lisp-op)
+  `(cons ,(mu-base:mkstr op) ',lisp-op))
 
 (defparameter *primitives*
-  (list (def-binary-prim0-ar +)
-        (def-binary-prim0-ar -)
-        (def-binary-prim0-ar *)
-        (def-binary-prim0-ar /)
-        (def-binary-prim0 "||" :lisp-op or)
-        (def-binary-prim0 && :lisp-op and)
-        (def-binary-prim0 <=)
-        (def-binary-prim0 <)
-        (def-binary-prim0 >=)
-        (def-binary-prim0 >)
-        (def-binary-prim0 == :lisp-op eql)
-        (def-binary-prim0 != :lisp-op /=)))
+  (let ((prim0-alist
+         (list
+          ;; Arithmetic operators:
+          (def-prim0 + shovel-vm-prim0:add)
+          (def-prim0 - shovel-vm-prim0:subtract)
+          (def-prim0 "unary-minus" shovel-vm-prim0:unary-minus)
+          (def-prim0 * shovel-vm-prim0:multiply)
+          (def-prim0 / shovel-vm-prim0:divide)
+          (def-prim0 << shovel-vm-prim0:shift-left)
+          (def-prim0 >> shovel-vm-prim0:shift-right)
+          ;; TODO: modulo (in parser too).
+
+          ;; Relational operators:
+          (def-prim0 < shovel-vm-prim0:less-than)
+          (def-prim0 <= shovel-vm-prim0:less-than-or-equal)
+          (def-prim0 > shovel-vm-prim0:greater-than)
+          (def-prim0 >= shovel-vm-prim0:greater-than-or-equal)
+          (def-prim0 == shovel-vm-prim0:are-equal)
+          (def-prim0 != shovel-vm-prim0:are-not-equal)
+
+          ;; Logic operators:
+          (def-prim0 && shovel-vm-prim0:logical-and)
+          (def-prim0 "||" shovel-vm-prim0:logical-or)
+          (def-prim0 ! shovel-vm-prim0:logical-not)
+
+          ;; Bitwise operators:
+          (def-prim0 "&" shovel-vm-prim0:bitwise-and)
+          (def-prim0 "|" shovel-vm-prim0:bitwise-or)
+          ;; TODO: xor and bitwise negation (in parser too).
+
+          )))
+    (alexandria:alist-hash-table prim0-alist
+                                 :test #'equal)))
 
 (defun raise-shovel-error (vm message)
   (alexandria:when-let ((source (vm-source vm))
@@ -53,10 +71,10 @@
      (make-condition 'shovel-error :message message))))
 
 (defun find-required-primitive (vm name)
-  (let ((primitive-record (assoc name *primitives* :test #'string=)))
-    (unless primitive-record
+  (let ((primitive (gethash name *primitives*)))
+    (unless primitive
       (raise-shovel-error vm (format nil "Unknown prim0 '~a'." name)))
-    (second primitive-record)))
+    primitive))
 
 (defun run-vm (bytecode &key source user-primitives)
   (let ((vm (make-vm :bytecode bytecode
@@ -67,22 +85,29 @@
                      :source source)))
     (dolist (user-primitive user-primitives)
       (setf (gethash (first user-primitive) (vm-user-primitives vm))
-            (make-callable :prim (second user-primitive))))
+            (second user-primitive)))
     (loop while (step-vm vm))
     (first (vm-stack vm))))
 
 (defun vm-not-finished (vm)
   (< (vm-program-counter vm) (length (vm-bytecode vm))))
 
+(defun check-bool (vm)
+  (unless (shovel-vm-prim0:is-bool (first (vm-stack vm)))
+    (raise-shovel-error vm "Argument must be a boolean.")))
+
 (defun step-vm (vm)
   (when (vm-not-finished vm)
-    (let* ((instruction (elt (vm-bytecode vm) (vm-program-counter vm)))
+    (let* ((shovel-vm-prim0:*error-raiser* (lambda (message)
+                                             (raise-shovel-error vm message)))
+           (instruction (elt (vm-bytecode vm) (vm-program-counter vm)))
            (opcode (instruction-opcode instruction))
            (args (instruction-arguments instruction)))
-      (alexandria:when-let ((start-pos (instruction-start-pos instruction))
-                            (end-pos (instruction-end-pos instruction)))
-        (setf (vm-last-start-pos vm) start-pos
-              (vm-last-end-post vm) end-pos))
+      (unless (member opcode '(:call :callj))
+        (alexandria:when-let ((start-pos (instruction-start-pos instruction))
+                              (end-pos (instruction-end-pos instruction)))
+          (setf (vm-last-start-pos vm) start-pos
+                (vm-last-end-post vm) end-pos)))
       (case opcode
         (:new-frame
          (push (make-array args) (vm-current-environment vm))
@@ -94,10 +119,10 @@
          (push args (vm-stack vm))
          (incf (vm-program-counter vm)))
         (:prim0
-         (push (find-required-primitive vm args) (vm-stack vm))
+         (push (make-callable :prim0 args) (vm-stack vm))
          (incf (vm-program-counter vm)))
         (:prim
-         (push (find-user-primitive vm args) (vm-stack vm))
+         (push (make-callable :prim args) (vm-stack vm))
          (incf (vm-program-counter vm)))
         (:call (handle-call vm args t))
         (:callj (handle-call vm args nil))
@@ -115,8 +140,12 @@
                (vm-stack vm))
          (incf (vm-program-counter vm)))
         (:jump (setf (vm-program-counter vm) args))
-        (:tjump (jump-if (pop (vm-stack vm)) vm args))
-        (:fjump (jump-if (not (pop (vm-stack vm))) vm args))
+        (:tjump
+         (check-bool vm)
+         (jump-if (pop (vm-stack vm)) vm args))
+        (:fjump
+         (check-bool vm)
+         (jump-if (shovel-vm-prim0:logical-not (pop (vm-stack vm))) vm args))
         (:fn
          (push (make-callable :program-counter args
                               :environment (vm-current-environment vm))
@@ -136,11 +165,11 @@
 (defun find-user-primitive (vm primitive-name)
   (or (gethash primitive-name (vm-user-primitives vm))
       (raise-shovel-error vm
-                          (format nil "Unknown user primitive '~a'." 
+                          (format nil "Unknown user primitive '~a'."
                                   primitive-name))))
 
 (defun jump-if (value vm jump-address)
-  (if value
+  (if (shovel-vm-prim0:is-true value)
       (setf (vm-program-counter vm) jump-address)
       (incf (vm-program-counter vm))))
 
@@ -179,9 +208,11 @@
 
 (defun call-primitive (callable vm args save-return-address)
   (let* ((arg-values (subseq (vm-stack vm) 0 args))
-         (result (apply (or (callable-prim0 callable)
-                            (callable-prim callable))
-                        (reverse arg-values))))
+         (primitive (or (alexandria:if-let (prim0 (callable-prim0 callable))
+                          (find-required-primitive vm prim0))
+                        (alexandria:if-let (prim (callable-prim callable))
+                          (find-user-primitive vm prim))))
+         (result (apply primitive (reverse arg-values))))
     (setf (vm-stack vm) (subseq (vm-stack vm) args))
     (if save-return-address
         (incf (vm-program-counter vm))

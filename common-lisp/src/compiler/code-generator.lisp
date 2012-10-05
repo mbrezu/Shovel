@@ -262,7 +262,9 @@ initial definition at line ~d, column ~d."
 (defun compile-atom-value (label value)
   (case label
     ((:string :number) (read-from-string value))
-    (:bool (string= value "true"))
+    (:bool (cond ((string= value "true") :true)
+                 ((string= value "false") :false)
+                 (t (error "Shovel internal WTF."))))
     (:void nil)))
 
 (defun validate-atom-value (ast)

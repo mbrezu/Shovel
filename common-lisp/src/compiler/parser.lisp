@@ -221,9 +221,21 @@ token positions."
                                             (:punctuation "<<"))))
 
 (defun parse-multiplication-term ()
-  (if (tokenp :punctuation "-") (parse-unary-minus) (parse-unary-minus-term)))
+  (cond ((tokenp :punctuation "-") (parse-unary-minus))
+        ((tokenp :punctuation "!") (parse-logical-not))
+        (t (parse-tight-unary))))
 
-(defun parse-unary-minus-term ()
+(defun parse-logical-not ()
+  (with-new-parse-tree :call
+    (require-token (list :punctuation "!"))
+    (list (make-prim0-parse-tree "!") (parse-multiplication-term))))
+
+(defun parse-unary-minus ()
+  (with-new-parse-tree :call
+    (require-token (list :punctuation "-"))
+    (list (make-prim0-parse-tree "unary-minus") (parse-multiplication-term))))
+
+(defun parse-tight-unary ()
   (cond ((tokenp :number) (parse-number))
         ((tokenp :string) (parse-literal-string))
         ((or (tokenp :identifier "true")
@@ -310,11 +322,6 @@ token positions."
 (defun parse-void () (token-as-parse-tree :void))
 
 (defun parse-literal-string () (token-as-parse-tree :string))
-
-(defun parse-unary-minus ()
-  (with-new-parse-tree :call
-    (require-token (list :punctuation "-"))
-    (list (make-prim0-parse-tree "-") (parse-unary-minus-term))))
 
 (defun parse-lambda ()
   (with-new-parse-tree :fn

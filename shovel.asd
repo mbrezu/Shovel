@@ -23,7 +23,8 @@
                              (:file "compiler")))
        (:module "vm"
                 :depends-on ("package" "shovel-types")
-                :components ((:file "vm")))
+                :components ((:file "prim0")
+                             (:file "vm" :depends-on ("prim0"))))
        (:file "shovel" :depends-on ("package"
                                     "shovel-types"
                                     "compiler"

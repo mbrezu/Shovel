@@ -1,0 +1,8 @@
+
+* TODO rest of basic required primitives
+* TODO array and hash primitives
+  array, len, hash, keys
+* TODO len must work for strings too
+* TODO while, for and foreach in the language
+* TODO serialization and deserialiazation 
+* TODO figure out how interruptible user primitives are written
