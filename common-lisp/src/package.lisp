@@ -32,7 +32,8 @@
   (:export
    :first-non-blank
    :underline
-   :highlight-position))
+   :highlight-position
+   :extract-relevant-source))
 
 (defpackage #:shovel-compiler-types
   (:use #:cl #:shovel-types)

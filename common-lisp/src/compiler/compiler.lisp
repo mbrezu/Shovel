@@ -61,23 +61,8 @@
                             (end-pos (instruction-end-pos instruction)))
         (setf (instruction-comments instruction)
               (append (instruction-comments instruction)
-                      (extract-relevant-source source-lines start-pos end-pos)))))
+                      (extract-relevant-source source-lines start-pos end-pos
+                                               :line-prefix "    ; ")))))
     instructions))
 
-(defun extract-relevant-source (source-lines start-pos end-pos)
-  (let* ((start-line (pos-line start-pos))
-         (end-line (pos-line end-pos))
-         (add-elipsis (> end-line start-line))
-         (first-line (elt source-lines (1- start-line))))
-    (list (with-output-to-string (str)
-            (format str "    ; line ~5d: ~a" start-line first-line)
-            (when add-elipsis
-              (format str " [...content snipped...]")))
-          (format nil "    ; line ~5d: ~a"
-                  start-line
-                  (underline (max (pos-column start-pos)
-                                  (first-non-blank first-line))
-                             (min (length first-line)
-                                  (if add-elipsis
-                                      (length first-line)
-                                      (pos-column end-pos))))))))
+

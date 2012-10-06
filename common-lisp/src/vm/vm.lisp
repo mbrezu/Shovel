@@ -119,6 +119,34 @@
                       (shovel-vm-prim0:shovel-string-representation (cdr var))))))
     (write-environment (cdr env) stream)))
 
+(defun write-stack-trace (vm stream)
+  (let ((source-lines (alexandria:if-let
+                          (source (vm-source vm))
+                        (split-sequence:split-sequence #\newline source))))
+    (labels ((iter (stack)
+               (when stack
+                 (when (return-address-p (car stack))
+                   (let* ((pc (return-address-program-counter (car stack)))
+                          (call-site (elt (vm-bytecode vm) (1- pc))))
+                     (alexandria:if-let
+                         ((start-pos (instruction-start-pos call-site))
+                          (end-pos (instruction-end-pos call-site)))
+                       (if source-lines
+                           (dolist (line
+                                     (extract-relevant-source source-lines
+                                                              start-pos end-pos))
+                             (write-string line stream)
+                             (terpri stream))
+                           (progn
+                             (format stream "Call from line ~d, column ~d."
+                                     (pos-line start-pos) (pos-column start-pos))
+                             (terpri stream)))
+                       (progn
+                         (format stream "Call from unknown source location.")
+                         (terpri stream)))))
+                 (iter (cdr stack)))))
+      (iter (vm-stack vm)))))
+
 (defun raise-shovel-error (vm message)
   (alexandria:when-let ((source (vm-source vm))
                         (start-pos (vm-last-start-pos vm)))
@@ -126,10 +154,11 @@
                           (highlight-position source start-pos))))
   (setf message
         (with-output-to-string (str)
-          (write-string message str)
+          (write-string message str) (terpri str)
+          (write-string "Current stack trace:" str) (terpri str)
+          (write-stack-trace vm str)
           (terpri str)
-          (write-string "Current environment:" str)
-          (terpri str)
+          (write-string "Current environment:" str) (terpri str)
           (write-environment (vm-current-environment vm) str)))
   (error
    (alexandria:if-let (pos (vm-last-start-pos vm))
