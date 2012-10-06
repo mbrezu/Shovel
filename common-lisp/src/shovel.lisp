@@ -17,7 +17,7 @@
 
 (defun stdlib ()
   (values "
-var stdlib = (fn () {
+var stdlib = {
    var min = fn (a, b) if a < b a else b
    var max = fn (a, b) if a > b a else b
    var while = fn (condition, body) {
@@ -94,7 +94,7 @@ var stdlib = (fn () {
         \"sort\", qsort,
         \"reverse\", reverse
        )
-})()
+}
 "
           "stdlib.shr"))
 

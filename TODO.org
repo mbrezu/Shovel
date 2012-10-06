@@ -15,7 +15,8 @@
   via '[]'.
 * DONE only catch our errors (improve on the ignore-errors forms in shovel)
 * DONE comments :-)
-* TODO FN must also record the number of arguments accepted by the callable.
+* DONE FN must also record the number of arguments accepted by the callable.
+* DONE blocks are expressions :-)
 * TODO NEW-FRAME must also have a 'debug' form
   where it takes a list of the names of variable present in the frame,
   not the number of variables.

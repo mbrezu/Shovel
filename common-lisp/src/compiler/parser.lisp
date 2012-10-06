@@ -21,9 +21,7 @@
     (reverse result)))
 
 (defun parse-statement ()
-  (cond ((tokenp :punctuation "{")
-         (parse-block))
-        ((tokenp :identifier "var")
+  (cond ((tokenp :identifier "var")
          (parse-var-decl))
         ((tokenp :identifier "return")
          (parse-return))
@@ -291,6 +289,8 @@ token positions."
          (prog1
              (parse-expression)
            (consume-token :punctuation ")")))
+        ((tokenp :punctuation "{")
+         (parse-block))
         ((tokenp :identifier) (parse-name))
         ((tokenp :prim) (parse-prim))
         (t (raise-error (if (current-token)
