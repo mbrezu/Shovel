@@ -27,8 +27,8 @@
 * DONE keep the names of the variables in the environments and 
   display them if in case of an exception.
 * DONE check the number of arguments for primitives and required primitives
-* TODO add a 'panic' primitive that throws an exception.
-* TODO tests !
+* DONE add a 'panic' primitive that throws an exception.
+* DONE tests !
 * TODO record file names in source positions
   (so we can show useful line/column information for multiple files).
 ** TODO implement a 'load' primitive (loads source code).

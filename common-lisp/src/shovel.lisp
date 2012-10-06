@@ -93,18 +93,19 @@ var stdlib = {
 "
           "stdlib.shr"))
 
+(defun naked-run-code (source &key user-primitives)
+  (shovel-vm:run-vm
+   (shovel-compiler:assemble-instructions
+    (shovel-compiler:compile-string-to-instructions source))
+   :source source
+   :user-primitives user-primitives))
+
 (defun run-code (source &key user-primitives debug)
   (let ((*print-circle* t))
-    (handle-errors (shovel-vm:run-vm
-                    (shovel-compiler:assemble-instructions
-                     (shovel-compiler:compile-string-to-instructions source))
-                    :source source
-                    :user-primitives user-primitives))))
+    (handle-errors (naked-run-code source :user-primitives user-primitives))))
 
 (defun print-code (source &key debug)
   (let ((*print-circle* t))
     (handle-errors
       (shovel-compiler:show-instructions
        (shovel-compiler:compile-string-to-instructions source)))))
-
-
