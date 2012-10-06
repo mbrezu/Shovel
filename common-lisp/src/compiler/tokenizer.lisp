@@ -137,7 +137,7 @@
 (defun tokenize-punctuation ()
   (let ((crt (current-char))
         (la (lookahead-char)))
-    (cond ((member crt '(#\( #\) #\[ #\] #\+ #\- #\* #\/ #\{ #\}))
+    (cond ((member crt '(#\( #\) #\[ #\] #\+ #\- #\* #\/ #\{ #\} #\,))
            (make-punctuation-token 1))
           ((char= crt #\=)
            (make-punctuation-token (if (and la (char= la #\=)) 2 1)))

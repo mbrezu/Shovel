@@ -59,12 +59,25 @@
 
           ;; Hash constructor:
           (def-prim0 "hash" shovel-vm-prim0:hash-constructor)
+          
+          ;; Hash table has key?
+          (def-prim0 "hasKey" shovel-vm-prim0:has-key)
+          
+          ;; Keys for hash table
+          (def-prim0 "keys" shovel-vm-prim0:get-hash-table-keys)
+          
+          ;; Array constructors:
           (def-prim0 "array" shovel-vm-prim0:array-constructor)
           (def-prim0 "arrayN" shovel-vm-prim0:array-constructor-n)
+          
+          ;; Array and hash set and get:
           (def-prim0 "svm_gref" shovel-vm-prim0:array-or-hash-get)
           (def-prim0 "svm_set_indexed" shovel-vm-prim0:array-or-hash-set)
+          
+          ;; String or array length:
           (def-prim0 "length" shovel-vm-prim0:get-length)
-          (def-prim0 "keys" shovel-vm-prim0:get-hash-table-keys)
+          
+          ;; String or array slice:
           (def-prim0 "slice" shovel-vm-prim0:get-slice)
 
           ;; Current date/time:

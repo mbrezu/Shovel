@@ -123,7 +123,8 @@
    :parse-float
    :modulo
    :bitwise-xor
-   :pow))
+   :pow
+   :has-key))
 
 (defpackage #:shovel-vm
   (:use #:cl #:shovel-types #:shovel-utils)

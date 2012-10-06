@@ -357,7 +357,7 @@ token positions."
 (defparameter *required-primitives*
   '("pow"
     "array" "arrayN" "length" "slice"
-    "hash" "keys" 
+    "hash" "keys" "hasKey"
     "utcSecondsSinceUnixEpoch" "decodeTime" "encodeTime"
     "isString" "isHash" "isBool" "isArray" "isNumber" "isCallable"
     "string" "stringRepresentation"

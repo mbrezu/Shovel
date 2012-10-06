@@ -165,6 +165,18 @@
         (coerce (reverse result) 'vector))
       (vm-error "Argument must be a hash table.")))
 
+;; HasKey:
+
+(defun has-key (hash-table key)
+  (unless (hash-table-p hash-table)
+    (vm-error "First argument must be a hash table."))
+  (unless (stringp key)
+    (vm-error "Second argument must be a string."))
+  (multiple-value-bind (value has-key)
+      (gethash key hash-table)
+    (declare (ignore value))
+    (make-bool has-key)))
+
 ;; Slice of a string or array:
 
 (defun get-slice (array-or-string start end)
