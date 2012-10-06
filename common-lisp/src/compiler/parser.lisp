@@ -96,14 +96,7 @@ token positions."
     (unless (and token (some (lambda (candidate)
                                (apply #'tokenp candidate))
                              possible-tokens))
-      (let (line column at-eof pos)
-        (if token
-            (let ((start-pos (token-start-pos token)))
-              (setf pos start-pos
-                    line (pos-line pos)
-                    column (pos-column pos)))
-            (setf at-eof t))
-        (let* ((expectation
+      (let* ((expectation
                 (let ((possible-contents
                        (remove-if #'null (mapcar #'second possible-tokens)))
                       (possible-types (remove-duplicates
@@ -128,12 +121,7 @@ token positions."
                                  (format nil "but got '~a'" (token-content token))
                                  "but reached the end of the input"))
                (message (format nil "~a, ~a." expectation actual-input)))
-          (setf message (maybe-extend-message pos message))
-          (error (make-condition 'shovel-compiler-error
-                                 :message message
-                                 :line line
-                                 :column column
-                                 :at-eof at-eof)))))))
+        (raise-error message)))))
 
 (defun maybe-extend-message (pos message)
   (if pos
@@ -145,7 +133,7 @@ token positions."
 (defun parse-var-decl ()
   (with-new-parse-tree :var
     (consume-token :identifier "var")
-    (let ((lhs (parse-name)))
+    (let ((lhs (parse-name nil)))
       (consume-token :punctuation "=")
       (let ((rhs (parse-expression)))
         (list lhs rhs)))))
@@ -287,6 +275,19 @@ token positions."
               result)))
           (t start))))
 
+(defun raise-error (message)
+  (let* ((token (current-token))
+         (pos (if token (token-start-pos token)))
+         (line (if token (pos-line pos)))
+         (column (if token (pos-column pos)))
+         (at-eof (not token)))
+    (setf message (maybe-extend-message pos message))
+    (error (make-condition 'shovel-compiler-error
+                           :message message
+                           :line line
+                           :column column
+                           :at-eof at-eof))))
+
 (defun parse-parenthesized-or-name ()
   (cond ((tokenp :punctuation "(")  ; Handle parenthesized expression.
          (consume-token :punctuation "(")
@@ -295,21 +296,10 @@ token positions."
            (consume-token :punctuation ")")))
         ((tokenp :identifier) (parse-name))
         ((tokenp :prim) (parse-prim))
-        (t (let* ((token (current-token))
-                  (message (if token
-                               (format nil "Unexpected token '~a'."
-                                       (token-content token))
-                               "Unexpected end of file."))
-                  (pos (if token (token-start-pos token)))
-                  (line (if token (pos-line pos)))
-                  (column (if token (pos-column pos)))
-                  (at-eof (not token)))
-             (setf message (maybe-extend-message pos message))
-             (error (make-condition 'shovel-compiler-error
-                                    :message message
-                                    :line line
-                                    :column column
-                                    :at-eof at-eof))))))
+        (t (raise-error (if (current-token)
+                            (format nil "Unexpected token '~a'."
+                                    (token-content (current-token)))
+                            "Unexpected end of file.")))))
 
 (defun token-as-parse-tree (label)
   (with-new-parse-tree label
@@ -335,11 +325,11 @@ token positions."
 (defun parse-lambda-args ()
   (with-new-parse-tree :list
     (if (tokenp :punctuation "(")
-        (parse-list #'parse-name
+        (parse-list (lambda () (parse-name nil))
                     '(:punctuation "(")
                     '(:punctuation ",")
                     '(:punctuation ")"))
-        (list (parse-name)))))
+        (list (parse-name nil)))))
 
 (defun parse-list (item-parser open-paren separator close-paren)
   (let (result)
@@ -363,11 +353,31 @@ token positions."
     "string" "stringRepresentation"
     "parseInt" "parseFloat"))
 
-(defun parse-name ()
+(defun is-required-primitive-name (str)
+  (member str *required-primitives* :test #'string=))
+
+(defparameter *reserved-keywords* '("var" "if" "fn" "return"))
+
+(defun is-reserved-keyword (str)
+  (member str *reserved-keywords* :test #'string=))
+
+(defun parse-name (&optional (can-be-required-primitive t))
   (require-token (list :identifier))
   (let ((content (token-content (current-token))))
-    (if (member content *required-primitives* :test #'string=)
-        (token-as-parse-tree :prim0)
+    (when (is-reserved-keyword content)
+      (raise-error (format nil "'~a' is a reserved keyword." content)))
+    (if (is-required-primitive-name content)
+        (if can-be-required-primitive
+            (token-as-parse-tree :prim0)
+            (let* ((pos (token-start-pos (current-token)))
+                   (line (pos-line pos))
+                   (column (pos-column pos))
+                   (message (format nil "Name '~a' is reserved for a primitive."
+                                    content)))
+              (error (make-condition 'shovel-compiler-error
+                                     :message message
+                                     :line line
+                                     :column column))))
         (token-as-parse-tree :name))))
 
 (defun parse-prim ()
