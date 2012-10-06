@@ -23,7 +23,7 @@
 (defmacro both-numbers (op)
   `(cond ((and (numberp t1) (numberp t2))
           (,op t1 t2))
-         (t (vm-error "Arguments must both be numbers."))))
+         (t (vm-error "Both arguments must be numbers."))))
 (defun subtract (t1 t2) (both-numbers -))
 (defun unary-minus (t1)
   (if (numberp t1)
@@ -41,7 +41,15 @@
          (floor (/ t1 t2)))
         ((and (numberp t1) (numberp t2))
          (float (/ t1 t2)))
-        (t (vm-error "Arguments must be both numbers."))))
+        (t (vm-error "Both arguments must be numbers."))))
+(defmacro both-integers (op)
+  `(cond ((and (integerp t1) (integerp t2))
+          (,op t1 t2))
+         (t (vm-error "Both arguments must be integers."))))
+(defun modulo (t1 t2)
+  (both-integers mod))
+(defun pow (t1 t2)
+  (both-numbers expt))
 
 ;; Logic operators:
 (defun is-bool (var)
@@ -56,7 +64,7 @@
 (defmacro both-bools (op)
   `(cond ((and (is-bool t1) (is-bool t2))
           (,op t1 t2))
-         (t (vm-error "Arguments must both be booleans."))))
+         (t (vm-error "Both arguments must be booleans."))))
 
 (defun logical-and (t1 t2)
   (labels ((and-op (t1 t2) (and (eq :true t1) (eq :true t2))))
@@ -87,14 +95,12 @@
 (defun are-not-equal (t1 t2) (make-bool (both-numbers-or-strings /= string/=)))
 
 ;; Bitwise operators:
-(defmacro both-integers (op)
-  `(cond ((and (integerp t1) (integerp t2))
-          (,op t1 t2))
-         (t (vm-error "Arguments must both be integers."))))
 (defun bitwise-and (t1 t2)
   (both-integers logand))
 (defun bitwise-or (t1 t2)
   (both-integers logior))
+(defun bitwise-xor (t1 t2)
+  (both-integers logxor))
 
 ;; Hash constructor:
 (defun hash-constructor (&rest args)
@@ -121,7 +127,7 @@
 ;; Hash or array access:
 (defun array-or-hash-get (array-or-hash index)
   (cond ((vectorp array-or-hash)
-         (if (numberp index)
+         (if (integerp index)
              (aref array-or-hash index)
              (vm-error "Getting an array element requires an integer index.")))
         ((hash-table-p array-or-hash)

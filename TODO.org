@@ -4,7 +4,11 @@
   array, len, hash, keys
 * DONE len must work for strings too
 * TODO while, for and foreach in the language
-  these will be implemented as part of the standard library
+  these will be implemented as part of the standard library.
+* TODO FN must also record the number of arguments accepted by the callable.
+* TODO NEW-FRAME must also have a 'debug' form
+  where it takes a list of the names of variable present in the frame,
+  not the number of variables.
 * TODO serialization and deserialiazation 
 * TODO figure out how interruptible user primitives are written
 * TODO checking of return values for user primitives

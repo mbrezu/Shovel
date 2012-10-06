@@ -216,7 +216,9 @@ token positions."
 (defun parse-addition-term ()
   (left-assoc #'parse-multiplication-term '((:punctuation "*")
                                             (:punctuation "/")
+                                            (:punctuation "%")
                                             (:punctuation "&")
+                                            (:punctuation "^")
                                             (:punctuation ">>")
                                             (:punctuation "<<"))))
 
@@ -353,7 +355,8 @@ token positions."
     (reverse result)))
 
 (defparameter *required-primitives*
-  '("array" "arrayN" "length" "slice"
+  '("pow"
+    "array" "arrayN" "length" "slice"
     "hash" "keys" 
     "utcSecondsSinceUnixEpoch" "decodeTime" "encodeTime"
     "isString" "isHash" "isBool" "isArray" "isNumber" "isCallable"

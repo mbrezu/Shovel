@@ -36,7 +36,8 @@
           (def-prim0 / shovel-vm-prim0:divide)
           (def-prim0 << shovel-vm-prim0:shift-left)
           (def-prim0 >> shovel-vm-prim0:shift-right)
-          ;; TODO: modulo (in parser too).
+          (def-prim0 % shovel-vm-prim0:modulo)
+          (def-prim0 "pow" shovel-vm-prim0:pow)
 
           ;; Relational operators:
           (def-prim0 < shovel-vm-prim0:less-than)
@@ -54,7 +55,7 @@
           ;; Bitwise operators:
           (def-prim0 "&" shovel-vm-prim0:bitwise-and)
           (def-prim0 "|" shovel-vm-prim0:bitwise-or)
-          ;; TODO: xor and bitwise negation (in parser too).
+          (def-prim0 "^" shovel-vm-prim0:bitwise-xor)
 
           ;; Hash constructor:
           (def-prim0 "hash" shovel-vm-prim0:hash-constructor)

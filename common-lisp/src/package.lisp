@@ -120,7 +120,10 @@
    :shovel-string
    :shovel-string-representation
    :parse-int
-   :parse-float))
+   :parse-float
+   :modulo
+   :bitwise-xor
+   :pow))
 
 (defpackage #:shovel-vm
   (:use #:cl #:shovel-types #:shovel-utils)
