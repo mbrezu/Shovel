@@ -136,6 +136,15 @@
              (vm-error
               "Getting a hash table value requires a key that is a string.")))))
 
+(defun hash-get-dot (hash-table key)
+  (unless (hash-table-p hash-table)
+    (vm-error "First argument must be a hash table."))
+  (unless (stringp key)
+    (vm-error "Second argument must be a string."))
+  (unless (eq :true (has-key hash-table key))
+    (vm-error "Key not found in hash table."))
+  (gethash key hash-table))
+
 (defun array-or-hash-set (array-or-hash index value)
   (cond ((vectorp array-or-hash)
          (if (numberp index)
@@ -205,7 +214,7 @@
        (format nil
                "Ending index (~d) is larger than the length of the sequence (~d)."
                real-end length)))
-    (subseq array-or-string real-start real-end)))
+    (copy-seq (subseq array-or-string real-start real-end))))
 
 ;; Current date/time:
 

@@ -124,7 +124,8 @@
    :modulo
    :bitwise-xor
    :pow
-   :has-key))
+   :has-key
+   :hash-get-dot))
 
 (defpackage #:shovel-vm
   (:use #:cl #:shovel-types #:shovel-utils)

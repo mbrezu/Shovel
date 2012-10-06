@@ -243,7 +243,7 @@ token positions."
                 (parse-tree-start-pos start)
                 :call
               (require-token (list :punctuation "."))
-              (list (make-prim0-parse-tree "svm_gref")
+              (list (make-prim0-parse-tree "svm_gref_dot")
                     start
                     (parse-name-as-string)))))
           ((tokenp :punctuation "(") ; Handle function call.

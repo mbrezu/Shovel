@@ -72,6 +72,7 @@
           
           ;; Array and hash set and get:
           (def-prim0 "svm_gref" shovel-vm-prim0:array-or-hash-get)
+          (def-prim0 "svm_gref_dot" shovel-vm-prim0:hash-get-dot)
           (def-prim0 "svm_set_indexed" shovel-vm-prim0:array-or-hash-set)
           
           ;; String or array length:

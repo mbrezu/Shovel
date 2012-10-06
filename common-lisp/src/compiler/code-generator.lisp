@@ -85,7 +85,8 @@ at line ~d, column ~d."
   (and (eq :call (parse-tree-label ast))
        (let ((fn (first (parse-tree-children ast))))
          (and (eq :prim0 (parse-tree-label fn))
-              (string= "svm_gref" (parse-tree-children fn))))))
+              (or (string= "svm_gref" (parse-tree-children fn))
+                  (string= "svm_gref_dot" (parse-tree-children fn)))))))
 
 (defun gref-call-array-or-hash (ast) (second (parse-tree-children ast)))
 

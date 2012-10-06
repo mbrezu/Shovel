@@ -9,8 +9,8 @@
 * DONE a hasKey primitive.
 * DONE cry loudly if a variable or argument
   has the name of a required primitive
-* TODO parser errors should show source context, too
-* TODO cry loudly if trying to access a hash value
+* DONE parser errors should show source context, too
+* DONE cry loudly if trying to access a hash value
   via '.' uses a non-existing key; return null if the access is made
   via '[]'.
 * TODO only catch our errors (improve on the ignore-errors forms in shovel)
