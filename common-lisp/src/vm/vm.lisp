@@ -212,7 +212,7 @@
            (loop
               for i = 0 then (1+ i)
               for var in args
-              do (setf (aref new-frame i) (cons var nil)))
+              do (setf (aref new-frame i) (cons var :null)))
            (push new-frame (vm-current-environment vm)))
          (incf (vm-program-counter vm)))
         (:drop-frame

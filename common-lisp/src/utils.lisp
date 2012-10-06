@@ -11,7 +11,7 @@
                        line)
           0)))
 
-(defun extract-relevant-source (source-lines start-pos end-pos 
+(defun extract-relevant-source (source-lines start-pos end-pos
                                 &key (line-prefix ""))
   (when (stringp source-lines)
     (setf source-lines (split-sequence:split-sequence #\newline source-lines)))

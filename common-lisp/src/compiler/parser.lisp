@@ -288,14 +288,14 @@ token positions."
                            :at-eof at-eof))))
 
 (defun parse-parenthesized-or-name ()
-  (cond ((tokenp :punctuation "(")  ; Handle parenthesized expression.
+  (cond ((tokenp :identifier) (parse-name))
+        ((tokenp :punctuation "(")  ; Handle parenthesized expression.
          (consume-token :punctuation "(")
          (prog1
              (parse-expression)
            (consume-token :punctuation ")")))
         ((tokenp :punctuation "{")
          (parse-block))
-        ((tokenp :identifier) (parse-name))
         ((tokenp :prim) (parse-prim))
         (t (raise-error (if (current-token)
                             (format nil "Unexpected token '~a'."
