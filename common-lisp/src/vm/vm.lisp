@@ -119,7 +119,7 @@
                       (shovel-vm-prim0:shovel-string-representation (cdr var))))))
     (write-environment (cdr env) stream)))
 
-(defun write-stack-trace (vm stream)
+(defun write-stack-trace (vm stream &optional stack-dump)
   (let ((source (vm-source vm)))
     (labels ((print-call-site (start-pos end-pos)
                (if (and start-pos end-pos)
@@ -138,13 +138,18 @@
                      (terpri stream))))
              (iter (stack)
                (when stack
-                 (when (return-address-p (car stack))
-                   (let* ((pc (return-address-program-counter (car stack)))
-                          (call-site (elt (vm-bytecode vm) (1- pc))))
-                     (print-call-site (instruction-start-pos call-site)
-                                      (instruction-end-pos call-site))))
+                 (if (return-address-p (car stack))
+                     (let* ((pc (return-address-program-counter (car stack)))
+                            (call-site (elt (vm-bytecode vm) (1- pc))))
+                       (print-call-site (instruction-start-pos call-site)
+                                        (instruction-end-pos call-site)))
+                     (if stack-dump
+                         (format stream "~a~%"
+                                 (shovel-vm-prim0:shovel-string-representation
+                                  (car stack)))))
                  (iter (cdr stack)))))
-      (print-call-site (vm-last-start-pos vm) (vm-last-end-pos vm))
+      (unless stack-dump
+        (print-call-site (vm-last-start-pos vm) (vm-last-end-pos vm)))
       (iter (vm-stack vm)))))
 
 (defun raise-shovel-error (vm message)

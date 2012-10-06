@@ -280,7 +280,7 @@
         ((hash-table-p var) "[...hash...]")
         ((is-callable var) "[...callable...]")
         ((is-bool var) (string-downcase (symbol-name var)))
-        ((null var) "null")
+        ((eq :null var) "null")
         (t (unknown-type-error))))
 
 (defun shovel-string-representation (var)
@@ -301,7 +301,7 @@
                       var)
              (format str "~{~a~^, ~}" (nreverse pieces))
              (write-string ")" str))))
-        ((or (null var)
+        ((or (eq :null var)
              (numberp var)
              (is-bool var)
              (is-callable var))

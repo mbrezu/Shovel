@@ -106,23 +106,22 @@ SVM_SET_INDEXED required primitive."
 
 (defun compile-if (ast env val? more?)
   (validate-if ast)
-  (seq (if more?
-           (let ((l1 (gen-label))
-                 (l2 (gen-label)))
-             (seq (compile-ast (if-pred ast) env t t)
-                  (gen :fjump :arguments l1)
-                  (compile-ast (if-then ast) env val? t)
-                  (gen :jump :arguments l2)
-                  (gen :label :arguments l1)
-                  (compile-ast (if-else ast) env val? t)
-                  (gen :label :arguments l2)))
-           (let ((l1 (gen-label)))
-             (seq (compile-ast (if-pred ast) env t t)
-                  (gen :fjump :arguments l1)
-                  (compile-ast (if-then ast) env val? nil)
-                  (gen :label :arguments l1)
-                  (compile-ast (if-else ast) env val? nil))))
-       (unless val? (gen :pop))))
+  (if more?
+      (let ((l1 (gen-label))
+            (l2 (gen-label)))
+        (seq (compile-ast (if-pred ast) env t t)
+             (gen :fjump :arguments l1)
+             (compile-ast (if-then ast) env val? t)
+             (gen :jump :arguments l2)
+             (gen :label :arguments l1)
+             (compile-ast (if-else ast) env val? t)
+             (gen :label :arguments l2)))
+      (let ((l1 (gen-label)))
+        (seq (compile-ast (if-pred ast) env t t)
+             (gen :fjump :arguments l1)
+             (compile-ast (if-then ast) env val? nil)
+             (gen :label :arguments l1)
+             (compile-ast (if-else ast) env val? nil)))))
 
 (defun compile-funcall (ast env val? more?)
   (let* ((children (parse-tree-children ast))
@@ -249,7 +248,7 @@ SVM_SET_INDEXED required primitive."
   (alexandria:when-let (source (generator-state-source *generator-state*))
     (let ((lines (extract-relevant-source source start-pos end-pos)))
       (setf message
-            (format nil "~a~%~a~%~a" 
+            (format nil "~a~%~a~%~a"
                     message (first lines) (second lines)))))
   (error (make-condition 'shovel-compiler-error
                          :message message

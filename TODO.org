@@ -28,10 +28,13 @@
   display them if in case of an exception.
 * TODO check the number of arguments for primitives and required primitives
 * TODO add a 'panic' primitive that throws an exception.
+* TODO tests !
 * TODO record file names in source positions
   (so we can show useful line/column information for multiple files).
-* TODO implement a 'load' primitive.
+** TODO implement a 'load' primitive (loads source code).
 * TODO serialization and deserialization
+** TODO for the bytecode
+** TODO for the VM state
 * TODO figure out how interruptible user primitives are written
 * TODO checking of return values for user primitives
   to make sure that they return an instance of a shovel type; tests

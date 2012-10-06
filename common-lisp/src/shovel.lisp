@@ -64,16 +64,11 @@ var stdlib = {
      return result
    }
    var qsort = fn (arr, lessThan) {
-     // Broken - probably a compiler bug.
-     // @print('***')
-     // @print(arr)
      if length(arr) == 0 || length(arr) == 1 return arr
      var pivot = arr[0]
-     // @print(pivot)
-     var lesser = filter(slice(arr, 1, -1), fn el lessThan(el, pivot))
-     var greater = filter(slice(arr, 1, -1), fn el lessThan(pivot, el))
-     // @print(lesser)
-     // @print(greater)
+     var woPivot = slice(arr, 1, -1)
+     var lesser = filter(woPivot, fn el lessThan(el, pivot))
+     var greater = filter(woPivot, fn el lessThan(pivot, el))
      return qsort(lesser, lessThan) + array(pivot) + qsort(greater, lessThan)
    }
    var reverse = fn (arr) {

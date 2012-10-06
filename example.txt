@@ -195,3 +195,11 @@ L2:
     DROP-FRAME
 
 ----------------------------------------------------
+CL-USER> (shovel:run-code (concatenate 'string (shovel:stdlib)
+                                             "
+stdlib.sort(array(3, 1, 2, 10, 50, 20), fn (a, b) a < b)
+
+"
+                                             ) :debug nil)
+#(1 2 3 10 20 50)
+----------------------------------------------------

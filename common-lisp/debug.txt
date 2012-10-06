@@ -6,5 +6,3 @@ Silly Common Lisp SLOC count :-)
 
 find . -iname '*.lisp' | xargs egrep "^[\ ]*[^\t ;]" | wc -l
 
-
-
