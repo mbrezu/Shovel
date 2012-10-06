@@ -23,8 +23,8 @@
   (program-counter nil)
   (environment nil))
 
-(defmacro def-prim0 (op lisp-op)
-  `(cons ,(mu-base:mkstr op) ',lisp-op))
+(defmacro def-prim0 (op lisp-op &optional (arity 2))
+  `(list ,(mu-base:mkstr op) ',lisp-op ,arity))
 
 (defparameter *primitives*
   (let ((prim0-alist
@@ -32,7 +32,7 @@
           ;; Arithmetic operators:
           (def-prim0 + shovel-vm-prim0:add)
           (def-prim0 - shovel-vm-prim0:subtract)
-          (def-prim0 "unary-minus" shovel-vm-prim0:unary-minus)
+          (def-prim0 "unary-minus" shovel-vm-prim0:unary-minus 1)
           (def-prim0 * shovel-vm-prim0:multiply)
           (def-prim0 / shovel-vm-prim0:divide)
           (def-prim0 << shovel-vm-prim0:shift-left)
@@ -51,7 +51,7 @@
           ;; Logic operators:
           (def-prim0 && shovel-vm-prim0:logical-and)
           (def-prim0 "||" shovel-vm-prim0:logical-or)
-          (def-prim0 ! shovel-vm-prim0:logical-not)
+          (def-prim0 ! shovel-vm-prim0:logical-not 1)
 
           ;; Bitwise operators:
           (def-prim0 "&" shovel-vm-prim0:bitwise-and)
@@ -59,53 +59,53 @@
           (def-prim0 "^" shovel-vm-prim0:bitwise-xor)
 
           ;; Hash constructor:
-          (def-prim0 "hash" shovel-vm-prim0:hash-constructor)
+          (def-prim0 "hash" shovel-vm-prim0:hash-constructor nil)
 
           ;; Hash table has key?
-          (def-prim0 "hasKey" shovel-vm-prim0:has-key)
+          (def-prim0 "hasKey" shovel-vm-prim0:has-key 2)
 
           ;; Keys for hash table
-          (def-prim0 "keys" shovel-vm-prim0:get-hash-table-keys)
+          (def-prim0 "keys" shovel-vm-prim0:get-hash-table-keys 1)
 
           ;; Array constructors:
-          (def-prim0 "array" shovel-vm-prim0:array-constructor)
-          (def-prim0 "arrayN" shovel-vm-prim0:array-constructor-n)
+          (def-prim0 "array" shovel-vm-prim0:array-constructor nil)
+          (def-prim0 "arrayN" shovel-vm-prim0:array-constructor-n 1)
 
           ;; Array and hash set and get:
           (def-prim0 "svm_gref" shovel-vm-prim0:array-or-hash-get)
           (def-prim0 "svm_gref_dot" shovel-vm-prim0:hash-get-dot)
-          (def-prim0 "svm_set_indexed" shovel-vm-prim0:array-or-hash-set)
+          (def-prim0 "svm_set_indexed" shovel-vm-prim0:array-or-hash-set 3)
 
           ;; String or array length:
-          (def-prim0 "length" shovel-vm-prim0:get-length)
+          (def-prim0 "length" shovel-vm-prim0:get-length 1)
 
           ;; String or array slice:
-          (def-prim0 "slice" shovel-vm-prim0:get-slice)
+          (def-prim0 "slice" shovel-vm-prim0:get-slice 3)
 
           ;; Current date/time:
           (def-prim0 "utcSecondsSinceUnixEpoch"
-              shovel-vm-prim0:utc-seconds-since-unix-epoch)
+              shovel-vm-prim0:utc-seconds-since-unix-epoch 0)
 
           ;; Date/time construction/deconstruction:
-          (def-prim0 "decodeTime" shovel-vm-prim0:decode-time)
-          (def-prim0 "encodeTime" shovel-vm-prim0:encode-time)
+          (def-prim0 "decodeTime" shovel-vm-prim0:decode-time 1)
+          (def-prim0 "encodeTime" shovel-vm-prim0:encode-time 1)
 
           ;; Object types:
-          (def-prim0 "isString" shovel-vm-prim0:shovel-is-string)
-          (def-prim0 "isHash" shovel-vm-prim0:shovel-is-hash)
-          (def-prim0 "isBool" shovel-vm-prim0:shovel-is-bool)
-          (def-prim0 "isArray" shovel-vm-prim0:shovel-is-array)
-          (def-prim0 "isNumber" shovel-vm-prim0:shovel-is-number)
-          (def-prim0 "isCallable" shovel-vm-prim0:shovel-is-callable)
+          (def-prim0 "isString" shovel-vm-prim0:shovel-is-string 1)
+          (def-prim0 "isHash" shovel-vm-prim0:shovel-is-hash 1)
+          (def-prim0 "isBool" shovel-vm-prim0:shovel-is-bool 1)
+          (def-prim0 "isArray" shovel-vm-prim0:shovel-is-array 1)
+          (def-prim0 "isNumber" shovel-vm-prim0:shovel-is-number 1)
+          (def-prim0 "isCallable" shovel-vm-prim0:shovel-is-callable 1)
 
           ;; Stringification:
-          (def-prim0 "string" shovel-vm-prim0:shovel-string)
+          (def-prim0 "string" shovel-vm-prim0:shovel-string 1)
           (def-prim0 "stringRepresentation"
-              shovel-vm-prim0:shovel-string-representation)
+              shovel-vm-prim0:shovel-string-representation 1)
 
           ;; Parsing numbers:
-          (def-prim0 "parseInt" shovel-vm-prim0:parse-int)
-          (def-prim0 "parseFloat" shovel-vm-prim0:parse-float))))
+          (def-prim0 "parseInt" shovel-vm-prim0:parse-int 1)
+          (def-prim0 "parseFloat" shovel-vm-prim0:parse-float 1))))
     (alexandria:alist-hash-table prim0-alist :test #'equal)))
 
 (defun write-environment (env stream)
@@ -184,7 +184,7 @@
                      :source source)))
     (dolist (user-primitive user-primitives)
       (setf (gethash (first user-primitive) (vm-user-primitives vm))
-            (second user-primitive)))
+            (rest user-primitive)))
     (loop while (step-vm vm))
     (first (vm-stack vm))))
 
@@ -301,6 +301,11 @@
         (call-primitive callable vm num-args save-return-address)
         (call-function callable vm num-args save-return-address))))
 
+(defun arity-error (vm expected-arity actual-arity)
+  (raise-shovel-error
+   vm (format nil "Function of ~d arguments called with ~d arguments."
+              expected-arity actual-arity)))
+
 (defun call-function (callable vm num-args save-return-address)
   (when save-return-address
     (setf (vm-stack vm)
@@ -311,25 +316,26 @@
                  (subseq (vm-stack vm) num-args)))))
   (when (and (callable-num-args callable )
              (/= (callable-num-args callable) num-args))
-    (raise-shovel-error
-     vm
-     (format nil "Function of ~d arguments called with ~d arguments."
-             (callable-num-args callable) num-args)))
+    (arity-error vm (callable-num-args callable) num-args))
   (setf (vm-program-counter vm) (callable-program-counter callable)
         (vm-current-environment vm) (callable-environment callable)))
 
 (defun call-primitive (callable vm num-args save-return-address)
   (let* ((arg-values (subseq (vm-stack vm) 0 num-args))
-         (primitive (or (alexandria:if-let (prim0 (callable-prim0 callable))
-                          (find-required-primitive vm prim0))
-                        (alexandria:if-let (prim (callable-prim callable))
-                          (find-user-primitive vm prim))))
-         (result (apply primitive (reverse arg-values))))
-    (setf (vm-stack vm) (subseq (vm-stack vm) num-args))
-    (if save-return-address
-        (incf (vm-program-counter vm))
-        (apply-return-address vm (pop (vm-stack vm))))
-    (push result (vm-stack vm))))
+         (primitive-record (or (alexandria:if-let (prim0 (callable-prim0 callable))
+                                 (find-required-primitive vm prim0))
+                               (alexandria:if-let (prim (callable-prim callable))
+                                 (find-user-primitive vm prim))))
+         (primitive (first primitive-record))
+         (primitive-arity (second primitive-record)))
+    (when (and primitive-arity (/= primitive-arity num-args))
+      (arity-error vm primitive-arity num-args))
+    (let ((result (apply primitive (reverse arg-values))))
+      (setf (vm-stack vm) (subseq (vm-stack vm) num-args))
+      (if save-return-address
+          (incf (vm-program-counter vm))
+          (apply-return-address vm (pop (vm-stack vm))))
+      (push result (vm-stack vm)))))
 
 (defun set-in-environment (environment frame-number var-index value)
   (setf (cdr (aref (nth frame-number environment) var-index)) value))

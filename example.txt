@@ -202,4 +202,17 @@ stdlib.sort(array(3, 1, 2, 10, 50, 20), fn (a, b) a < b)
 "
                                              ) :debug nil)
 #(1 2 3 10 20 50)
+
 ----------------------------------------------------
+
+CL-USER> (shovel:run-code (concatenate 'string (shovel:stdlib)
+"
+var g = fn x x + 2
+var f = fn x g(x) + 2
+//var a = f('1')
+@print(1, 2)
+"
+) :user-primitives '(("print" print 1)))
+
+----------------------------------------------------
+
