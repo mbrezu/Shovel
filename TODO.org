@@ -1,8 +1,13 @@
 
-* TODO rest of basic required primitives
-* TODO array and hash primitives
+* DONE rest of basic required primitives
+* DONE array and hash primitives
   array, len, hash, keys
-* TODO len must work for strings too
+* DONE len must work for strings too
 * TODO while, for and foreach in the language
+  these will be implemented as part of the standard library
 * TODO serialization and deserialiazation 
 * TODO figure out how interruptible user primitives are written
+* TODO checking of return values for user primitives
+  to make sure that they return an instance of a shovel type; tests
+  should make sure that required primitives return an instance of a
+  shovel type.

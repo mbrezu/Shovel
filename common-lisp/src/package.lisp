@@ -77,8 +77,7 @@
 
 (defpackage #:shovel-vm-prim0
   (:use #:cl #:shovel-types)
-  (:export
-   :*error-raiser*
+  (:export 
    :add
    :subtract
    :multiply
@@ -98,12 +97,36 @@
    :logical-or
    :logical-not
    :is-true
-   :is-bool))
+   :is-bool
+   :hash-constructor
+   :array-constructor
+   :array-or-hash-get
+   :array-or-hash-set
+   :get-length
+   :get-hash-table-keys
+   :array-constructor-n
+   :for-each
+   :for-each-with-index
+   :get-slice
+   :utc-seconds-since-unix-epoch
+   :decode-time
+   :encode-time
+   :shovel-is-string
+   :shovel-is-hash
+   :shovel-is-bool
+   :shovel-is-array
+   :shovel-is-number
+   :shovel-is-callable
+   :shovel-string
+   :shovel-string-representation
+   :parse-int
+   :parse-float))
 
 (defpackage #:shovel-vm
   (:use #:cl #:shovel-types #:shovel-utils)
   (:export
-   :run-vm))
+   :run-vm 
+   :*error-raiser*))
 
 (defpackage #:shovel
   (:use #:cl)

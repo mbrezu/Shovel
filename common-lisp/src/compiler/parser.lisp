@@ -352,10 +352,18 @@ token positions."
     (apply #'consume-token close-paren)
     (reverse result)))
 
+(defparameter *required-primitives*
+  '("array" "arrayN" "length" "slice"
+    "hash" "keys" 
+    "utcSecondsSinceUnixEpoch" "decodeTime" "encodeTime"
+    "isString" "isHash" "isBool" "isArray" "isNumber" "isCallable"
+    "string" "stringRepresentation"
+    "parseInt" "parseFloat"))
+
 (defun parse-name ()
   (require-token (list :identifier))
   (let ((content (token-content (current-token))))
-    (if (member content '("array" "hash") :test #'string=)
+    (if (member content *required-primitives* :test #'string=)
         (token-as-parse-tree :prim0)
         (token-as-parse-tree :name))))
 

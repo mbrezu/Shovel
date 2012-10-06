@@ -1,6 +1,8 @@
 
 (in-package :shovel-vm)
 
+(defvar *error-raiser*)
+
 (defstruct vm
   bytecode program-counter
   current-environment
@@ -54,9 +56,41 @@
           (def-prim0 "|" shovel-vm-prim0:bitwise-or)
           ;; TODO: xor and bitwise negation (in parser too).
 
-          )))
-    (alexandria:alist-hash-table prim0-alist
-                                 :test #'equal)))
+          ;; Hash constructor:
+          (def-prim0 "hash" shovel-vm-prim0:hash-constructor)
+          (def-prim0 "array" shovel-vm-prim0:array-constructor)
+          (def-prim0 "arrayN" shovel-vm-prim0:array-constructor-n)
+          (def-prim0 "svm_gref" shovel-vm-prim0:array-or-hash-get)
+          (def-prim0 "svm_set_indexed" shovel-vm-prim0:array-or-hash-set)
+          (def-prim0 "length" shovel-vm-prim0:get-length)
+          (def-prim0 "keys" shovel-vm-prim0:get-hash-table-keys)
+          (def-prim0 "slice" shovel-vm-prim0:get-slice)
+
+          ;; Current date/time:
+          (def-prim0 "utcSecondsSinceUnixEpoch"
+              shovel-vm-prim0:utc-seconds-since-unix-epoch)
+          
+          ;; Date/time construction/deconstruction:
+          (def-prim0 "decodeTime" shovel-vm-prim0:decode-time)
+          (def-prim0 "encodeTime" shovel-vm-prim0:encode-time)
+          
+          ;; Object types:
+          (def-prim0 "isString" shovel-vm-prim0:shovel-is-string)
+          (def-prim0 "isHash" shovel-vm-prim0:shovel-is-hash)
+          (def-prim0 "isBool" shovel-vm-prim0:shovel-is-bool)
+          (def-prim0 "isArray" shovel-vm-prim0:shovel-is-array)
+          (def-prim0 "isNumber" shovel-vm-prim0:shovel-is-number)
+          (def-prim0 "isCallable" shovel-vm-prim0:shovel-is-callable)
+          
+          ;; Stringification:
+          (def-prim0 "string" shovel-vm-prim0:shovel-string)
+          (def-prim0 "stringRepresentation" 
+              shovel-vm-prim0:shovel-string-representation)
+          
+          ;; Parsing numbers:
+          (def-prim0 "parseInt" shovel-vm-prim0:parse-int)
+          (def-prim0 "parseFloat" shovel-vm-prim0:parse-float))))
+    (alexandria:alist-hash-table prim0-alist :test #'equal)))
 
 (defun raise-shovel-error (vm message)
   (alexandria:when-let ((source (vm-source vm))
@@ -98,8 +132,8 @@
 
 (defun step-vm (vm)
   (when (vm-not-finished vm)
-    (let* ((shovel-vm-prim0:*error-raiser* (lambda (message)
-                                             (raise-shovel-error vm message)))
+    (let* ((shovel-vm:*error-raiser* (lambda (message)
+                                       (raise-shovel-error vm message)))
            (instruction (elt (vm-bytecode vm) (vm-program-counter vm)))
            (opcode (instruction-opcode instruction))
            (args (instruction-arguments instruction)))
@@ -187,33 +221,33 @@
                           (nth i arg-values))))
   (incf (vm-program-counter vm)))
 
-(defun handle-call (vm args save-return-address)
+(defun handle-call (vm num-args save-return-address)
   (let ((callable (pop (vm-stack vm))))
     (unless (callable-p callable)
       (raise-shovel-error vm (format nil "Object is not callable.")))
     (if (or (callable-prim callable) (callable-prim0 callable))
-        (call-primitive callable vm args save-return-address)
-        (call-function callable vm args save-return-address))))
+        (call-primitive callable vm num-args save-return-address)
+        (call-function callable vm num-args save-return-address))))
 
-(defun call-function (callable vm args save-return-address)
+(defun call-function (callable vm num-args save-return-address)
   (when save-return-address
     (setf (vm-stack vm)
           (append
-           (subseq (vm-stack vm) 0 args)
+           (subseq (vm-stack vm) 0 num-args)
            (cons (make-return-address :program-counter (1+ (vm-program-counter vm))
                                       :environment (vm-current-environment vm))
-                 (subseq (vm-stack vm) args)))))
+                 (subseq (vm-stack vm) num-args)))))
   (setf (vm-program-counter vm) (callable-program-counter callable)
         (vm-current-environment vm) (callable-environment callable)))
 
-(defun call-primitive (callable vm args save-return-address)
-  (let* ((arg-values (subseq (vm-stack vm) 0 args))
+(defun call-primitive (callable vm num-args save-return-address)
+  (let* ((arg-values (subseq (vm-stack vm) 0 num-args))
          (primitive (or (alexandria:if-let (prim0 (callable-prim0 callable))
                           (find-required-primitive vm prim0))
                         (alexandria:if-let (prim (callable-prim callable))
                           (find-user-primitive vm prim))))
          (result (apply primitive (reverse arg-values))))
-    (setf (vm-stack vm) (subseq (vm-stack vm) args))
+    (setf (vm-stack vm) (subseq (vm-stack vm) num-args))
     (if save-return-address
         (incf (vm-program-counter vm))
         (apply-return-address vm (pop (vm-stack vm))))
