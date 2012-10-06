@@ -19,6 +19,7 @@
 (defstruct callable
   (prim0 nil)
   (prim nil)
+  (num-args nil)
   (program-counter nil)
   (environment nil))
 
@@ -59,25 +60,25 @@
 
           ;; Hash constructor:
           (def-prim0 "hash" shovel-vm-prim0:hash-constructor)
-          
+
           ;; Hash table has key?
           (def-prim0 "hasKey" shovel-vm-prim0:has-key)
-          
+
           ;; Keys for hash table
           (def-prim0 "keys" shovel-vm-prim0:get-hash-table-keys)
-          
+
           ;; Array constructors:
           (def-prim0 "array" shovel-vm-prim0:array-constructor)
           (def-prim0 "arrayN" shovel-vm-prim0:array-constructor-n)
-          
+
           ;; Array and hash set and get:
           (def-prim0 "svm_gref" shovel-vm-prim0:array-or-hash-get)
           (def-prim0 "svm_gref_dot" shovel-vm-prim0:hash-get-dot)
           (def-prim0 "svm_set_indexed" shovel-vm-prim0:array-or-hash-set)
-          
+
           ;; String or array length:
           (def-prim0 "length" shovel-vm-prim0:get-length)
-          
+
           ;; String or array slice:
           (def-prim0 "slice" shovel-vm-prim0:get-slice)
 
@@ -196,8 +197,9 @@
          (check-bool vm)
          (jump-if (shovel-vm-prim0:logical-not (pop (vm-stack vm))) vm args))
         (:fn
-         (push (make-callable :program-counter args
-                              :environment (vm-current-environment vm))
+         (push (make-callable :program-counter (first args)
+                              :environment (vm-current-environment vm)
+                              :num-args (second args))
                (vm-stack vm))
          (incf (vm-program-counter vm)))
         (:args (handle-args vm args))
@@ -254,6 +256,12 @@
            (cons (make-return-address :program-counter (1+ (vm-program-counter vm))
                                       :environment (vm-current-environment vm))
                  (subseq (vm-stack vm) num-args)))))
+  (when (and (callable-num-args callable )
+             (/= (callable-num-args callable) num-args))
+    (raise-shovel-error
+     vm
+     (format nil "Function of ~d arguments called with ~d arguments."
+             (callable-num-args callable) num-args)))
   (setf (vm-program-counter vm) (callable-program-counter callable)
         (vm-current-environment vm) (callable-environment callable)))
 

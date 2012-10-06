@@ -27,7 +27,7 @@
                         (gen :label :arguments fn :pos ast)
                         (compile-fn-body (fn-args ast) (fn-body ast) env)
                         (gen :label :arguments l)
-                        (gen :fn :arguments fn)
+                        (gen :fn :arguments (list fn (length (fn-args ast))))
                         (unless more? (gen :return))))))
         (:begin (compile-block (parse-tree-children ast) env val? more?))
         (:set! (compile-set ast env val? more?))

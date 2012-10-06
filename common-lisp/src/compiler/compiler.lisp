@@ -24,16 +24,16 @@
                (dolist (instruction instructions)
                  (let ((opcode (instruction-opcode instruction))
                        (args (instruction-arguments instruction)))
-                   (case opcode
-                     ((:tjump :fjump :jump :fn)
-                      (setf (aref result current)
-                            (make-instruction :opcode opcode
-                                              :arguments (gethash args labels-hash)))
-                      (incf current))
-                     (:label)
-                     (t (setf (aref result current)
-                              instruction)
-                        (incf current)))))
+                   (unless (eq :label opcode)
+                     (case opcode
+                       ((:tjump :fjump :jump)
+                        (setf (instruction-arguments instruction)
+                              (gethash args labels-hash)))
+                       (:fn
+                        (setf (first (instruction-arguments instruction))
+                              (gethash (first args) labels-hash))))
+                     (setf (aref result current) instruction)
+                     (incf current))))
                result)))
     (multiple-value-bind (length labels-hash)
         (assemble-pass-1 instructions)

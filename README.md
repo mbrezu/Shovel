@@ -137,8 +137,10 @@ The possible opcodes are:
    in the first slots (e.g. for two arguments the top of the stack
    will be stored at position 1 and the next-top-of-stack at position
    0);
- * FN *address* - builds a closure (as a pair of the current
-   environment and *address*) and stores it on the stack.
+ * FN *address*, *number-of-arguments* - builds a closure (as a pair
+   of the current environment and *address*) and stores it on the
+   stack; the closure can only be called with *number-of-arguments*
+   arguments.
  * PRIM *primitive-name* - pushes a primitive on the stack; the
    primitive can be called with CALLJ or stored in a data structure;
  * PRIM0 *primitive-name* - like PRIM, but for primitives that are
