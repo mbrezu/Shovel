@@ -27,7 +27,7 @@
                         (gen :label :arguments l)
                         (gen :fn :arguments fn)
                         (unless more? (gen :return))))))
-        (:begin (compile-block (parse-tree-children ast) env more?))
+        (:begin (compile-block (parse-tree-children ast) env val? more?))
         (:set! (compile-set ast env val? more?))
         (:if (compile-if ast env val? more?))
         (:name (validate-name ast)
@@ -35,12 +35,15 @@
                  (seq (gen :lget :arguments (find-name var-name env
                                                        (parse-tree-start-pos ast))
                            :pos ast)
-                      (unless more? (gen :return)))))
-        (:call (compile-funcall ast env more?))
+                      (unless more? (gen :return))
+                      (unless val? (gen :pop)))))
+        (:call (compile-funcall ast env val? more?))
         (:prim0 (seq (gen :prim0 :arguments (parse-tree-children ast) :pos ast)
-                     (unless more? (gen :return))))
+                     (unless more? (gen :return))
+                     (unless val? (gen :pop))))
         (:prim (seq (gen :prim :arguments (parse-tree-children ast) :pos ast)
-                    (unless more? (gen :return))))
+                    (unless more? (gen :return))
+                    (unless val? (gen :pop))))
         (:return (seq (compile-ast (parse-tree-children ast) env t more?)
                       (when more? (gen :return))))
         ((:number :string :bool :void) (compile-atom ast env val? more?))
@@ -97,24 +100,25 @@ at line ~d, column ~d."
 
 (defun compile-if (ast env val? more?)
   (validate-if ast)
-  (if more?
-      (let ((l1 (gen-label))
-            (l2 (gen-label)))
-        (seq (compile-ast (if-pred ast) env t t)
-             (gen :fjump :arguments l1)
-             (compile-ast (if-then ast) env val? t)
-             (gen :jump :arguments l2)
-             (gen :label :arguments l1)
-             (compile-ast (if-else ast) env val? t)
-             (gen :label :arguments l2)))
-      (let ((l1 (gen-label)))
-        (seq (compile-ast (if-pred ast) env t t)
-             (gen :fjump :arguments l1)
-             (compile-ast (if-then ast) env val? nil)
-             (gen :label :arguments l1)
-             (compile-ast (if-else ast) env val? nil)))))
+  (seq (if more?
+           (let ((l1 (gen-label))
+                 (l2 (gen-label)))
+             (seq (compile-ast (if-pred ast) env t t)
+                  (gen :fjump :arguments l1)
+                  (compile-ast (if-then ast) env val? t)
+                  (gen :jump :arguments l2)
+                  (gen :label :arguments l1)
+                  (compile-ast (if-else ast) env val? t)
+                  (gen :label :arguments l2)))
+           (let ((l1 (gen-label)))
+             (seq (compile-ast (if-pred ast) env t t)
+                  (gen :fjump :arguments l1)
+                  (compile-ast (if-then ast) env val? nil)
+                  (gen :label :arguments l1)
+                  (compile-ast (if-else ast) env val? nil))))
+       (unless val? (gen :pop))))
 
-(defun compile-funcall (ast env more?)
+(defun compile-funcall (ast env val? more?)
   (let* ((children (parse-tree-children ast))
          (arg-code (mapcan (lambda (ast)
                              (compile-ast ast env t t))
@@ -123,7 +127,8 @@ at line ~d, column ~d."
     (if more?
         (seq arg-code
              function-code
-             (gen :call :arguments (length (rest children)) :pos ast))
+             (gen :call :arguments (length (rest children)) :pos ast)
+             (unless val? (gen :pop)))
         (seq arg-code
              function-code
              (gen :callj :arguments (length (rest children)) :pos ast)))))
@@ -164,11 +169,11 @@ at line ~d, column ~d."
 
 (defun generate-instructions (ast)
   (setf *label-counter* 0)
-  (compile-block ast (empty-env) t))
+  (compile-block ast (empty-env) t t))
 
 (defun last1 (list) (first (last list)))
 
-(defun compile-block (ast env more?)
+(defun compile-block (ast env val? more?)
   (let* ((new-env (cons (make-env-frame) env))
          (drop-values-asts (butlast ast))
          (value-ast (last1 ast))
@@ -179,8 +184,8 @@ at line ~d, column ~d."
          (top-frame-count (length (env-frame-vars (car new-env)))))
     (seq (gen :new-frame :arguments top-frame-count)
          compiled-body
-         (if more?
-             (gen :drop-frame)))))
+         (if more? (gen :drop-frame))
+         (unless val? (gen :pop)))))
 
 (defun compile-fn-body (args body env)
   (let ((new-env (cons (make-env-frame) env)))
@@ -265,7 +270,7 @@ initial definition at line ~d, column ~d."
     (:bool (cond ((string= value "true") :true)
                  ((string= value "false") :false)
                  (t (error "Shovel internal WTF."))))
-    (:void nil)))
+    (:void :null)))
 
 (defun validate-atom-value (ast)
   (or (and (member (parse-tree-label ast) '(:string :number :bool :void))

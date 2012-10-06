@@ -135,4 +135,5 @@
   (:use #:cl)
   (:export
    :print-code
-   :run-code))
+   :run-code
+   :stdlib))

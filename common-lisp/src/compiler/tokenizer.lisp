@@ -65,8 +65,17 @@
           ((char= #\" ch)
            (tokenize (cons (tokenize-literal-string)
                            tokens)))
+          ((and (char= #\/ ch) (char= #\/ (lookahead-char)))
+           (eat-comment)
+           (tokenize tokens))
           (t (tokenize (cons (tokenize-punctuation)
                              tokens))))))
+
+(defun eat-comment ()
+  (next-char)
+  (next-char)
+  (tokenize-pred :dummy (lambda (ch) (char/= ch #\newline)))
+  (next-char))
 
 (defun tokenize-pred (type pred)
   "Forms a token with type TYPE from the characters for which PRED
@@ -128,7 +137,7 @@
 (defun tokenize-punctuation ()
   (let ((crt (current-char))
         (la (lookahead-char)))
-    (cond ((member crt '(#\( #\) #\[ #\] #\+ #\- #\* #\/))
+    (cond ((member crt '(#\( #\) #\[ #\] #\+ #\- #\* #\/ #\{ #\}))
            (make-punctuation-token 1))
           ((char= crt #\=)
            (make-punctuation-token (if (and la (char= la #\=)) 2 1)))

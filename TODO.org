@@ -3,13 +3,21 @@
 * DONE array and hash primitives
   array, len, hash, keys
 * DONE len must work for strings too
-* TODO while, for and foreach in the language
+* DONE while, for and foreach in the language
   these will be implemented as part of the standard library.
+  Implemented as "standard library" code in Shript itself.
+* TODO a hasKey primitive.
+* TODO cry loudly if a variable or argument
+  has the name of a required primitive
+* TODO cry loudly if trying to access a hash value
+  via '.' uses a non-existing key; return null if the access is made
+  via '[]'.
+* DONE comments :-)
 * TODO FN must also record the number of arguments accepted by the callable.
 * TODO NEW-FRAME must also have a 'debug' form
   where it takes a list of the names of variable present in the frame,
   not the number of variables.
-* TODO serialization and deserialiazation 
+* TODO serialization and deserialization
 * TODO figure out how interruptible user primitives are written
 * TODO checking of return values for user primitives
   to make sure that they return an instance of a shovel type; tests

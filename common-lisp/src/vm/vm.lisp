@@ -70,11 +70,11 @@
           ;; Current date/time:
           (def-prim0 "utcSecondsSinceUnixEpoch"
               shovel-vm-prim0:utc-seconds-since-unix-epoch)
-          
+
           ;; Date/time construction/deconstruction:
           (def-prim0 "decodeTime" shovel-vm-prim0:decode-time)
           (def-prim0 "encodeTime" shovel-vm-prim0:encode-time)
-          
+
           ;; Object types:
           (def-prim0 "isString" shovel-vm-prim0:shovel-is-string)
           (def-prim0 "isHash" shovel-vm-prim0:shovel-is-hash)
@@ -82,12 +82,12 @@
           (def-prim0 "isArray" shovel-vm-prim0:shovel-is-array)
           (def-prim0 "isNumber" shovel-vm-prim0:shovel-is-number)
           (def-prim0 "isCallable" shovel-vm-prim0:shovel-is-callable)
-          
+
           ;; Stringification:
           (def-prim0 "string" shovel-vm-prim0:shovel-string)
-          (def-prim0 "stringRepresentation" 
+          (def-prim0 "stringRepresentation"
               shovel-vm-prim0:shovel-string-representation)
-          
+
           ;; Parsing numbers:
           (def-prim0 "parseInt" shovel-vm-prim0:parse-int)
           (def-prim0 "parseFloat" shovel-vm-prim0:parse-float))))
@@ -95,8 +95,9 @@
 
 (defun raise-shovel-error (vm message)
   (alexandria:when-let ((source (vm-source vm))
-                        (pos (vm-last-start-pos vm)))
-    (setf message (format nil "~a~%~a" message (highlight-position source pos))))
+                        (start-pos (vm-last-start-pos vm)))
+    (setf message (format nil "~a~%~a" message
+                          (highlight-position source start-pos))))
   (error
    (alexandria:if-let (pos (vm-last-start-pos vm))
      (make-condition 'shovel-error
@@ -138,11 +139,10 @@
            (instruction (elt (vm-bytecode vm) (vm-program-counter vm)))
            (opcode (instruction-opcode instruction))
            (args (instruction-arguments instruction)))
-      (unless (member opcode '(:call :callj))
-        (alexandria:when-let ((start-pos (instruction-start-pos instruction))
-                              (end-pos (instruction-end-pos instruction)))
-          (setf (vm-last-start-pos vm) start-pos
-                (vm-last-end-post vm) end-pos)))
+      (alexandria:when-let ((start-pos (instruction-start-pos instruction))
+                            (end-pos (instruction-end-pos instruction)))
+        (setf (vm-last-start-pos vm) start-pos
+              (vm-last-end-post vm) end-pos))
       (case opcode
         (:new-frame
          (push (make-array args) (vm-current-environment vm))
@@ -225,7 +225,9 @@
 (defun handle-call (vm num-args save-return-address)
   (let ((callable (pop (vm-stack vm))))
     (unless (callable-p callable)
-      (raise-shovel-error vm (format nil "Object is not callable.")))
+      (raise-shovel-error vm (format nil "Object [~a] is not callable."
+                                     (shovel-vm-prim0:shovel-string-representation
+                                      callable))))
     (if (or (callable-prim callable) (callable-prim0 callable))
         (call-primitive callable vm num-args save-return-address)
         (call-function callable vm num-args save-return-address))))

@@ -172,7 +172,7 @@
     (vm-error "Argument must be a string or an array."))
   (let* ((length (length array-or-string))
          (real-start (if (< start 0) (+ length start) start))
-         (real-end (if (< end 0) (+ length end) end)))
+         (real-end (if (< end 0) (+ length end 1) end)))
     (when (> real-start real-end)
       (vm-error
        (format nil "Starting index (~d) is larger than ending index (~d)."
@@ -188,12 +188,12 @@
     (when (< real-end 0)
       (vm-error
        (format nil "Ending index (~d) is less than 0." real-end)))
-    (when (>= real-end length)
+    (when (> real-end length)
       (vm-error
        (format nil
-               "Ending index (~d) is equal to or larger than the length of the sequence (~d)."
+               "Ending index (~d) is larger than the length of the sequence (~d)."
                real-end length)))
-    (subseq array-or-string real-start (1+ real-end))))
+    (subseq array-or-string real-start real-end)))
 
 ;; Current date/time:
 
@@ -259,6 +259,7 @@
         ((hash-table-p var) "[...hash...]")
         ((is-callable var) "[...callable...]")
         ((is-bool var) (string-downcase (symbol-name var)))
+        ((null var) "null")
         (t (unknown-type-error))))
 
 (defun shovel-string-representation (var)
@@ -279,7 +280,11 @@
                       var)
              (format str "~{~a~^, ~}" (nreverse pieces))
              (write-string ")" str))))
-        ((or (numberp var) (is-bool var) (is-callable var)) (shovel-string var))
+        ((or (null var)
+             (numberp var)
+             (is-bool var)
+             (is-callable var))
+         (shovel-string var))
         (t (unknown-type-error))))
 
 ;; Parsing numbers:
