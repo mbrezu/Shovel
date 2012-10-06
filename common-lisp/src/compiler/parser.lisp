@@ -352,7 +352,8 @@ token positions."
     "utcSecondsSinceUnixEpoch" "decodeTime" "encodeTime"
     "isString" "isHash" "isBool" "isArray" "isNumber" "isCallable"
     "string" "stringRepresentation"
-    "parseInt" "parseFloat"))
+    "parseInt" "parseFloat"
+    "panic"))
 
 (defun is-required-primitive-name (str)
   (member str *required-primitives* :test #'string=))

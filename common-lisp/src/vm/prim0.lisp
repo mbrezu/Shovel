@@ -326,3 +326,7 @@
       (+ integer-part
          (/ (float fractional-part) (expt 10 (- (length var) dotpos 1)))))
     (parse-integer var)))
+
+(defun panic (message)
+  (check-string message)
+  (vm-error message))

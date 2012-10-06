@@ -125,7 +125,8 @@
    :bitwise-xor
    :pow
    :has-key
-   :hash-get-dot))
+   :hash-get-dot
+   :panic))
 
 (defpackage #:shovel-vm
   (:use #:cl #:shovel-types #:shovel-utils)

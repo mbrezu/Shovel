@@ -105,7 +105,11 @@
 
           ;; Parsing numbers:
           (def-prim0 "parseInt" shovel-vm-prim0:parse-int 1)
-          (def-prim0 "parseFloat" shovel-vm-prim0:parse-float 1))))
+          (def-prim0 "parseFloat" shovel-vm-prim0:parse-float 1)
+          
+          ;; Exception throwing:
+          (def-prim0 "panic" shovel-vm-prim0:panic 1)
+          )))
     (alexandria:alist-hash-table prim0-alist :test #'equal)))
 
 (defun write-environment (env stream)
