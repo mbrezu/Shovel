@@ -35,7 +35,8 @@
         (:name (validate-name ast)
                (let ((var-name (name-identifier ast)))
                  (seq (gen :lget :arguments (find-name var-name env
-                                                       (parse-tree-start-pos ast))
+                                                       (parse-tree-start-pos ast)
+                                                       (parse-tree-end-pos ast))
                            :pos ast)
                       (unless more? (gen :return))
                       (unless val? (gen :pop)))))
@@ -64,6 +65,7 @@ SVM_SET_INDEXED required primitive."
              (unless (is-gref-call lhs)
                (raise-error
                 (parse-tree-start-pos ast)
+                (parse-tree-end-pos ast)
                 "Assignment only supported for names, arrays and hashes at line ~d, column ~d."))
              (let* ((array-or-hash (gref-call-array-or-hash lhs))
                     (index (gref-call-index lhs))
@@ -95,7 +97,9 @@ SVM_SET_INDEXED required primitive."
 
 (defun compile-set-var (name env val? more? ast-for-pos)
   (seq (gen :lset
-            :arguments (find-name name env (parse-tree-start-pos ast-for-pos))
+            :arguments (find-name name env
+                                  (parse-tree-start-pos ast-for-pos)
+                                  (parse-tree-end-pos ast-for-pos))
             :pos ast-for-pos)
        (unless val? (gen :pop))
        (unless more? (gen :return))))
@@ -241,14 +245,16 @@ SVM_SET_INDEXED required primitive."
 
 (defun name-identifier (name) (parse-tree-children name))
 
-(defun raise-error (pos message)
+(defun raise-error (start-pos end-pos message)
   (alexandria:when-let (source (generator-state-source *generator-state*))
-    (setf message
-          (format nil "~a~%~a" message (highlight-position source pos))))
-  (error (make-condition 'shovel-error
+    (let ((lines (extract-relevant-source source start-pos end-pos)))
+      (setf message
+            (format nil "~a~%~a~%~a" 
+                    message (first lines) (second lines)))))
+  (error (make-condition 'shovel-compiler-error
                          :message message
-                         :line (pos-line pos)
-                         :column (pos-column pos))))
+                         :line (pos-line start-pos)
+                         :column (pos-column start-pos))))
 
 (defun extend-frame (env name name-ast)
   (let ((top-frame (car env))
@@ -256,6 +262,7 @@ SVM_SET_INDEXED required primitive."
     (alexandria:when-let
         (var-record (assoc name (env-frame-vars top-frame) :test #'equal))
       (raise-error current-start-pos
+                   (parse-tree-end-pos name-ast)
                    (format nil
                            "Variable '~a' is already defined in this frame at line ~d, column ~d."
                            name
@@ -265,13 +272,13 @@ SVM_SET_INDEXED required primitive."
           (cons (list name (length (env-frame-vars top-frame)) current-start-pos)
                 (env-frame-vars top-frame)))))
 
-(defun find-name (name env start-pos &optional (frame-number 0))
+(defun find-name (name env start-pos end-pos &optional (frame-number 0))
   (when (null env)
-    (raise-error start-pos (format nil "Undefined variable '~a'." name)))
+    (raise-error start-pos end-pos (format nil "Undefined variable '~a'." name)))
   (let ((pair (assoc name (env-frame-vars (first env)) :test #'equal)))
     (if pair
         (list frame-number (second pair))
-        (find-name name (rest env) start-pos (1+ frame-number)))))
+        (find-name name (rest env) start-pos end-pos (1+ frame-number)))))
 
 (defun compile-atom (ast env val? more?)
   (declare (ignore env))

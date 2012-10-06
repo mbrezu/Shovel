@@ -11,15 +11,10 @@
                        line)
           0)))
 
-(defun highlight-position (source pos)
-  (let* ((source-lines (split-sequence:split-sequence #\newline source))
-         (relevant-line (elt source-lines (1- (pos-line pos)))))
-    (format nil "~a~%~a" 
-            relevant-line
-            (underline (pos-column pos) (pos-column pos)))))
-
 (defun extract-relevant-source (source-lines start-pos end-pos 
                                 &key (line-prefix ""))
+  (when (stringp source-lines)
+    (setf source-lines (split-sequence:split-sequence #\newline source-lines)))
   (let* ((start-line (pos-line start-pos))
          (end-line (pos-line end-pos))
          (add-elipsis (> end-line start-line))

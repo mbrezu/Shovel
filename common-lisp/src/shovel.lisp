@@ -65,15 +65,15 @@ var stdlib = {
    }
    var qsort = fn (arr, lessThan) {
      // Broken - probably a compiler bug.
-     @print('***')
-     @print(arr)
+     // @print('***')
+     // @print(arr)
      if length(arr) == 0 || length(arr) == 1 return arr
      var pivot = arr[0]
-     @print(pivot)
+     // @print(pivot)
      var lesser = filter(slice(arr, 1, -1), fn el lessThan(el, pivot))
      var greater = filter(slice(arr, 1, -1), fn el lessThan(pivot, el))
-     @print(lesser)
-     @print(greater)
+     // @print(lesser)
+     // @print(greater)
      return qsort(lesser, lessThan) + array(pivot) + qsort(greater, lessThan)
    }
    var reverse = fn (arr) {

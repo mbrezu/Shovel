@@ -9,7 +9,7 @@
   stack
   user-primitives
   (last-start-pos nil)
-  (last-end-post nil)
+  (last-end-pos nil)
   (source nil))
 
 (defstruct return-address
@@ -120,41 +120,37 @@
     (write-environment (cdr env) stream)))
 
 (defun write-stack-trace (vm stream)
-  (let ((source-lines (alexandria:if-let
-                          (source (vm-source vm))
-                        (split-sequence:split-sequence #\newline source))))
-    (labels ((iter (stack)
+  (let ((source (vm-source vm)))
+    (labels ((print-call-site (start-pos end-pos)
+               (if (and start-pos end-pos)
+                   (if source
+                       (dolist (line
+                                 (extract-relevant-source source
+                                                          start-pos end-pos))
+                         (write-string line stream)
+                         (terpri stream))
+                       (progn
+                         (format stream "Call from line ~d, column ~d."
+                                 (pos-line start-pos) (pos-column start-pos))
+                         (terpri stream)))
+                   (progn
+                     (format stream "Call from unknown source location.")
+                     (terpri stream))))
+             (iter (stack)
                (when stack
                  (when (return-address-p (car stack))
                    (let* ((pc (return-address-program-counter (car stack)))
                           (call-site (elt (vm-bytecode vm) (1- pc))))
-                     (alexandria:if-let
-                         ((start-pos (instruction-start-pos call-site))
-                          (end-pos (instruction-end-pos call-site)))
-                       (if source-lines
-                           (dolist (line
-                                     (extract-relevant-source source-lines
-                                                              start-pos end-pos))
-                             (write-string line stream)
-                             (terpri stream))
-                           (progn
-                             (format stream "Call from line ~d, column ~d."
-                                     (pos-line start-pos) (pos-column start-pos))
-                             (terpri stream)))
-                       (progn
-                         (format stream "Call from unknown source location.")
-                         (terpri stream)))))
+                     (print-call-site (instruction-start-pos call-site)
+                                      (instruction-end-pos call-site))))
                  (iter (cdr stack)))))
+      (print-call-site (vm-last-start-pos vm) (vm-last-end-pos vm))
       (iter (vm-stack vm)))))
 
 (defun raise-shovel-error (vm message)
-  (alexandria:when-let ((source (vm-source vm))
-                        (start-pos (vm-last-start-pos vm)))
-    (setf message (format nil "~a~%~a" message
-                          (highlight-position source start-pos))))
   (setf message
         (with-output-to-string (str)
-          (write-string message str) (terpri str)
+          (write-string message str) (terpri str) (terpri str)
           (write-string "Current stack trace:" str) (terpri str)
           (write-stack-trace vm str)
           (terpri str)
@@ -204,7 +200,7 @@
       (alexandria:when-let ((start-pos (instruction-start-pos instruction))
                             (end-pos (instruction-end-pos instruction)))
         (setf (vm-last-start-pos vm) start-pos
-              (vm-last-end-post vm) end-pos))
+              (vm-last-end-pos vm) end-pos))
       (case opcode
         (:new-frame
          (let ((new-frame (make-array (length args))))

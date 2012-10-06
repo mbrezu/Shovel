@@ -31,8 +31,7 @@
   (:use #:cl #:shovel-types)
   (:export
    :first-non-blank
-   :underline
-   :highlight-position
+   :underline 
    :extract-relevant-source))
 
 (defpackage #:shovel-compiler-types

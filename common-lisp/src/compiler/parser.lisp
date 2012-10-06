@@ -95,30 +95,30 @@ token positions."
                                (apply #'tokenp candidate))
                              possible-tokens))
       (let* ((expectation
-                (let ((possible-contents
-                       (remove-if #'null (mapcar #'second possible-tokens)))
-                      (possible-types (remove-duplicates
-                                       (mapcar #'first possible-tokens))))
-                  (cond
-                    ((null possible-contents)
-                     (cond
-                       ((null possible-types)
-                        (error "Shovel internal WTF."))
-                       ((length=1 possible-types)
-                        (format nil "Expected a ~(~a~)"
-                                (first possible-types)))
-                       (t (format nil "Expected a ~{~(~a~)~^ or a ~}"
-                                  possible-types))))
-                    ((length=1 possible-contents)
-                     (format nil "Expected '~a'"
-                             (first possible-contents)))
-                    (t
-                     (format nil "Expected ~{'~a'~^ or ~}"
-                             possible-contents)))))
-               (actual-input (if token
-                                 (format nil "but got '~a'" (token-content token))
-                                 "but reached the end of the input"))
-               (message (format nil "~a, ~a." expectation actual-input)))
+              (let ((possible-contents
+                     (remove-if #'null (mapcar #'second possible-tokens)))
+                    (possible-types (remove-duplicates
+                                     (mapcar #'first possible-tokens))))
+                (cond
+                  ((null possible-contents)
+                   (cond
+                     ((null possible-types)
+                      (error "Shovel internal WTF."))
+                     ((length=1 possible-types)
+                      (format nil "Expected a ~(~a~)"
+                              (first possible-types)))
+                     (t (format nil "Expected a ~{~(~a~)~^ or a ~}"
+                                possible-types))))
+                  ((length=1 possible-contents)
+                   (format nil "Expected '~a'"
+                           (first possible-contents)))
+                  (t
+                   (format nil "Expected ~{'~a'~^ or ~}"
+                           possible-contents)))))
+             (actual-input (if token
+                               (format nil "but got '~a'" (token-content token))
+                               "but reached the end of the input"))
+             (message (format nil "~a, ~a." expectation actual-input)))
         (raise-error message)))))
 
 (defun parse-var-decl ()
@@ -274,9 +274,13 @@ token positions."
          (at-eof (not token)))
     (when pos
       (alexandria:when-let (source (parse-state-source *parse-state*))
-        (setf message
-              (format nil "~a~%~a" message (highlight-position source pos)))))
-    (setf message (maybe-extend-message pos message))
+        (let* ((start-pos (token-start-pos token))
+               (end-pos (token-end-pos token))
+               (lines (extract-relevant-source source start-pos end-pos)))
+          (setf message
+                (format nil "~a~%~a~%~a" message
+                        (first lines)
+                        (second lines))))))
     (error (make-condition 'shovel-compiler-error
                            :message message
                            :line line
