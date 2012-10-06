@@ -108,11 +108,29 @@
           (def-prim0 "parseFloat" shovel-vm-prim0:parse-float))))
     (alexandria:alist-hash-table prim0-alist :test #'equal)))
 
+(defun write-environment (env stream)
+  (when env
+    (let ((frame (car env)))
+      (loop
+         for i from 0 to (1- (length frame))
+         do (let ((var (elt frame i)))
+              (format stream "~a = ~a~%"
+                      (car var)
+                      (shovel-vm-prim0:shovel-string-representation (cdr var))))))
+    (write-environment (cdr env) stream)))
+
 (defun raise-shovel-error (vm message)
   (alexandria:when-let ((source (vm-source vm))
                         (start-pos (vm-last-start-pos vm)))
     (setf message (format nil "~a~%~a" message
                           (highlight-position source start-pos))))
+  (setf message
+        (with-output-to-string (str)
+          (write-string message str)
+          (terpri str)
+          (write-string "Current environment:" str)
+          (terpri str)
+          (write-environment (vm-current-environment vm) str)))
   (error
    (alexandria:if-let (pos (vm-last-start-pos vm))
      (make-condition 'shovel-error
@@ -160,7 +178,12 @@
               (vm-last-end-post vm) end-pos))
       (case opcode
         (:new-frame
-         (push (make-array args) (vm-current-environment vm))
+         (let ((new-frame (make-array (length args))))
+           (loop
+              for i = 0 then (1+ i)
+              for var in args
+              do (setf (aref new-frame i) (cons var nil)))
+           (push new-frame (vm-current-environment vm)))
          (incf (vm-program-counter vm)))
         (:drop-frame
          (pop (vm-current-environment vm))
@@ -279,7 +302,7 @@
     (push result (vm-stack vm))))
 
 (defun set-in-environment (environment frame-number var-index value)
-  (setf (aref (nth frame-number environment) var-index) value))
+  (setf (cdr (aref (nth frame-number environment) var-index)) value))
 
 (defun get-from-environment (enviroment frame-number var-index)
-  (aref (nth frame-number enviroment) var-index))
+  (cdr (aref (nth frame-number enviroment) var-index)))

@@ -147,10 +147,8 @@ The possible opcodes are:
    required to exist on every ShovelVM; see the section 'Required
    primitives' for the list of primitives that need to be specified
    with PRIM0;
- * NEW-FRAME *count* - extends the current environment with a frame
-   containing *count* slots;
- * NEW-FRAME *var-1*, *var-2*, ... *var-count* - the 'debugging'
-   version of NEW-FRAME;
+ * NEW-FRAME *var-1*, *var-2*, ... *var-count* - extends the current
+   environment with a frame containing *count* slots;
  * DROP-FRAME - removes a frame from the current environment;
 
 ### Required Primitives
