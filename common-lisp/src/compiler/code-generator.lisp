@@ -277,7 +277,8 @@ SVM_SET_INDEXED required primitive."
 
 (defun compile-atom-value (label value)
   (case label
-    ((:string :number) (read-from-string value))
+    (:number (read-from-string value))
+    (:string (subseq value 1 (1- (length value))))
     (:bool (cond ((string= value "true") :true)
                  ((string= value "false") :false)
                  (t (error "Shovel internal WTF."))))

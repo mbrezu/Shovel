@@ -57,19 +57,17 @@
     (cond ((not ch) (reverse tokens))
           ((or (char= #\_ ch) (char= #\$ ch) (alpha-char-p ch)
                (char= #\@ ch))
-           (tokenize (cons (tokenize-identifier)
-                           tokens)))
+           (tokenize (cons (tokenize-identifier) tokens)))
           ((or (digit-char-p ch))
-           (tokenize (cons (tokenize-number)
-                           tokens)))
+           (tokenize (cons (tokenize-number) tokens)))
           ((char= #\" ch)
-           (tokenize (cons (tokenize-literal-string)
-                           tokens)))
+           (tokenize (cons (tokenize-literal-string #\") tokens)))
+          ((char= #\' ch)
+           (tokenize (cons (tokenize-literal-string #\') tokens)))
           ((and (char= #\/ ch) (char= #\/ (lookahead-char)))
            (eat-comment)
            (tokenize tokens))
-          (t (tokenize (cons (tokenize-punctuation)
-                             tokens))))))
+          (t (tokenize (cons (tokenize-punctuation) tokens))))))
 
 (defun eat-comment ()
   (next-char)
@@ -91,25 +89,31 @@
                   :start-pos start-pos
                   :end-pos end-pos))))
 
-(defun tokenize-literal-string ()
+(defun tokenize-literal-string (quote)
   (let ((quote-counter 0)
         escaped)
-    (tokenize-pred :string
-                   (lambda (ch)
-                     (prog1
-                         (< quote-counter 2)
-                       (when (and (char= #\" ch) (not escaped))
-                         (incf quote-counter))
-                       (setf escaped (char= #\\ ch)))))))
+    (prog1
+        (tokenize-pred :string
+                       (lambda (ch)
+                         (prog1
+                             (< quote-counter 2)
+                           (when (and (char= quote ch) (not escaped))
+                             (incf quote-counter))
+                           (setf escaped (char= #\\ ch)))))
+      (unless (= 2 quote-counter)
+        (error (make-condition
+                'shovel-error
+                :message "Expected an end quote, but reached the end of file."
+                :at-eof t))))))
 
 (defun tokenize-identifier ()
   (let ((result (tokenize-pred :identifier
-                        (lambda (ch)
-                          (or (char= #\_ ch)
-                              (char= #\$ ch)
-                              (char= #\@ ch)
-                              (alpha-char-p ch)
-                              (digit-char-p ch))))))
+                               (lambda (ch)
+                                 (or (char= #\_ ch)
+                                     (char= #\$ ch)
+                                     (char= #\@ ch)
+                                     (alpha-char-p ch)
+                                     (digit-char-p ch))))))
     (when (char= (elt (token-content result) 0) #\@)
       (setf (token-type result) :prim
             (token-content result) (subseq (token-content result) 1)))

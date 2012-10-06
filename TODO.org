@@ -17,9 +17,18 @@
 * DONE comments :-)
 * DONE FN must also record the number of arguments accepted by the callable.
 * DONE blocks are expressions :-)
+* DONE apostrophes for string quotation
 * TODO NEW-FRAME must also have a 'debug' form
   where it takes a list of the names of variable present in the frame,
   not the number of variables.
+* TODO when saving the return addresses, also save the position in code
+  for the call, so we can build nice stack traces when an exception is
+  thrown.
+* TODO keep the names of the variables in the environments and 
+  display them if there in case of an exception.
+* TODO record file names in source positions
+  (so we can show useful line/column information for multiple files).
+* TODO implement a 'load' primitive.
 * TODO serialization and deserialization
 * TODO figure out how interruptible user primitives are written
 * TODO checking of return values for user primitives

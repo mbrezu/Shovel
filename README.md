@@ -149,6 +149,8 @@ The possible opcodes are:
    with PRIM0;
  * NEW-FRAME *count* - extends the current environment with a frame
    containing *count* slots;
+ * NEW-FRAME *var-1*, *var-2*, ... *var-count* - the 'debugging'
+   version of NEW-FRAME;
  * DROP-FRAME - removes a frame from the current environment;
 
 ### Required Primitives

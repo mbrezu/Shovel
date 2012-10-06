@@ -65,7 +65,7 @@ var stdlib = {
    }
    var qsort = fn (arr, lessThan) {
      // Broken - probably a compiler bug.
-     @print(\"***\")
+     @print('***')
      @print(arr)
      if length(arr) == 0 || length(arr) == 1 return arr
      var pivot = arr[0]
@@ -81,18 +81,18 @@ var stdlib = {
      forIndex(arr, fn i result[length(arr) - 1 - i] = arr[i])
      return result
    }
-   hash(\"min\", min,
-        \"max\", max,
-        \"while\", while,
-        \"forIndex\", forIndex,
-        \"forEach\", forEach,
-        \"forEachWithIndex\", forEachWithIndex,
-        \"map\", map,
-        \"mapWithIndex\", mapWithIndex,
-        \"filter\", filter,
-        \"reduceFromLeft\", reduceFromLeft,
-        \"sort\", qsort,
-        \"reverse\", reverse
+   hash('min', min,
+        'max', max,
+        'while', while,
+        'forIndex', forIndex,
+        'forEach', forEach,
+        'forEachWithIndex', forEachWithIndex,
+        'map', map,
+        'mapWithIndex', mapWithIndex,
+        'filter', filter,
+        'reduceFromLeft', reduceFromLeft,
+        'sort', qsort,
+        'reverse', reverse
        )
 }
 "
