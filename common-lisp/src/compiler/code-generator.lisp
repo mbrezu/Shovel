@@ -3,10 +3,12 @@
 
 (defstruct env-frame (vars nil))
 
-(defvar *label-counter* 0)
+(defstruct generator-state label-counter source)
+
+(defvar *generator-state*)
 
 (defun gen-label (&optional (symbol 'l))
-  (mu-base:mksymb symbol (incf *label-counter*)))
+  (mu-base:mksymb symbol (incf (generator-state-label-counter *generator-state*))))
 
 (defun compile-ast (ast env val? more?)
   (when ast
@@ -60,10 +62,9 @@ SVM_SET_INDEXED required primitive."
                                env val? more? ast)))
         (t (let ((lhs (set-left-side ast)))
              (unless (is-gref-call lhs)
-               (error "Assignment only supported for names, arrays and hashes ~
-at line ~d, column ~d."
-                      (pos-line (parse-tree-start-pos ast))
-                      (pos-column (parse-tree-start-pos ast))))
+               (raise-error
+                (parse-tree-start-pos ast)
+                "Assignment only supported for names, arrays and hashes at line ~d, column ~d."))
              (let* ((array-or-hash (gref-call-array-or-hash lhs))
                     (index (gref-call-index lhs))
                     (set-operator (set-operator ast))
@@ -168,9 +169,10 @@ at line ~d, column ~d."
 
 (defun empty-env () (list (make-env-frame)))
 
-(defun generate-instructions (ast)
-  (setf *label-counter* 0)
-  (compile-block ast (empty-env) t t))
+(defun generate-instructions (ast &key source)
+  (let ((*generator-state* (make-generator-state :label-counter 0
+                                                 :source source)))
+    (compile-block ast (empty-env) t t)))
 
 (defun last1 (list) (first (last list)))
 
@@ -231,25 +233,33 @@ at line ~d, column ~d."
 
 (defun name-identifier (name) (parse-tree-children name))
 
+(defun raise-error (pos message)
+  (alexandria:when-let (source (generator-state-source *generator-state*))
+    (setf message
+          (format nil "~a~%~a" message (highlight-position source pos))))
+  (error (make-condition 'shovel-error
+                         :message message
+                         :line (pos-line pos)
+                         :column (pos-column pos))))
+
 (defun extend-frame (env name name-ast)
   (let ((top-frame (car env))
         (current-start-pos (parse-tree-start-pos name-ast)))
     (alexandria:when-let
         (var-record (assoc name (env-frame-vars top-frame) :test #'equal))
-      (error "Variable '~a' is already defined in this frame; ~
-current definition attempt at line ~d, column ~d, ~
-initial definition at line ~d, column ~d."
-             name
-             (pos-line current-start-pos) (pos-column current-start-pos)
-             (pos-line (third var-record)) (pos-column (third var-record))))
+      (raise-error current-start-pos
+                   (format nil
+                           "Variable '~a' is already defined in this frame at line ~d, column ~d."
+                           name
+                           (pos-line (third var-record))
+                           (pos-column (third var-record)))))
     (setf (env-frame-vars top-frame)
           (cons (list name (length (env-frame-vars top-frame)) current-start-pos)
                 (env-frame-vars top-frame)))))
 
 (defun find-name (name env start-pos &optional (frame-number 0))
   (when (null env)
-    (error "Undefined variable '~a' at line ~d, column ~d."
-           name (pos-line start-pos) (pos-column start-pos)))
+    (raise-error start-pos (format nil "Undefined variable '~a'." name)))
   (let ((pair (assoc name (env-frame-vars (first env)) :test #'equal)))
     (if pair
         (list frame-number (second pair))

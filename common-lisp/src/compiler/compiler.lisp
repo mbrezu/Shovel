@@ -5,7 +5,7 @@
   (let* ((tokens (shovel-compiler-tokenizer:tokenize-string source))
          (parse-tree (shovel-compiler-parser:parse-tokens tokens :source source))
          (instructions (shovel-compiler-code-generator:generate-instructions
-                        parse-tree)))
+                        parse-tree :source source)))
     (include-relevant-source-as-comments source instructions)))
 
 (defun assemble-instructions (instructions)

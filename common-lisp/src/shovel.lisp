@@ -6,10 +6,13 @@
   `(let ((action (lambda () ,@body)))
      (if debug
          (progn (princ (funcall action)) (terpri))
-         (multiple-value-bind (result error)
-             (ignore-errors (funcall action))
-           (unless error (princ result) (terpri))
-           (when error (princ error) (terpri))))
+         (handler-case
+             (progn
+               (princ (funcall action))
+               (terpri))
+           (shovel-types:shovel-error (er)
+             (princ er)
+             (terpri))))
      (values)))
 
 (defun stdlib ()

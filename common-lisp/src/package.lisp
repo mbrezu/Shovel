@@ -65,7 +65,7 @@
   (:export :parse-tokens))
 
 (defpackage #:shovel-compiler-code-generator
-  (:use #:cl #:shovel-compiler-types #:shovel-types)
+  (:use #:cl #:shovel-compiler-types #:shovel-types #:shovel-utils)
   (:export :generate-instructions))
 
 (defpackage #:shovel-compiler

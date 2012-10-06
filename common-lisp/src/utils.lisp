@@ -17,3 +17,4 @@
     (format nil "~a~%~a" 
             relevant-line
             (underline (pos-column pos) (pos-column pos)))))
+

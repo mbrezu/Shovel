@@ -13,7 +13,7 @@
 * DONE cry loudly if trying to access a hash value
   via '.' uses a non-existing key; return null if the access is made
   via '[]'.
-* TODO only catch our errors (improve on the ignore-errors forms in shovel)
+* DONE only catch our errors (improve on the ignore-errors forms in shovel)
 * DONE comments :-)
 * TODO FN must also record the number of arguments accepted by the callable.
 * TODO NEW-FRAME must also have a 'debug' form

@@ -123,13 +123,6 @@ token positions."
                (message (format nil "~a, ~a." expectation actual-input)))
         (raise-error message)))))
 
-(defun maybe-extend-message (pos message)
-  (if pos
-      (alexandria:if-let (source (parse-state-source *parse-state*))
-        (format nil "~a~%~a" message (highlight-position source pos))
-        message)
-      message))
-
 (defun parse-var-decl ()
   (with-new-parse-tree :var
     (consume-token :identifier "var")
@@ -281,6 +274,10 @@ token positions."
          (line (if token (pos-line pos)))
          (column (if token (pos-column pos)))
          (at-eof (not token)))
+    (when pos
+      (alexandria:when-let (source (parse-state-source *parse-state*))
+        (setf message
+              (format nil "~a~%~a" message (highlight-position source pos)))))
     (setf message (maybe-extend-message pos message))
     (error (make-condition 'shovel-compiler-error
                            :message message
