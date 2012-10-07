@@ -5,10 +5,13 @@
 
 (defvar *parse-state* nil)
 
+(declaim (inline current-token))
 (defun current-token () (car (parse-state-tokens *parse-state*)))
 
+(declaim (inline previous-token))
 (defun previous-token () (parse-state-previous-token *parse-state*))
 
+(declaim (inline next-token))
 (defun next-token () (setf (parse-state-previous-token *parse-state*)
                            (pop (parse-state-tokens *parse-state*))))
 
@@ -358,7 +361,7 @@ token positions."
 (defun is-required-primitive-name (str)
   (member str *required-primitives* :test #'string=))
 
-(defparameter *reserved-keywords* '("var" "if" "fn" "return"))
+(defparameter *reserved-keywords* '("var" "if" "fn" "return" "true" "false"))
 
 (defun is-reserved-keyword (str)
   (member str *reserved-keywords* :test #'string=))

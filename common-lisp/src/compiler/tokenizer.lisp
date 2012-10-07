@@ -11,11 +11,13 @@
 (defun make-pos-from-previous ()
   (clone-pos (tokenizer-state-previous-pos *tokenizer-state*)))
 
+(declaim (inline extract-content))
 (defun extract-content (start-pos end-pos)
   (subseq (tokenizer-state-source *tokenizer-state*)
           (1- (pos-char start-pos))
           (pos-char end-pos)))
 
+(declaim (inline current-char))
 (defun current-char (&optional forced-current-char)
   (let ((current-source (tokenizer-state-source *tokenizer-state*))
         (current-char

@@ -6,7 +6,7 @@
          (parse-tree (shovel-compiler-parser:parse-tokens tokens :source source))
          (instructions (shovel-compiler-code-generator:generate-instructions
                         parse-tree :source source)))
-    (include-relevant-source-as-comments source instructions)))
+    instructions))
 
 (defun assemble-instructions (instructions)
   (labels ((assemble-pass-1 (instructions)
@@ -39,7 +39,8 @@
         (assemble-pass-1 instructions)
       (assemble-pass-2 instructions length labels-hash))))
 
-(defun show-instructions (instructions)
+(defun show-instructions (source instructions)
+  (include-relevant-source-as-comments source instructions)
   (dolist (instruction instructions)
     (let ((opcode (instruction-opcode instruction))
           (args (instruction-arguments instruction)))

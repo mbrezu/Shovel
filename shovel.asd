@@ -3,7 +3,8 @@
 (asdf:defsystem #:shovel
   :depends-on (#:alexandria
                #:split-sequence
-               #:mbrezu-utils-base)
+               #:mbrezu-utils-base
+               #:fiveam)
   :components
   ((:module
     "common-lisp"
@@ -28,4 +29,9 @@
        (:file "shovel" :depends-on ("package"
                                     "shovel-types"
                                     "compiler"
-                                    "vm"))))))))
+                                    "vm"))))
+     (:module
+      "tests"
+      :depends-on ("src")
+      :components ((:file "package")
+                   (:file "tests")))))))
