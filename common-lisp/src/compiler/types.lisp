@@ -1,7 +1,16 @@
 
 (in-package #:shovel-compiler-types)
 
-(defstruct token type content start-pos end-pos)
+(declaim (optimize speed))
+(declaim (inline make-token))
+(defstruct token type content start-pos end-pos
+           (is-relational-op nil)
+           (is-adder-op nil)
+           (is-multiplier-op nil)
+           (is-logical-and-op nil)
+           (is-logical-or-op nil)
+           (is-required-primitive nil)
+           (is-keyword nil))
 
 (defstruct parse-tree label start-pos end-pos children)
 
@@ -9,6 +18,7 @@
   ((at-eof :initform nil :accessor error-at-eof :initarg :at-eof)))
 
 (defmethod print-object ((object shovel-compiler-error) stream)
+  (declare (optimize (speed 1)))
   (format stream "Shovel error")
   (alexandria:when-let (file (error-file object))
     (format stream " in file '~a'" file))

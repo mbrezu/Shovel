@@ -34,10 +34,12 @@
                  expr)))))
 
 (defun tokenp (expected-type &optional expected-content)
+  (declare (optimize speed))
   (let ((token (current-token)))
     (when token
       (let ((type (token-type token))
             (content (token-content token)))
+        (declare (type (simple-array character (*)) content))
         (and (eq type expected-type)
              (or (null expected-content)
                  (string= content expected-content)))))))
@@ -76,6 +78,7 @@ token positions."
                         :children ,children))))
 
 (defun parse-block ()
+  (declare (optimize speed))
   (with-new-parse-tree :begin
     (let (statements)
       (consume-token :punctuation "{")
@@ -87,42 +90,56 @@ token positions."
       (reverse statements))))
 
 (defun consume-token (type content)
-  (require-token (list type content))
+  (declare (optimize speed))
+  (require-token-1 type content)
   (next-token))
 
 (defun length=1 (list) (and (consp list) (null (rest list))))
 
+(defun require-token-error (possible-tokens token)
+  (let* ((expectation
+          (let ((possible-contents
+                 (remove-if #'null (mapcar #'second possible-tokens)))
+                (possible-types (remove-duplicates
+                                 (mapcar #'first possible-tokens))))
+            (cond
+              ((null possible-contents)
+               (cond
+                 ((null possible-types)
+                  (error "Shovel internal WTF."))
+                 ((length=1 possible-types)
+                  (format nil "Expected a ~(~a~)"
+                          (first possible-types)))
+                 (t (format nil "Expected a ~{~(~a~)~^ or a ~}"
+                            possible-types))))
+              ((length=1 possible-contents)
+               (format nil "Expected '~a'"
+                       (first possible-contents)))
+              (t
+               (format nil "Expected ~{'~a'~^ or ~}"
+                       possible-contents)))))
+         (actual-input (if token
+                           (format nil "but got '~a'" (token-content token))
+                           "but reached the end of the input"))
+         (message (format nil "~a, ~a." expectation actual-input)))
+    (raise-error message)))
+
 (defun require-token (&rest possible-tokens)
+  (declare (optimize speed))
   (let ((token (current-token)))
     (unless (and token (some (lambda (candidate)
                                (apply #'tokenp candidate))
                              possible-tokens))
-      (let* ((expectation
-              (let ((possible-contents
-                     (remove-if #'null (mapcar #'second possible-tokens)))
-                    (possible-types (remove-duplicates
-                                     (mapcar #'first possible-tokens))))
-                (cond
-                  ((null possible-contents)
-                   (cond
-                     ((null possible-types)
-                      (error "Shovel internal WTF."))
-                     ((length=1 possible-types)
-                      (format nil "Expected a ~(~a~)"
-                              (first possible-types)))
-                     (t (format nil "Expected a ~{~(~a~)~^ or a ~}"
-                                possible-types))))
-                  ((length=1 possible-contents)
-                   (format nil "Expected '~a'"
-                           (first possible-contents)))
-                  (t
-                   (format nil "Expected ~{'~a'~^ or ~}"
-                           possible-contents)))))
-             (actual-input (if token
-                               (format nil "but got '~a'" (token-content token))
-                               "but reached the end of the input"))
-             (message (format nil "~a, ~a." expectation actual-input)))
-        (raise-error message)))))
+      (require-token-error possible-tokens token))))
+
+(defun require-token-1 (possible-token-type &optional possible-token-content)
+  (declare (optimize speed))
+  (let ((token (current-token)))
+    (unless (and token (tokenp possible-token-type
+                               possible-token-content))
+      (require-token-error (list possible-token-type
+                                 possible-token-content)
+                           token))))
 
 (defun parse-var-decl ()
   (with-new-parse-tree :var
@@ -159,7 +176,7 @@ token positions."
      (parse-lambda))
     ((tokenp :identifier "if") ; Handle branches.
      (parse-if))
-    (t (left-assoc #'parse-or-term '((:punctuation "||"))))))
+    (t (left-assoc #'parse-or-term #'token-is-logical-or-op))))
 
 (defun make-prim0-parse-tree (primitive-name)
   (with-new-parse-tree :prim0
@@ -167,42 +184,32 @@ token positions."
         primitive-name
       (next-token))))
 
-(defun left-assoc (sub-parser operators)
+(defun left-assoc (sub-parser operator-pred)
+  (declare (optimize speed)
+           (type (function (token) boolean) operator-pred)
+           (type (function () parse-tree) sub-parser))
   (labels ((iter (start)
-             (if (some (lambda (operator) (apply #'tokenp operator)) operators)
-                 (let ((operator (current-token)))
+             (let ((token (current-token)))
+               (if (and token (funcall operator-pred token))
                    (iter (with-new-anchored-parse-tree
                              (parse-tree-start-pos start)
                              :call
-                           (list (make-prim0-parse-tree (token-content operator))
+                           (list (make-prim0-parse-tree (token-content token))
                                  start
-                                 (funcall sub-parser)))))
-                 start)))
+                                 (funcall sub-parser))))
+                   start))))
     (iter (funcall sub-parser))))
 
-(defun parse-or-term () (left-assoc #'parse-and-term '((:punctuation "&&"))))
+(defun parse-or-term () (left-assoc #'parse-and-term #'token-is-logical-and-op))
 
 (defun parse-and-term ()
-  (left-assoc #'parse-relational-term '((:punctuation "<")
-                                        (:punctuation ">")
-                                        (:punctuation "<=")
-                                        (:punctuation ">=")
-                                        (:punctuation "==")
-                                        (:punctuation "!="))))
+  (left-assoc #'parse-relational-term #'token-is-relational-op))
 
 (defun parse-relational-term ()
-  (left-assoc #'parse-addition-term '((:punctuation "+")
-                                      (:punctuation "-")
-                                      (:punctuation "|"))))
+  (left-assoc #'parse-addition-term #'token-is-adder-op))
 
 (defun parse-addition-term ()
-  (left-assoc #'parse-multiplication-term '((:punctuation "*")
-                                            (:punctuation "/")
-                                            (:punctuation "%")
-                                            (:punctuation "&")
-                                            (:punctuation "^")
-                                            (:punctuation ">>")
-                                            (:punctuation "<<"))))
+  (left-assoc #'parse-multiplication-term #'token-is-multiplier-op))
 
 (defun parse-multiplication-term ()
   (cond ((tokenp :punctuation "-") (parse-unary-minus))
@@ -211,12 +218,12 @@ token positions."
 
 (defun parse-logical-not ()
   (with-new-parse-tree :call
-    (require-token (list :punctuation "!"))
+    (require-token-1 :punctuation "!")
     (list (make-prim0-parse-tree "!") (parse-multiplication-term))))
 
 (defun parse-unary-minus ()
   (with-new-parse-tree :call
-    (require-token (list :punctuation "-"))
+    (require-token-1 :punctuation "-")
     (list (make-prim0-parse-tree "unary-minus") (parse-multiplication-term))))
 
 (defun parse-tight-unary ()
@@ -236,7 +243,7 @@ token positions."
             (with-new-anchored-parse-tree
                 (parse-tree-start-pos start)
                 :call
-              (require-token (list :punctuation "."))
+              (require-token-1 :punctuation ".")
               (list (make-prim0-parse-tree "svm_gref_dot")
                     start
                     (parse-name-as-string)))))
@@ -256,7 +263,7 @@ token positions."
                                (parse-tree-start-pos start)
                                :call
                              (setf gref-start-pos (get-current-start-pos))
-                             (require-token (list :punctuation "["))
+                             (require-token-1 :punctuation "[")
                              (prog1
                                  (list (setf gref-parse-tree
                                              (make-prim0-parse-tree "svm_gref"))
@@ -336,6 +343,8 @@ token positions."
         (list (parse-name nil)))))
 
 (defun parse-list (item-parser open-paren separator close-paren)
+  (declare (optimize speed)
+           (type (function () t) item-parser))
   (let (result)
     (apply #'consume-token open-paren)
     (loop
@@ -348,30 +357,13 @@ token positions."
     (apply #'consume-token close-paren)
     (reverse result)))
 
-(defparameter *required-primitives*
-  '("pow"
-    "array" "arrayN" "length" "slice"
-    "hash" "keys" "hasKey"
-    "utcSecondsSinceUnixEpoch" "decodeTime" "encodeTime"
-    "isString" "isHash" "isBool" "isArray" "isNumber" "isCallable"
-    "string" "stringRepresentation"
-    "parseInt" "parseFloat"
-    "panic"))
-
-(defun is-required-primitive-name (str)
-  (member str *required-primitives* :test #'string=))
-
-(defparameter *reserved-keywords* '("var" "if" "fn" "return" "true" "false"))
-
-(defun is-reserved-keyword (str)
-  (member str *reserved-keywords* :test #'string=))
-
 (defun parse-name (&optional (can-be-required-primitive t))
-  (require-token (list :identifier))
-  (let ((content (token-content (current-token))))
-    (when (is-reserved-keyword content)
+  (require-token-1 :identifier)
+  (let* ((token (current-token))
+         (content (token-content token)))
+    (when (token-is-keyword token)
       (raise-error (format nil "'~a' is a reserved keyword." content)))
-    (if (is-required-primitive-name content)
+    (if (token-is-required-primitive token)
         (if can-be-required-primitive
             (token-as-parse-tree :prim0)
             (let* ((pos (token-start-pos (current-token)))
@@ -386,11 +378,11 @@ token positions."
         (token-as-parse-tree :name))))
 
 (defun parse-prim ()
-  (require-token (list :prim))
+  (require-token-1 :prim)
   (token-as-parse-tree :prim))
 
 (defun parse-name-as-string ()
-  (require-token (list :identifier))
+  (require-token-1 :identifier)
   (let ((result (token-as-parse-tree :string)))
     (setf (parse-tree-children result)
           (format nil "\"~a\"" (parse-tree-children result)))

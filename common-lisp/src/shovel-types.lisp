@@ -1,11 +1,17 @@
 
 (in-package #:shovel-types)
 
+(declaim (optimize speed))
+
 (defstruct instruction
   opcode (arguments nil)
   (start-pos nil) (end-pos nil) (comments nil))
 
-(defstruct (pos (:copier clone-pos)) (line 1) (column 1) (char 1))
+(declaim (inline make-pos clone-pos copy-pos-slots))
+(defstruct (pos (:copier clone-pos))
+  (line 1 :type fixnum)
+  (column 1 :type fixnum)
+  (char 1 :type fixnum))
 
 (define-condition shovel-error (error)
   ((file :initform nil :accessor error-file :initarg :file)
@@ -14,6 +20,7 @@
    (message :initform nil :accessor error-message :initarg :message)))
 
 (defmethod print-object ((object shovel-error) stream)
+  (declare (optimize (speed 1)))
   (format stream "Shovel error")
   (alexandria:when-let (file (error-file object))
     (format stream " in file '~a'" file))

@@ -32,7 +32,8 @@
   (:export
    :first-non-blank
    :underline 
-   :extract-relevant-source))
+   :extract-relevant-source
+   :when-one-of-strings))
 
 (defpackage #:shovel-compiler-types
   (:use #:cl #:shovel-types)
@@ -45,7 +46,14 @@
    :token-content
    :token-start-pos
    :token-end-pos
-
+   :token-is-relational-op
+   :token-is-adder-op
+   :token-is-multiplier-op
+   :token-is-logical-and-op
+   :token-is-logical-or-op
+   :token-is-required-primitive
+   :token-is-keyword
+   
    :parse-tree
    :make-parse-tree
    :parse-tree-p
