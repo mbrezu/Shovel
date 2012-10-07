@@ -214,7 +214,7 @@ token positions."
 (defun parse-multiplication-term ()
   (cond ((tokenp :punctuation "-") (parse-unary-minus))
         ((tokenp :punctuation "!") (parse-logical-not))
-        (t (parse-tight-unary))))
+        (t (parse-atomish))))
 
 (defun parse-logical-not ()
   (with-new-parse-tree :call
@@ -226,7 +226,7 @@ token positions."
     (require-token-1 :punctuation "-")
     (list (make-prim0-parse-tree "unary-minus") (parse-multiplication-term))))
 
-(defun parse-tight-unary ()
+(defun parse-atomish ()
   (cond ((tokenp :number) (parse-number))
         ((tokenp :string) (parse-literal-string))
         ((or (tokenp :identifier "true")
@@ -237,6 +237,7 @@ token positions."
         (t (parse-identifier-or-call-or-ref))))
 
 (defun parse-identifier-or-call-or-ref (&optional forced-start)
+  (declare (optimize speed))
   (let ((start (or forced-start (parse-parenthesized-or-name))))
     (cond ((tokenp :punctuation ".") ; Handle hash access by dotting.
            (parse-identifier-or-call-or-ref

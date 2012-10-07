@@ -3,7 +3,9 @@
 
 (defstruct env-frame (vars nil))
 
+(declaim (optimize speed))
 (defstruct generator-state label-counter source (instructions nil))
+(declaim (optimize (speed 1)))
 
 (defvar *generator-state*)
 
@@ -124,20 +126,6 @@ SVM_SET_INDEXED required primitive."
         (gen :label :arguments l1)
         (compile-ast (if-else ast) env val? nil))))
 
-(defun compile-aside (compiling-action)
-  (let ((old-instructions (generator-state-instructions *generator-state*)))
-    (unwind-protect
-         (progn
-           (setf (generator-state-instructions *generator-state*) nil)
-           (funcall compiling-action)
-           (nreverse (generator-state-instructions *generator-state*)))
-      (setf (generator-state-instructions *generator-state*)
-            old-instructions))))
-
-(defun push-instructions (instructions)
-  (dolist (instruction instructions)
-    (push instruction (generator-state-instructions *generator-state*))))
-
 (defun compile-funcall (ast env val? more?)
   (declare (optimize speed))
   (let* ((children (parse-tree-children ast)))
@@ -192,30 +180,28 @@ SVM_SET_INDEXED required primitive."
 
 (defun last1 (list) (first (last list)))
 
+(defun compile-statements (env drop-values-asts value-ast more?)
+  (declare (optimize speed))
+  (dolist (ast drop-values-asts)
+    (compile-ast ast env nil t))
+  (compile-ast value-ast env t more?))
+
 (defun compile-block (ast env val? more?)
   (declare (optimize speed))
-  (labels ((compile-statements (env drop-values-asts value-ast)
-             (dolist (ast drop-values-asts)
-               (compile-ast ast env nil t))
-             (compile-ast value-ast env t more?)))
-    (let* ((new-frame (make-env-frame))
-           (new-env (cons new-frame env))
-           (drop-values-asts (butlast ast))
-           (value-ast (last1 ast))
-           (compiled-body (compile-aside
-                           (lambda ()
-                             (compile-statements new-env
-                                                 drop-values-asts value-ast))))
-           (vars (reverse (mapcar #'first (env-frame-vars new-frame)))))
-      (if vars
-          (progn
-            (gen :new-frame :arguments vars)
-            (push-instructions compiled-body)
-            (if more? (gen :drop-frame))
-            (unless val? (gen :pop)))
-          (progn
-            (compile-statements env drop-values-asts value-ast)
-            (unless val? (gen :pop)))))))
+  (let* ((new-frame (make-env-frame))
+         (new-env (cons new-frame env))
+         (drop-values-asts (butlast ast))
+         (value-ast (last1 ast))
+         (var-names (mapcar #'var-name (remove-if (lambda (stmt)
+                                                    (not (var-p stmt)))
+                                                  ast))))
+    (cond ((> (length var-names) 0)
+           (gen :new-frame :arguments var-names)
+           (compile-statements new-env drop-values-asts value-ast more?)
+           (if more? (gen :drop-frame))
+           (unless val? (gen :pop)))
+          (t (compile-statements env drop-values-asts value-ast more?)
+             (unless val? (gen :pop))))))
 
 (defun compile-fn-body (args body env)
   (declare (optimize speed))
@@ -223,15 +209,12 @@ SVM_SET_INDEXED required primitive."
          (new-env (cons new-frame env)))
     (dolist (arg args)
       (extend-frame new-env (name-identifier arg) arg))
-    (let ((compiled-body (compile-aside (lambda ()
-                                          (compile-ast body new-env t nil))))
-          (vars (reverse (mapcar #'first (env-frame-vars new-frame)))))
-      (if vars
-          (progn
-            (gen :new-frame :arguments vars)
-            (gen :args :arguments (length (the list args)))
-            (push-instructions compiled-body))
-          (compile-ast body env t nil)))))
+    (let ((var-names (mapcar #'name-identifier args)))
+      (cond ((> (length (the list var-names)) 0)
+             (gen :new-frame :arguments var-names)
+             (gen :args :arguments (length (the list args)))
+             (compile-ast body new-env t nil))
+            (t (compile-ast body env t nil))))))
 
 (defun validate-fn (fn-ast)
   (or (fn-p fn-ast)

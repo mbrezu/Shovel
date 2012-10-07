@@ -35,7 +35,13 @@
 * TODO serialization and deserialization
 ** TODO for the bytecode
 ** TODO for the VM state
-* TODO figure out how interruptible user primitives are written
+* DONE figure out how interruptible user primitives are written
+  they return three extra values:
+  - :continue, which means keep on going;
+  - :nap-retry, go to sleep and retry the primitive call on wake-up;
+  - :nap, go to sleep and go on from the next instruction after the
+    primitive call with the result returned by the primitive call.
+* TODO implement interruptible user primitives
 * TODO checking of return values for user primitives
   to make sure that they return an instance of a shovel type; tests
   should make sure that required primitives return an instance of a
