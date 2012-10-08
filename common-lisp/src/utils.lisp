@@ -107,3 +107,22 @@
        (declare (type (simple-array character (*)) ,g-str)
                 (type fixnum ,g-str-len))
        ,(gen-code g-str g-str-len alternatives))))
+
+(defmacro defbits (struct-name accessor &rest bitnames)
+  (check-type accessor symbol)
+  (dolist (bitname bitnames)
+    (check-type bitname symbol))
+  `(locally (declare (optimize speed))
+     ,@(loop
+          for i from 0 to (1- (length bitnames))
+          collect `(declaim
+                    (inline ,(mu-base:mksymb struct-name '- (elt bitnames i))))
+          collect `(defun ,(mu-base:mksymb struct-name '- (elt bitnames i)) (struct)
+                     (/= 0 (ldb (byte 1 ,i) (the fixnum (,accessor struct)))))
+          collect `(defun ,(mu-base:mksymb 'set- struct-name '- (elt bitnames i))
+                       (struct new-value)
+                     (setf (ldb (byte 1 ,i) (,accessor struct))
+                           (if new-value 1 0))
+                     new-value)
+          collect `(defsetf ,(mu-base:mksymb struct-name '- (elt bitnames i))
+                       ,(mu-base:mksymb 'set- struct-name '- (elt bitnames i))))))

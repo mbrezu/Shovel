@@ -10,8 +10,7 @@
 (declaim (inline make-pos clone-pos copy-pos-slots))
 (defstruct (pos (:copier clone-pos))
   (line 1 :type fixnum)
-  (column 1 :type fixnum)
-  (char 1 :type fixnum))
+  (column 1 :type fixnum))
 
 (define-condition shovel-error (error)
   ((file :initform nil :accessor error-file :initarg :file)

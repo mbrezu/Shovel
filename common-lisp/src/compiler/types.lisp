@@ -4,13 +4,16 @@
 (declaim (optimize speed))
 (declaim (inline make-token))
 (defstruct token type content start-pos end-pos
-           (is-relational-op nil)
-           (is-adder-op nil)
-           (is-multiplier-op nil)
-           (is-logical-and-op nil)
-           (is-logical-or-op nil)
-           (is-required-primitive nil)
-           (is-keyword nil))
+           (bits 0 :type fixnum))
+
+(shovel-utils:defbits token token-bits
+  is-relational-op
+  is-adder-op
+  is-multiplier-op
+  is-logical-and-op
+  is-logical-or-op
+  is-required-primitive
+  is-keyword)
 
 (defstruct parse-tree label start-pos end-pos children)
 

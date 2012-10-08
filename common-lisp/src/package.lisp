@@ -19,7 +19,6 @@
    :clone-pos
    :pos-line
    :pos-column
-   :pos-char
 
    :shovel-error
    :error-file
@@ -33,7 +32,8 @@
    :first-non-blank
    :underline 
    :extract-relevant-source
-   :when-one-of-strings))
+   :when-one-of-strings
+   :defbits))
 
 (defpackage #:shovel-compiler-types
   (:use #:cl #:shovel-types)
@@ -53,6 +53,7 @@
    :token-is-logical-or-op
    :token-is-required-primitive
    :token-is-keyword
+   :token-bits
    
    :parse-tree
    :make-parse-tree
@@ -66,7 +67,8 @@
 
 (defpackage #:shovel-compiler-tokenizer
   (:use #:cl #:shovel-compiler-types #:shovel-types)
-  (:export :tokenize-string))
+  (:export :tokenize-string
+           ))
 
 (defpackage #:shovel-compiler-parser
   (:use #:cl #:shovel-compiler-types #:shovel-types #:shovel-utils)

@@ -1,7 +1,9 @@
 
 (in-package #:shovel-compiler-tokenizer)
 
-(defstruct tokenizer-state source current-pos (previous-pos (make-pos)))
+(defstruct tokenizer-state source
+           (current-char 0 :type fixnum)
+           current-pos (previous-pos (make-pos)))
 
 (defvar *tokenizer-state*)
 
@@ -14,41 +16,41 @@
   (clone-pos (tokenizer-state-previous-pos *tokenizer-state*)))
 
 (declaim (inline extract-content))
-(defun extract-content (start-pos end-pos)
-  (declare (type pos start-pos end-pos))
+(defun extract-content (start-char end-char)
+  (declare (type fixnum start-char end-char))
   (subseq (the (simple-array character (*))
             (tokenizer-state-source *tokenizer-state*))
-          (1- (the fixnum (pos-char start-pos)))
-          (pos-char end-pos)))
+          start-char
+          end-char))
 
 (declaim (inline current-char))
-(defun current-char (&optional forced-current-char)
+(defun current-char ()
   (declare (optimize speed (safety 0)))
   (let ((current-source (tokenizer-state-source *tokenizer-state*))
-        (current-char
-         (or forced-current-char
-             (pos-char (tokenizer-state-current-pos *tokenizer-state*)))))
+        (current-char (tokenizer-state-current-char *tokenizer-state*)))
     (declare (type (simple-array character (*)) current-source)
              (type fixnum current-char))
-    (cond ((> current-char (length current-source)) nil)
+    (cond ((>= current-char (length current-source)) nil)
           (t (the character
-               (aref (the (simple-array character (*)) current-source)
-                     (1- current-char)))))))
+               (aref current-source current-char))))))
+
+(declaim (inline lookahead-char))
+(defun lookahead-char ()
+  (declare (optimize (safety 0)))
+  (incf (tokenizer-state-current-char *tokenizer-state*))
+  (unwind-protect
+       (current-char)
+    (decf (tokenizer-state-current-char *tokenizer-state*))))
 
 (defun test ()
   (declare (optimize speed))
   (aref (the (simple-array character (*)) (shovel:stdlib)) 0))
 
-(declaim (inline lookahead-char))
-(defun lookahead-char (&optional (n 1))
-  (let ((lookahead-position
-         (+ n (pos-char (tokenizer-state-current-pos *tokenizer-state*)))))
-    (current-char lookahead-position)))
-
+(declaim (inline copy-pos-slots))
 (defun copy-pos-slots (source-pos destination-pos)
+  (declare (optimize speed))
   (setf (pos-line destination-pos) (pos-line source-pos)
-        (pos-column destination-pos) (pos-column source-pos)
-        (pos-char destination-pos) (pos-char source-pos)))
+        (pos-column destination-pos) (pos-column source-pos)))
 
 (declaim (inline next-char))
 (defun next-char ()
@@ -62,7 +64,7 @@
             (incf (pos-line pos))
             (setf (pos-column pos) 1))
           (incf (pos-column pos))))
-    (incf (pos-char pos))))
+    (incf (tokenizer-state-current-char *tokenizer-state*))))
 
 (declaim (inline is-white-space))
 (defun is-white-space (ch)
@@ -102,14 +104,16 @@
   holds, starting with the current character."
   (declare (optimize speed)
            (type (function (character) boolean) pred))
-  (let ((start-pos (make-pos-from-current)))
+  (let ((start-pos (make-pos-from-current))
+        (start-char (tokenizer-state-current-char *tokenizer-state*)))
     (loop
        for ch of-type character = (current-char) then (current-char)
        while (and ch (funcall pred ch))
        do (next-char))
-    (let ((end-pos (make-pos-from-previous)))
+    (let ((end-pos (make-pos-from-previous))
+          (end-char (tokenizer-state-current-char *tokenizer-state*)))
       (make-token :type type
-                  :content (extract-content start-pos end-pos)
+                  :content (extract-content start-char end-char)
                   :start-pos start-pos
                   :end-pos end-pos))))
 
@@ -176,11 +180,13 @@
 (defun make-punctuation-token (length)
   (declare (optimize speed)
            (type fixnum length))
-  (let ((start-pos (make-pos-from-current)))
+  (let ((start-pos (make-pos-from-current))
+        (start-char (tokenizer-state-current-char *tokenizer-state*)))
     (loop repeat length do (next-char))
-    (let ((end-pos (make-pos-from-previous)))
+    (let ((end-pos (make-pos-from-previous))
+          (end-char (tokenizer-state-current-char *tokenizer-state*)))
       (make-token :type :punctuation
-                  :content (extract-content start-pos end-pos)
+                  :content (extract-content start-char end-char)
                   :start-pos start-pos
                   :end-pos end-pos))))
 
