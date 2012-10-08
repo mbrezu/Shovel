@@ -46,18 +46,13 @@
   (declare (optimize speed))
   (aref (the (simple-array character (*)) (shovel:stdlib)) 0))
 
-(declaim (inline copy-pos-slots))
-(defun copy-pos-slots (source-pos destination-pos)
-  (declare (optimize speed))
-  (setf (pos-line destination-pos) (pos-line source-pos)
-        (pos-column destination-pos) (pos-column source-pos)))
-
 (declaim (inline next-char))
 (defun next-char ()
   (declare (optimize (safety 0)))
   (let ((pos (tokenizer-state-current-pos *tokenizer-state*)))
     (declare (type pos pos))
-    (copy-pos-slots pos (tokenizer-state-previous-pos *tokenizer-state*))
+    (setf (tokenizer-state-previous-pos *tokenizer-state*)
+          (clone-pos pos))
     (let ((ch (current-char)))
       (if (and ch (char= #\newline ch))
           (progn
@@ -132,6 +127,8 @@
         (error (make-condition
                 'shovel-error
                 :message "Expected an end quote, but reached the end of file."
+                :file (pos-file-name
+                       (tokenizer-state-current-pos *tokenizer-state*))
                 :at-eof t))))))
 
 (defmacro on ((var-name object) &body body)
@@ -234,10 +231,14 @@
            (error (make-condition
                    'shovel-error
                    :message (format nil "Unexpected character '~a'." crt)
+                   :file (pos-file-name pos)
                    :line (pos-line pos)
                    :column (pos-column pos))))))))
 
-(defun tokenize-string (source)
-  (let ((*tokenizer-state* (make-tokenizer-state :source source
-                                                 :current-pos (make-pos))))
+(defun tokenize-source-file (source-file)
+  (let* ((file-name (shript-file-name source-file))
+         (contents (shript-file-contents source-file))
+         (*tokenizer-state* (make-tokenizer-state
+                             :source contents
+                             :current-pos (make-pos :file-name file-name))))
     (tokenize)))

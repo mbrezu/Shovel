@@ -29,9 +29,8 @@
 * DONE check the number of arguments for primitives and required primitives
 * DONE add a 'panic' primitive that throws an exception.
 * DONE tests !
-* TODO record file names in source positions
+* DONE record file names in source positions
   (so we can show useful line/column information for multiple files).
-** TODO implement a 'load' primitive (loads source code).
 * TODO serialization and deserialization
 ** TODO for the bytecode
 ** TODO for the VM state

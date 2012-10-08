@@ -11,20 +11,47 @@
                        line)
           0)))
 
-(defun extract-relevant-source (source-lines start-pos end-pos
-                                &key (line-prefix ""))
-  (when (stringp source-lines)
-    (setf source-lines (split-sequence:split-sequence #\newline source-lines)))
-  (let* ((start-line (pos-line start-pos))
+(defun prepare-sources (sources)
+  (let ((counter 0))
+    (mapcar (lambda (source)
+              (cond ((stringp source)
+                     (shovel-types:make-shript-file
+                      :contents source
+                      :name (mu-base:mkstr "<unspecified-" (incf counter) ">")))
+                    (t source)))
+            sources)))
+
+(defun find-source (sources file-name)
+  (dolist (source sources)
+    (when (string= file-name (shovel-types:shript-file-name source))
+      (return-from find-source source)))
+  (error (make-condition 'shovel-error
+                         :message (format nil "File '~a' not found." file-name))))
+
+(defun extract-relevant-source (source-files start-pos end-pos
+                                &key
+                                  (line-prefix "")
+                                  source-lines)
+  (unless source-lines
+    (let* ((file-name (shovel-types:pos-file-name start-pos))
+           (source (find-source source-files file-name)))
+      (setf source-lines
+            (split-sequence:split-sequence
+             #\newline
+             (shovel-types:shript-file-contents source)))))
+  (let* ((file-name (pos-file-name start-pos))
+         (start-line (pos-line start-pos))
          (end-line (pos-line end-pos))
          (add-elipsis (> end-line start-line))
          (first-line (elt source-lines (1- start-line))))
     (list (with-output-to-string (str)
-            (format str "~aline ~5d: ~a" line-prefix start-line first-line)
+            (format str "~afile '~a' line ~d: ~a"
+                    line-prefix file-name start-line first-line)
             (when add-elipsis
               (format str " [...content snipped...]")))
-          (format nil "~aline ~5d: ~a"
+          (format nil "~afile '~a' line ~d: ~a"
                   line-prefix
+                  file-name
                   start-line
                   (underline (max (pos-column start-pos)
                                   (first-non-blank first-line))

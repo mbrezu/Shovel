@@ -19,6 +19,12 @@
    :clone-pos
    :pos-line
    :pos-column
+   :pos-file-name
+   
+   :shript-file
+   :make-shript-file
+   :shript-file-name
+   :shript-file-contents
 
    :shovel-error
    :error-file
@@ -33,7 +39,9 @@
    :underline 
    :extract-relevant-source
    :when-one-of-strings
-   :defbits))
+   :defbits
+   :prepare-sources
+   :find-source))
 
 (defpackage #:shovel-compiler-types
   (:use #:cl #:shovel-types)
@@ -67,8 +75,8 @@
 
 (defpackage #:shovel-compiler-tokenizer
   (:use #:cl #:shovel-compiler-types #:shovel-types)
-  (:export :tokenize-string
-           ))
+  (:export 
+           :tokenize-source-file))
 
 (defpackage #:shovel-compiler-parser
   (:use #:cl #:shovel-compiler-types #:shovel-types #:shovel-utils)

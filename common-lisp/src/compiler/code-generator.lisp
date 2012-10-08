@@ -192,9 +192,11 @@ SVM_SET_INDEXED required primitive."
          (new-env (cons new-frame env))
          (drop-values-asts (butlast ast))
          (value-ast (last1 ast))
-         (var-names (mapcar #'var-name (remove-if (lambda (stmt)
-                                                    (not (var-p stmt)))
-                                                  ast))))
+         (var-names (mapcar (lambda (var)
+                              (name-identifier (var-name var)))
+                            (remove-if (lambda (stmt)
+                                         (not (var-p stmt)))
+                                       ast))))
     (cond ((> (length var-names) 0)
            (gen :new-frame :arguments var-names)
            (compile-statements new-env drop-values-asts value-ast more?)
@@ -256,6 +258,7 @@ SVM_SET_INDEXED required primitive."
                     message (first lines) (second lines)))))
   (error (make-condition 'shovel-compiler-error
                          :message message
+                         :file (pos-file-name start-pos)
                          :line (pos-line start-pos)
                          :column (pos-column start-pos))))
 

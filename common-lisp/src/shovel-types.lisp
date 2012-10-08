@@ -9,8 +9,11 @@
 
 (declaim (inline make-pos clone-pos copy-pos-slots))
 (defstruct (pos (:copier clone-pos))
+  (file-name "<unspecified>")
   (line 1 :type fixnum)
   (column 1 :type fixnum))
+
+(defstruct shript-file name contents)
 
 (define-condition shovel-error (error)
   ((file :initform nil :accessor error-file :initarg :file)

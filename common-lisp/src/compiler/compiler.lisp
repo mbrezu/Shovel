@@ -1,11 +1,16 @@
 
 (in-package #:shovel-compiler)
 
-(defun compile-string-to-instructions (source)
-  (let* ((tokens (shovel-compiler-tokenizer:tokenize-string source))
-         (parse-tree (shovel-compiler-parser:parse-tokens tokens :source source))
-         (instructions (shovel-compiler-code-generator:generate-instructions
-                        parse-tree :source source)))
+(defun compile-string-to-instructions (sources)
+  (let* ((tokens (mapcan (lambda (shript-file)
+                           (shovel-compiler-tokenizer:tokenize-source-file
+                            shript-file))
+                         sources))
+         (parse-tree (shovel-compiler-parser:parse-tokens
+                      tokens :source sources))
+         (instructions
+          (shovel-compiler-code-generator:generate-instructions
+           parse-tree :source sources)))
     instructions))
 
 (defun assemble-instructions (instructions)
@@ -39,8 +44,8 @@
         (assemble-pass-1 instructions)
       (assemble-pass-2 instructions length labels-hash))))
 
-(defun show-instructions (source instructions)
-  (include-relevant-source-as-comments source instructions)
+(defun show-instructions (sources instructions)
+  (include-relevant-source-as-comments sources instructions)
   (dolist (instruction instructions)
     (let ((opcode (instruction-opcode instruction))
           (args (instruction-arguments instruction)))
@@ -55,15 +60,22 @@
                        (format t "    ~a" opcode)))))
       (terpri))))
 
-(defun include-relevant-source-as-comments (source instructions)
-  (let ((source-lines (split-sequence:split-sequence #\newline source)))
+(defun include-relevant-source-as-comments (sources instructions)
+  (let (source-lines last-file-name)
     (dolist (instruction instructions)
+      (when (or (not last-file-name)
+                (string/= last-file-name (pos-file-name
+                                          (instruction-start-pos instruction))))
+        (setf last-file-name (pos-file-name (instruction-start-pos instruction)))
+        (let ((source (shovel-utils:find-source sources last-file-name)))
+          (setf source-lines (split-sequence:split-sequence
+                              #\newline
+                              (shovel-types:shript-file-contents source)))))
       (alexandria:when-let ((start-pos (instruction-start-pos instruction))
                             (end-pos (instruction-end-pos instruction)))
         (setf (instruction-comments instruction)
               (append (instruction-comments instruction)
-                      (extract-relevant-source source-lines start-pos end-pos
-                                               :line-prefix "    ; ")))))
-    instructions))
-
-
+                      (extract-relevant-source sources start-pos end-pos
+                                               :line-prefix "    ; "
+                                               :source-lines source-lines))))))
+  instructions)

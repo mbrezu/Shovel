@@ -10,7 +10,7 @@
   user-primitives
   (last-start-pos nil)
   (last-end-pos nil)
-  (source nil))
+  (sources nil))
 
 (defstruct return-address
   program-counter
@@ -124,12 +124,12 @@
     (write-environment (cdr env) stream)))
 
 (defun write-stack-trace (vm stream &optional stack-dump)
-  (let ((source (vm-source vm)))
+  (let ((sources (vm-sources vm)))
     (labels ((print-call-site (start-pos end-pos)
                (if (and start-pos end-pos)
-                   (if source
+                   (if sources
                        (dolist (line
-                                 (extract-relevant-source source
+                                 (extract-relevant-source sources
                                                           start-pos end-pos))
                          (write-string line stream)
                          (terpri stream))
@@ -169,6 +169,7 @@
    (alexandria:if-let (pos (vm-last-start-pos vm))
      (make-condition 'shovel-error
                      :message message
+                     :file (pos-file-name pos)
                      :line (pos-line pos)
                      :column (pos-column pos))
      (make-condition 'shovel-error :message message))))
@@ -179,13 +180,13 @@
       (raise-shovel-error vm (format nil "Unknown prim0 '~a'." name)))
     primitive))
 
-(defun run-vm (bytecode &key source user-primitives)
+(defun run-vm (bytecode &key sources user-primitives)
   (let ((vm (make-vm :bytecode bytecode
                      :program-counter 0
                      :current-environment nil
                      :stack nil
                      :user-primitives (make-hash-table :test #'equal)
-                     :source source)))
+                     :sources sources)))
     (dolist (user-primitive user-primitives)
       (setf (gethash (first user-primitive) (vm-user-primitives vm))
             (rest user-primitive)))

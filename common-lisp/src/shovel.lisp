@@ -15,8 +15,10 @@
              (terpri))))
      (values)))
 
-(defun stdlib ()
-  (values "
+(let ((stdlib-file
+       (shovel-types:make-shript-file
+        :name "stdlib.shr"
+        :contents "
 var stdlib = {
    var min = fn (a, b) if a < b a else b
    var max = fn (a, b) if a > b a else b
@@ -63,13 +65,15 @@ var stdlib = {
      forEach(arr, fn item result = fun(result, item))
      return result
    }
-   var qsort = fn (arr, lessThan) {
+   var qsort = fn (arr, lessThan, equal) {
      if length(arr) == 0 || length(arr) == 1 return arr
      var pivot = arr[0]
-     var woPivot = slice(arr, 1, -1)
-     var lesser = filter(woPivot, fn el lessThan(el, pivot))
-     var greater = filter(woPivot, fn el lessThan(pivot, el))
-     return qsort(lesser, lessThan) + array(pivot) + qsort(greater, lessThan)
+     var butFirst = slice(arr, 1, -1)
+     var lesser = filter(butFirst, fn el lessThan(el, pivot) || equal(el, pivot))
+     var greater = filter(butFirst, fn el lessThan(pivot, el))
+     return qsort(lesser, lessThan, equal) 
+            + array(pivot)
+            + qsort(greater, lessThan, equal)
    }
    var reverse = fn (arr) {
      var result = arrayN(length(arr))
@@ -90,22 +94,26 @@ var stdlib = {
         'reverse', reverse
        )
 }
-"
-          "stdlib.shr"))
+")))
+  (defun stdlib ()
+    stdlib-file))
 
-(defun naked-run-code (source &key user-primitives)
+(defun naked-run-code (sources &key user-primitives)
+  (setf sources (shovel-utils:prepare-sources sources))
   (shovel-vm:run-vm
    (shovel-compiler:assemble-instructions
-    (shovel-compiler:compile-string-to-instructions source))
-   :source source
+    (shovel-compiler:compile-string-to-instructions sources))
+   :sources sources
    :user-primitives user-primitives))
 
-(defun run-code (source &key user-primitives debug)
+(defun run-code (sources &key user-primitives debug)
   (let ((*print-circle* t))
-    (handle-errors (naked-run-code source :user-primitives user-primitives))))
+    (handle-errors (naked-run-code sources :user-primitives user-primitives))))
 
-(defun print-code (source &key debug)
+(defun print-code (sources &key debug)
+  (setf sources (shovel-utils:prepare-sources sources))
   (let ((*print-circle* t))
     (handle-errors
       (shovel-compiler:show-instructions
-       (shovel-compiler:compile-string-to-instructions source)))))
+       sources
+       (shovel-compiler:compile-string-to-instructions sources)))))

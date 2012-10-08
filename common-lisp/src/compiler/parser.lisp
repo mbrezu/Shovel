@@ -280,8 +280,9 @@ token positions."
 (defun raise-error (message)
   (let* ((token (current-token))
          (pos (if token (token-start-pos token)))
-         (line (if token (pos-line pos)))
-         (column (if token (pos-column pos)))
+         (file-name (if pos (pos-file-name pos)))
+         (line (if pos (pos-line pos)))
+         (column (if pos (pos-column pos)))
          (at-eof (not token)))
     (when pos
       (alexandria:when-let (source (parse-state-source *parse-state*))
@@ -295,6 +296,7 @@ token positions."
     (error (make-condition 'shovel-compiler-error
                            :message message
                            :line line
+                           :file file-name
                            :column column
                            :at-eof at-eof))))
 
@@ -368,12 +370,14 @@ token positions."
         (if can-be-required-primitive
             (token-as-parse-tree :prim0)
             (let* ((pos (token-start-pos (current-token)))
+                   (file-name (pos-file-name pos))
                    (line (pos-line pos))
                    (column (pos-column pos))
                    (message (format nil "Name '~a' is reserved for a primitive."
                                     content)))
               (error (make-condition 'shovel-compiler-error
                                      :message message
+                                     :file file-name
                                      :line line
                                      :column column))))
         (token-as-parse-tree :name))))
