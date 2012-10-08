@@ -65,15 +65,13 @@ var stdlib = {
      forEach(arr, fn item result = fun(result, item))
      return result
    }
-   var qsort = fn (arr, lessThan, equal) {
+   var qsort = fn (arr, lessThan) {
      if length(arr) == 0 || length(arr) == 1 return arr
      var pivot = arr[0]
      var butFirst = slice(arr, 1, -1)
-     var lesser = filter(butFirst, fn el lessThan(el, pivot) || equal(el, pivot))
-     var greater = filter(butFirst, fn el lessThan(pivot, el))
-     return qsort(lesser, lessThan, equal) 
-            + array(pivot)
-            + qsort(greater, lessThan, equal)
+     var lesser = filter(butFirst, fn el lessThan(el, pivot))
+     var greater = filter(butFirst, fn el !lessThan(el, pivot))
+     return qsort(lesser, lessThan) + array(pivot) + qsort(greater, lessThan)
    }
    var reverse = fn (arr) {
      var result = arrayN(length(arr))

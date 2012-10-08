@@ -19,9 +19,7 @@
   (is (equalp #(1 2 3 3 4 5)
               (shovel:naked-run-code
                (list (shovel:stdlib)
-                     "stdlib.sort(array(3, 1, 2, 5, 4, 3),
-                                  fn (a, b) a < b,
-                                  fn (a, b) a == b)")))))
+                     "stdlib.sort(array(3, 1, 2, 5, 4, 3), fn (a, b) a < b)")))))
 
 (defun run-tests ()
   (fiveam:run! :shovel-tests))
