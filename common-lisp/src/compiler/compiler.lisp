@@ -63,9 +63,11 @@
 (defun include-relevant-source-as-comments (sources instructions)
   (let (source-lines last-file-name)
     (dolist (instruction instructions)
-      (when (or (not last-file-name)
-                (string/= last-file-name (pos-file-name
-                                          (instruction-start-pos instruction))))
+      (when (and (instruction-start-pos instruction)
+                 (or (not last-file-name)
+                     (string/= last-file-name
+                               (pos-file-name
+                                (instruction-start-pos instruction)))))
         (setf last-file-name (pos-file-name (instruction-start-pos instruction)))
         (let ((source (shovel-utils:find-source sources last-file-name)))
           (setf source-lines (split-sequence:split-sequence
