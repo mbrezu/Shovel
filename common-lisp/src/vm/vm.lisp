@@ -24,7 +24,7 @@
   (environment nil))
 
 (defmacro def-prim0 (op lisp-op &optional (arity 2))
-  `(list ,(mu-base:mkstr op) ',lisp-op ,arity))
+  `(list ,(format nil "~a" op) ',lisp-op ,arity))
 
 (defparameter *primitives*
   (let ((prim0-alist

@@ -10,7 +10,9 @@
 (defvar *generator-state*)
 
 (defun gen-label (&optional (symbol 'l))
-  (mu-base:mksymb symbol (incf (generator-state-label-counter *generator-state*))))
+  (alexandria:format-symbol
+   nil "~a~a" symbol
+   (incf (generator-state-label-counter *generator-state*))))
 
 (defun compile-ast (ast env val? more?)
   (declare (optimize speed))

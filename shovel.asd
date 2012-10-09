@@ -3,7 +3,6 @@
 (asdf:defsystem #:shovel
   :depends-on (#:alexandria
                #:split-sequence
-               #:mbrezu-utils-base
                #:fiveam)
   :components
   ((:module

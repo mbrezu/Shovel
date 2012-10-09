@@ -17,7 +17,7 @@
               (cond ((stringp source)
                      (shovel-types:make-shript-file
                       :contents source
-                      :name (mu-base:mkstr "<unspecified-" (incf counter) ">")))
+                      :name (format nil "<unspecified-~d>" (incf counter))))
                     (t source)))
             sources)))
 
@@ -143,13 +143,18 @@
      ,@(loop
           for i from 0 to (1- (length bitnames))
           collect `(declaim
-                    (inline ,(mu-base:mksymb struct-name '- (elt bitnames i))))
-          collect `(defun ,(mu-base:mksymb struct-name '- (elt bitnames i)) (struct)
+                    (inline ,(alexandria:symbolicate
+                              struct-name '- (elt bitnames i))))
+          collect `(defun ,(alexandria:symbolicate
+                            struct-name '- (elt bitnames i)) (struct)
                      (/= 0 (ldb (byte 1 ,i) (the fixnum (,accessor struct)))))
-          collect `(defun ,(mu-base:mksymb 'set- struct-name '- (elt bitnames i))
+          collect `(defun ,(alexandria:symbolicate
+                            'set- struct-name '- (elt bitnames i))
                        (struct new-value)
                      (setf (ldb (byte 1 ,i) (,accessor struct))
                            (if new-value 1 0))
                      new-value)
-          collect `(defsetf ,(mu-base:mksymb struct-name '- (elt bitnames i))
-                       ,(mu-base:mksymb 'set- struct-name '- (elt bitnames i))))))
+          collect `(defsetf ,(alexandria:symbolicate
+                              struct-name '- (elt bitnames i))
+                       ,(alexandria:symbolicate
+                         'set- struct-name '- (elt bitnames i))))))
