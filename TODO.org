@@ -32,9 +32,17 @@
 * DONE record file names in source positions
   (so we can show useful line/column information for multiple files).
 * TODO serialization and deserialization
-** TODO for the bytecode
+** DONE for the bytecode
 ** TODO for the VM state
-* TODO maybe the representation of instructions should take up less space
+** TODO the state should be serialized with
+   - the MD5 of the serialization of the bytecode for the current VM
+   - the Shovel version
+     
+   This way we can make sure that we throw an error if an attempt is
+   made to restart a virtual machine with the wrong state (such an
+   attempt would most likely result in an error down the road, but
+   it's better not to corrupt data and throw an error ASAP).
+* DONE maybe the representation of instructions should take up less space
 ** DONE don't record lines and columns everywhere;
    record only character indices within files and calculate
    line/column on demand; store the file names in a special dummy

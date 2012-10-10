@@ -158,4 +158,5 @@
    :run-code
    :stdlib
    :naked-run-code
-   ))
+   :serialize-bytecode
+   :deserialize-bytecode))

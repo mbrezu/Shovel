@@ -171,5 +171,67 @@ f = [...callable...]
 
 ")))
 
+(test code-printer
+  (is (string= (with-output-to-string (str)
+                 (let ((*standard-output* str))
+                   (shovel:print-code (list "var a = 1
+var b = 2
+var c = fn (x, y) x + y"))))
+               "    NEW-FRAME a, b, c
+    FILE-NAME <unspecified-1>
+    ; file '<unspecified-1>' line 1: var a = 1
+    ; file '<unspecified-1>' line 1:         ^
+    CONST 1
+    ; file '<unspecified-1>' line 1: var a = 1
+    ; file '<unspecified-1>' line 1: ^^^^^^^^^
+    LSET 0, 0
+    POP
+    ; file '<unspecified-1>' line 2: var b = 2
+    ; file '<unspecified-1>' line 2:         ^
+    CONST 2
+    ; file '<unspecified-1>' line 2: var b = 2
+    ; file '<unspecified-1>' line 2: ^^^^^^^^^
+    LSET 0, 1
+    POP
+    JUMP L2
+    ; file '<unspecified-1>' line 3: var c = fn (x, y) x + y
+    ; file '<unspecified-1>' line 3:         ^^^^^^^^^^^^^^^
+FN1:
+    NEW-FRAME x, y
+    ARGS 2
+    ; file '<unspecified-1>' line 3: var c = fn (x, y) x + y
+    ; file '<unspecified-1>' line 3:                   ^
+    LGET 0, 0
+    ; file '<unspecified-1>' line 3: var c = fn (x, y) x + y
+    ; file '<unspecified-1>' line 3:                       ^
+    LGET 0, 1
+    ; file '<unspecified-1>' line 3: var c = fn (x, y) x + y
+    ; file '<unspecified-1>' line 3:                     ^
+    PRIM0 +
+    ; file '<unspecified-1>' line 3: var c = fn (x, y) x + y
+    ; file '<unspecified-1>' line 3:                   ^^^^^
+    CALLJ 2
+L2:
+    FN FN1, 2
+    ; file '<unspecified-1>' line 3: var c = fn (x, y) x + y
+    ; file '<unspecified-1>' line 3: ^^^^^^^^^^^^^^^^^^^^^^^
+    LSET 0, 2
+    DROP-FRAME
+NIL
+")))
+
+(test bytecode-serializer
+  (let* ((instructions (shovel-compiler:assemble-instructions
+                        (shovel-compiler-code-generator:generate-instructions
+                         (shovel-compiler-parser:parse-tokens
+                          (shovel-compiler-tokenizer:tokenize-source-file
+                           (shovel:stdlib))
+                          :source (list (shovel:stdlib)))
+                         :source (list (shovel:stdlib)))))
+         (serialized-instructions (shovel:serialize-bytecode instructions))
+         (deserialized-instructions (shovel:deserialize-bytecode
+                                     serialized-instructions)))
+    (is (equalp instructions deserialized-instructions))))
+
 (defun run-tests ()
   (fiveam:run! :shovel-tests))

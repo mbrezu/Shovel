@@ -3,7 +3,8 @@
 (asdf:defsystem #:shovel
   :depends-on (#:alexandria
                #:split-sequence
-               #:fiveam)
+               #:fiveam
+               #:cl-messagepack)
   :components
   ((:module
     "common-lisp"

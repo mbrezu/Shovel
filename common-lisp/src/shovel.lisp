@@ -115,3 +115,58 @@ var stdlib = {
       (shovel-compiler:show-instructions
        sources
        (shovel-compiler:compile-sources-to-instructions sources)))))
+
+(defvar *opcode-int-table*)
+
+(setf *opcode-int-table*
+      (messagepack:get-symbol-int-table '((:new-frame 1)
+                                          (:drop-frame 2)
+                                          (:const 3)
+                                          (:prim0 4)
+                                          (:prim 5)
+                                          (:call 6)
+                                          (:callj 7)
+                                          (:lset 8)
+                                          (:pop 9)
+                                          (:lget 10)
+                                          (:jump 11)
+                                          (:tjump 12)
+                                          (:fjump 13)
+                                          (:fn 14)
+                                          (:args 15)
+                                          (:return 16)
+                                          (:file-name 17))))
+
+(defun serialize-bytecode (bytecode)
+  "Serializes the output of SHOVEL-COMPILER:ASSEMBLE-INSTRUCTIONS into
+an array of bytes."
+  (let ((transformed-bytecode
+         (mapcar (lambda (instruction)
+                   (list (shovel-types:instruction-opcode instruction)
+                         (shovel-types:instruction-arguments instruction)
+                         (shovel-types:instruction-start-pos instruction)
+                         (shovel-types:instruction-end-pos instruction)
+                         (shovel-types:instruction-comments instruction)))
+                 (coerce bytecode 'list))))
+    (let ((messagepack:*use-extensions* t))
+      (messagepack:with-symbol-int-table *opcode-int-table*
+        (messagepack:encode transformed-bytecode)))))
+
+(defun deserialize-bytecode (bytes)
+  "Deserializes an array of bytes into a vector of instructions."
+  (let ((messagepack:*use-extensions* t)
+        (messagepack:*decoder-prefers-lists* t))
+    (let* ((bytecode-list (messagepack:with-symbol-int-table *opcode-int-table*
+                           (messagepack:decode bytes)))
+           (result (make-array (length bytecode-list))))
+      (loop
+         for bytecode in bytecode-list
+         for i from 0
+         do (setf (aref result i)
+                  (shovel-types:make-instruction
+                   :opcode (first bytecode)
+                   :arguments (second bytecode)
+                   :start-pos (third bytecode)
+                   :end-pos (fourth bytecode)
+                   :comments (fifth bytecode))))
+      result)))

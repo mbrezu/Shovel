@@ -63,23 +63,26 @@
       (terpri))))
 
 (defun include-relevant-source-as-comments (sources instructions)
-  (let (source-lines last-file-name)
+  (let (source-lines last-file-name source)
     (dolist (instruction instructions)
-      (when (and (instruction-start-pos instruction)
-                 (or (not last-file-name)
-                     (string/= last-file-name
-                               (pos-file-name
-                                (instruction-start-pos instruction)))))
-        (setf last-file-name (pos-file-name (instruction-start-pos instruction)))
-        (let ((source (shovel-utils:find-source sources last-file-name)))
-          (setf source-lines (split-sequence:split-sequence
-                              #\newline
-                              (shovel-types:shript-file-contents source)))))
-      (alexandria:when-let ((start-pos (instruction-start-pos instruction))
-                            (end-pos (instruction-end-pos instruction)))
-        (setf (instruction-comments instruction)
-              (append (instruction-comments instruction)
-                      (extract-relevant-source sources start-pos end-pos
-                                               :line-prefix "    ; "
-                                               :source-lines source-lines))))))
+      (when (eq :file-name (instruction-opcode instruction))
+        (let ((file-name (instruction-arguments instruction)))
+          (when (or (not last-file-name) (string/= last-file-name file-name))
+            (setf last-file-name file-name
+                  source (shovel-types:shript-file-contents
+                          (shovel-utils:find-source sources last-file-name))
+                  source-lines (split-sequence:split-sequence
+                                #\newline
+                                source)))))
+      (when last-file-name
+        (alexandria:when-let*
+            ((character-start-pos (instruction-start-pos instruction))
+             (character-end-pos (instruction-end-pos instruction))
+             (start-pos (find-position last-file-name source character-start-pos))
+             (end-pos (find-position last-file-name source character-end-pos)))
+          (setf (instruction-comments instruction)
+                (append (instruction-comments instruction)
+                        (extract-relevant-source sources start-pos end-pos
+                                                 :line-prefix "    ; "
+                                                 :source-lines source-lines)))))))
   instructions)

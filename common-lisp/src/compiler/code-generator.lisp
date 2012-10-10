@@ -182,7 +182,7 @@ SVM_SET_INDEXED required primitive."
 (defun generate-instructions (ast &key source)
   (let ((*generator-state* (make-generator-state :label-counter 0
                                                  :source source)))
-    (compile-block (rest ast) (empty-env) t t)
+    (compile-block ast (empty-env) t t)
     (reverse (generator-state-instructions *generator-state*))))
 
 (defun last1 (list) (first (last list)))
