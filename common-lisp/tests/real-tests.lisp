@@ -310,5 +310,49 @@ var family = makeFamily()
                       "Jane is 23 years old."
                       "Andrew is 2 years old.")))))))
 
+(test array-margins
+  (is (string= (with-output-to-string (str)
+                 (let ((*standard-output* str))
+                   (shovel:run-code
+                    (list (shovel:stdlib)
+                          (shovel-types:make-shript-file :name "test.shr"
+                                                         :contents "
+var a = arrayN(10)
+a[10] = 1
+")))))
+               "Shovel error in file 'test.shr' at line 3, column 1: Invalid 0-based index (10 for an array with 10 elements).
+
+Current stack trace:
+file 'test.shr' line 3: a[10] = 1
+file 'test.shr' line 3: ^^^^^^^^^
+
+Current environment:
+stdlib = hash(\"filter\", [...callable...], \"forEach\", [...callable...], \"forEachWithIndex\", [...callable...], \"forIndex\", [...callable...], \"map\", [...callable...], \"mapWithIndex\", [...callable...], \"max\", [...callable...], \"min\", [...callable...], \"reduceFromLeft\", [...callable...], \"reverse\", [...callable...], \"sort\", [...callable...], \"while\", [...callable...])
+a = array(null, null, null, null, null, null, null, null, null, null)
+
+
+"))
+  (is (string= (with-output-to-string (str)
+                 (let ((*standard-output* str))
+                   (shovel:run-code
+                    (list (shovel:stdlib)
+                          (shovel-types:make-shript-file :name "test.shr"
+                                                         :contents "
+var a = arrayN(10)
+a[-1] = 1
+")))))
+               "Shovel error in file 'test.shr' at line 3, column 1: Index less than 0.
+
+Current stack trace:
+file 'test.shr' line 3: a[-1] = 1
+file 'test.shr' line 3: ^^^^^^^^^
+
+Current environment:
+stdlib = hash(\"filter\", [...callable...], \"forEach\", [...callable...], \"forEachWithIndex\", [...callable...], \"forIndex\", [...callable...], \"map\", [...callable...], \"mapWithIndex\", [...callable...], \"max\", [...callable...], \"min\", [...callable...], \"reduceFromLeft\", [...callable...], \"reverse\", [...callable...], \"sort\", [...callable...], \"while\", [...callable...])
+a = array(null, null, null, null, null, null, null, null, null, null)
+
+
+")))
+
 (defun run-tests ()
   (fiveam:run! :shovel-tests))

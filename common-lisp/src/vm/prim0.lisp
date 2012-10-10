@@ -122,13 +122,25 @@
   (coerce args 'vector))
 
 (defun array-constructor-n (n)
-  (make-array n))
+  (make-array n :initial-element :null))
+
+(defun validate-index-access (array index)
+  (cond ((< index 0)
+         (vm-error "Index less than 0."))
+        ((>= index (length array))
+         (vm-error
+          (format nil
+                  "Invalid 0-based index (~d for an array with ~d elements)."
+                  index
+                  (length array))))))
 
 ;; Hash or array access:
 (defun array-or-hash-get (array-or-hash index)
   (cond ((vectorp array-or-hash)
          (if (integerp index)
-             (aref array-or-hash index)
+             (progn
+               (validate-index-access array-or-hash index)
+               (aref array-or-hash index))
              (vm-error "Getting an array element requires an integer index.")))
         ((hash-table-p array-or-hash)
          (if (stringp index)
@@ -148,7 +160,9 @@
 (defun array-or-hash-set (array-or-hash index value)
   (cond ((vectorp array-or-hash)
          (if (numberp index)
-             (setf (aref array-or-hash index) value)
+             (progn
+               (validate-index-access array-or-hash index)
+               (setf (aref array-or-hash index) value))
              (vm-error "Getting an array element requires an integer index.")))
         ((hash-table-p array-or-hash)
          (if (stringp index)

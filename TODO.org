@@ -62,5 +62,5 @@
   should make sure that required primitives return an instance of a
   shovel type.
 * TODO exception raising and handling
-* TODO error checking for arrays (check that indices are in range)
+* DONE error checking for arrays (check that indices are in range)
 * TODO push si pop pentru vectori (ii fac extensibili)
