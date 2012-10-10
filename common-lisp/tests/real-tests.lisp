@@ -310,7 +310,7 @@ var family = makeFamily()
                       "Jane is 23 years old."
                       "Andrew is 2 years old.")))))))
 
-(test array-margins
+(test array-boundaries
   (is (string= (with-output-to-string (str)
                  (let ((*standard-output* str))
                    (shovel:run-code
@@ -353,6 +353,109 @@ a = array(null, null, null, null, null, null, null, null, null, null)
 
 
 ")))
+
+(test array-push
+  (is (string= (with-output-to-string (str)
+                 (let ((*standard-output* str))
+                   (shovel:run-code
+                    (list (shovel:stdlib)
+                          (shovel-types:make-shript-file :name "test.shr"
+                                                         :contents "
+var a = array()
+push(a, 1)
+push(a, 2)
+push(a, 3)
+a
+")))))
+               "#(1 2 3)
+"))
+  (is (string= (with-output-to-string (str)
+                 (let ((*standard-output* str))
+                   (shovel:run-code
+                    (list (shovel:stdlib)
+                          (shovel-types:make-shript-file :name "test.shr"
+                                                         :contents "
+var a = 1
+push(a, 1)
+")))))
+               "Shovel error in file 'test.shr' at line 3, column 1: First argument must be a vector.
+
+Current stack trace:
+file 'test.shr' line 3: push(a, 1)
+file 'test.shr' line 3: ^^^^^^^^^^
+
+Current environment:
+stdlib = hash(\"filter\", [...callable...], \"forEach\", [...callable...], \"forEachWithIndex\", [...callable...], \"forIndex\", [...callable...], \"map\", [...callable...], \"mapWithIndex\", [...callable...], \"max\", [...callable...], \"min\", [...callable...], \"reduceFromLeft\", [...callable...], \"reverse\", [...callable...], \"sort\", [...callable...], \"while\", [...callable...])
+a = 1
+
+
+")))
+
+(test array-pop
+  (is (string= (with-output-to-string (str)
+                 (let ((*standard-output* str))
+                   (shovel:run-code
+                    (list (shovel:stdlib)
+                          (shovel-types:make-shript-file :name "test.shr"
+                                                         :contents "
+var a = array(1, 2, 3)
+pop(a)
+")))))
+               "3
+"))
+  (is (string= (with-output-to-string (str)
+                 (let ((*standard-output* str))
+                   (shovel:run-code
+                    (list (shovel:stdlib)
+                          (shovel-types:make-shript-file :name "test.shr"
+                                                         :contents "
+var a = array(1, 2, 3)
+pop(a)
+pop(a)
+")))))
+               "2
+"))
+
+  (is (string= (with-output-to-string (str)
+                 (let ((*standard-output* str))
+                   (shovel:run-code
+                    (list (shovel:stdlib)
+                          (shovel-types:make-shript-file :name "test.shr"
+                                                         :contents "
+var a = array()
+pop(a)
+")))))
+               "Shovel error in file 'test.shr' at line 3, column 1: Can't pop from an empty array.
+
+Current stack trace:
+file 'test.shr' line 3: pop(a)
+file 'test.shr' line 3: ^^^^^^
+
+Current environment:
+stdlib = hash(\"filter\", [...callable...], \"forEach\", [...callable...], \"forEachWithIndex\", [...callable...], \"forIndex\", [...callable...], \"map\", [...callable...], \"mapWithIndex\", [...callable...], \"max\", [...callable...], \"min\", [...callable...], \"reduceFromLeft\", [...callable...], \"reverse\", [...callable...], \"sort\", [...callable...], \"while\", [...callable...])
+a = array()
+
+
+")))
+
+(test vm-serialization-and-push-pop-arrays
+  (let (flag)
+    (labels ((halt (a)
+               (cond ((not flag)
+                      (setf flag t)
+                      (values nil :nap))
+                     (t a))))
+      (let* ((my-program "
+var a = array(10, 20, 30)
+@halt(a)
+push(a, 40)
+pop(a)
+pop(a)
+@halt(a)
+")
+             (user-primitives (list (list "halt" #'halt 1))))
+        (is (equalp (test-serializer my-program user-primitives)
+                    #(10 20)))))))
 
 (defun run-tests ()
   (fiveam:run! :shovel-tests))

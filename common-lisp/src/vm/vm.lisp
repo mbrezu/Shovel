@@ -42,6 +42,7 @@
           (def-prim0 >> shovel-vm-prim0:shift-right)
           (def-prim0 % shovel-vm-prim0:modulo)
           (def-prim0 "pow" shovel-vm-prim0:pow)
+          (def-prim0 "floor" floor 1)
 
           ;; Relational operators:
           (def-prim0 < shovel-vm-prim0:less-than)
@@ -73,6 +74,10 @@
           ;; Array constructors:
           (def-prim0 "array" shovel-vm-prim0:array-constructor nil)
           (def-prim0 "arrayN" shovel-vm-prim0:array-constructor-n 1)
+
+          ;; Array push and pop:
+          (def-prim0 "push" shovel-vm-prim0:array-push)
+          (def-prim0 "pop" shovel-vm-prim0:array-pop 1)
 
           ;; Array and hash set and get:
           (def-prim0 "svm_gref" shovel-vm-prim0:array-or-hash-get)
@@ -229,7 +234,7 @@
     (values (first (vm-stack vm)) vm)))
 
 (defun vm-not-finished (vm)
-  (and 
+  (and
    (< (vm-program-counter vm) (length (vm-bytecode vm)))
    (not (vm-should-take-a-nap vm))))
 
@@ -496,7 +501,10 @@
                         "Internal error: Don't know how to deserialize object!"))
                    (case (aref serialized-object 0)
                      (:array
-                      (let ((result (make-array (1- (length serialized-object)))))
+                      (let* ((n (1- (length serialized-object)))
+                             (result (make-array n
+                                                 :adjustable t
+                                                 :fill-pointer n)))
                         (setf object-ref result)
                         (loop
                            for i from 0 to (1- (length result))

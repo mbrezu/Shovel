@@ -63,4 +63,4 @@
   shovel type.
 * TODO exception raising and handling
 * DONE error checking for arrays (check that indices are in range)
-* TODO push si pop pentru vectori (ii fac extensibili)
+* DONE push and pop for vectors (make them adjustable)

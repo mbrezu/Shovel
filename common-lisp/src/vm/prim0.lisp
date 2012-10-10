@@ -119,10 +119,33 @@
 
 ;; Array constructor:
 (defun array-constructor (&rest args)
-  (coerce args 'vector))
+  (let* ((vectorized-args (coerce args 'vector))
+         (n (length vectorized-args))
+         (result (make-array n
+                             :initial-element :null
+                             :adjustable t
+                             :fill-pointer n)))
+    (replace result vectorized-args)
+    result))
+
+(defun check-vector (array)
+  (unless (and (vectorp array) (not (stringp array)))
+    (vm-error "First argument must be a vector.")))
+
+(defun array-push (array new-element)
+  (check-vector array)
+  (vector-push-extend new-element array))
+
+(defun array-pop (array)
+  (check-vector array)
+  (unless (> (fill-pointer array) 0)
+    (vm-error "Can't pop from an empty array."))
+  (let ((result (aref array (1- (fill-pointer array)))))
+    (decf (fill-pointer array))
+    result))
 
 (defun array-constructor-n (n)
-  (make-array n :initial-element :null))
+  (make-array n :initial-element :null :adjustable t :fill-pointer n))
 
 (defun validate-index-access (array index)
   (cond ((< index 0)

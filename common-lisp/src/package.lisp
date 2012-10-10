@@ -143,7 +143,9 @@
    :pow
    :has-key
    :hash-get-dot
-   :panic))
+   :panic
+   :array-pop
+   :array-push))
 
 (defpackage #:shovel-vm
   (:use #:cl #:shovel-types #:shovel-utils)

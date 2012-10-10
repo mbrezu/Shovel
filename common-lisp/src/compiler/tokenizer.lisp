@@ -129,12 +129,12 @@
               (token-content result) (subseq content 1)))
       (shovel-utils:when-one-of-strings (token-content result)
         (("pow"
-          "array" "arrayN" "length" "slice"
+          "array" "arrayN" "length" "slice" "push" "pop"
           "hash" "keys" "hasKey"
           "utcSecondsSinceUnixEpoch" "decodeTime" "encodeTime"
           "isString" "isHash" "isBool" "isArray" "isNumber" "isCallable"
           "string" "stringRepresentation"
-          "parseInt" "parseFloat"
+          "parseInt" "parseFloat" "floor"
           "panic")
          (setf (token-is-required-primitive result) t))
         (("var" "if" "fn" "return" "true" "false")
