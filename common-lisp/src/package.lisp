@@ -41,7 +41,8 @@
    :when-one-of-strings
    :defbits
    :prepare-sources
-   :find-source))
+   :find-source
+   :find-position))
 
 (defpackage #:shovel-compiler-types
   (:use #:cl #:shovel-types)
@@ -69,9 +70,7 @@
    :parse-tree-label
    :parse-tree-start-pos
    :parse-tree-end-pos
-   :parse-tree-children
-
-   :shovel-compiler-error))
+   :parse-tree-children))
 
 (defpackage #:shovel-compiler-tokenizer
   (:use #:cl #:shovel-compiler-types #:shovel-types)
@@ -88,10 +87,10 @@
 
 (defpackage #:shovel-compiler
   (:use #:cl #:shovel-compiler-types #:shovel-types #:shovel-utils)
-  (:export
-   :compile-string-to-instructions
+  (:export 
    :assemble-instructions
-   :show-instructions))
+   :show-instructions
+   :compile-sources-to-instructions))
 
 (defpackage #:shovel-vm-prim0
   (:use #:cl #:shovel-types)

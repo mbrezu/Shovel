@@ -19,7 +19,8 @@
   ((file :initform nil :accessor error-file :initarg :file)
    (line :initform nil :accessor error-line :initarg :line)
    (column :initform nil :accessor error-column :initarg :column)
-   (message :initform nil :accessor error-message :initarg :message)))
+   (message :initform nil :accessor error-message :initarg :message)
+   (at-eof :initform nil :accessor error-at-eof :initarg :at-eof)))
 
 (defmethod print-object ((object shovel-error) stream)
   (declare (optimize (speed 1)))
@@ -29,4 +30,6 @@
   (alexandria:when-let ((line (error-line object))
                         (column (error-column object)))
     (format stream " at line ~d, column ~d" line column))
+  (when (error-at-eof object)
+    (format stream " at end of file"))
   (format stream ": ~a~%" (error-message object)))

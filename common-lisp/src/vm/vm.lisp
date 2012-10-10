@@ -106,7 +106,7 @@
           ;; Parsing numbers:
           (def-prim0 "parseInt" shovel-vm-prim0:parse-int 1)
           (def-prim0 "parseFloat" shovel-vm-prim0:parse-float 1)
-          
+
           ;; Exception throwing:
           (def-prim0 "panic" shovel-vm-prim0:panic 1)
           )))
@@ -123,29 +123,48 @@
                       (shovel-vm-prim0:shovel-string-representation (cdr var))))))
     (write-environment (cdr env) stream)))
 
+(defun find-file-name (vm program-counter)
+  (let (result)
+    (loop
+       for pc from program-counter downto 0
+       when (eq :file-name (instruction-opcode (aref (vm-bytecode vm) pc)))
+       do
+         (setf result (instruction-arguments (aref (vm-bytecode vm) pc)))
+         (loop-finish))
+    result))
+
 (defun write-stack-trace (vm stream &optional stack-dump)
   (let ((sources (vm-sources vm)))
-    (labels ((print-call-site (start-pos end-pos)
-               (if (and start-pos end-pos)
-                   (if sources
-                       (dolist (line
-                                 (extract-relevant-source sources
-                                                          start-pos end-pos))
+    (labels ((print-call-site (program-counter
+                               character-start-pos character-end-pos)
+               (let (found-location)
+                 (when (and character-start-pos character-end-pos)
+                   (when sources
+                     (alexandria:when-let*
+                         ((file-name (find-file-name vm program-counter))
+                          (shript-file (find-source sources file-name))
+                          (content (shript-file-contents shript-file))
+                          (start-pos (find-position file-name
+                                                    content
+                                                    character-start-pos))
+                          (end-pos (find-position file-name
+                                                  content
+                                                  character-end-pos)))
+                       (dolist (line (extract-relevant-source sources
+                                                              start-pos end-pos))
                          (write-string line stream)
                          (terpri stream))
-                       (progn
-                         (format stream "Call from line ~d, column ~d."
-                                 (pos-line start-pos) (pos-column start-pos))
-                         (terpri stream)))
-                   (progn
-                     (format stream "Call from unknown source location.")
-                     (terpri stream))))
+                       (setf found-location t))))
+                 (unless found-location
+                   (format stream "Call from unknown source location.")
+                   (terpri stream))))
              (iter (stack)
                (when stack
                  (if (return-address-p (car stack))
                      (let* ((pc (return-address-program-counter (car stack)))
                             (call-site (elt (vm-bytecode vm) (1- pc))))
-                       (print-call-site (instruction-start-pos call-site)
+                       (print-call-site pc
+                                        (instruction-start-pos call-site)
                                         (instruction-end-pos call-site)))
                      (if stack-dump
                          (format stream "~a~%"
@@ -153,7 +172,9 @@
                                   (car stack)))))
                  (iter (cdr stack)))))
       (unless stack-dump
-        (print-call-site (vm-last-start-pos vm) (vm-last-end-pos vm)))
+        (print-call-site (vm-program-counter vm)
+                         (vm-last-start-pos vm)
+                         (vm-last-end-pos vm)))
       (iter (vm-stack vm)))))
 
 (defun raise-shovel-error (vm message)
@@ -165,14 +186,23 @@
           (terpri str)
           (write-string "Current environment:" str) (terpri str)
           (write-environment (vm-current-environment vm) str)))
-  (error
-   (alexandria:if-let (pos (vm-last-start-pos vm))
-     (make-condition 'shovel-error
-                     :message message
-                     :file (pos-file-name pos)
-                     :line (pos-line pos)
-                     :column (pos-column pos))
-     (make-condition 'shovel-error :message message))))
+  (let (pos file-name line column)
+    (setf file-name (find-file-name vm (vm-program-counter vm)))
+    (when (and file-name (vm-sources vm))
+      (alexandria:when-let* ((shript-file (find-source (vm-sources vm) file-name))
+                             (content (shript-file-contents shript-file)))        
+        (setf pos (find-position file-name content (vm-last-start-pos vm)))
+        (when pos
+          (setf line (pos-line pos))
+          (setf column (pos-column pos)))))
+    (error
+     (alexandria:if-let (pos (vm-last-start-pos vm))
+       (make-condition 'shovel-error
+                       :message message
+                       :file file-name
+                       :line line
+                       :column column)
+       (make-condition 'shovel-error :message message)))))
 
 (defun find-required-primitive (vm name)
   (let ((primitive (gethash name *primitives*)))
@@ -268,6 +298,8 @@
             (apply-return-address vm retaddr)
             (setf (vm-stack vm)
                   (cons result other-stack))))
+        (:file-name ; This is just a file name marker, skip it.
+         (incf (vm-program-counter vm)))
         (t (error "Shovel internal WTF: unknown instruction '~a'." opcode)))))
   (vm-not-finished vm))
 

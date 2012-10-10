@@ -1,13 +1,15 @@
 
 (in-package #:shovel-compiler)
 
-(defun compile-string-to-instructions (sources)
-  (let* ((tokens (mapcan (lambda (shript-file)
-                           (shovel-compiler-tokenizer:tokenize-source-file
-                            shript-file))
-                         sources))
-         (parse-tree (shovel-compiler-parser:parse-tokens
-                      tokens :source sources))
+(defun compile-sources-to-instructions (sources)
+  (let* ((all-tokens (mapcar (lambda (shript-file)
+                               (shovel-compiler-tokenizer:tokenize-source-file
+                                shript-file))
+                             sources))
+         (parse-tree (mapcan (lambda (file-tokens)
+                               (shovel-compiler-parser:parse-tokens
+                                file-tokens :source sources))
+                             all-tokens))
          (instructions
           (shovel-compiler-code-generator:generate-instructions
            parse-tree :source sources)))

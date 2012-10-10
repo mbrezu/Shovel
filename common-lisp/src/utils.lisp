@@ -28,6 +28,26 @@
   (error (make-condition 'shovel-error
                          :message (format nil "File '~a' not found." file-name))))
 
+(defun find-position (file-name content char-position)
+  (declare (optimize speed (safety 0))
+           (type (simple-array character (*)) file-name content)
+           (type fixnum char-position))
+  (let ((result (make-pos :file-name file-name)))
+    (when (<= (length content) char-position)
+      (error
+       "The character position specified is not inside the provided content."))
+    (loop
+       for i from 0 to char-position
+       when (char= (aref content i) #\newline) 
+       do 
+         (incf (pos-line result))
+         (setf (pos-column result) 1)
+       when (char/= (aref content i) #\newline)
+       do
+         (incf (pos-column result)))
+    (decf (pos-column result))
+    result))
+
 (defun extract-relevant-source (source-files start-pos end-pos
                                 &key
                                   (line-prefix "")

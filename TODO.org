@@ -35,7 +35,7 @@
 ** TODO for the bytecode
 ** TODO for the VM state
 * TODO maybe the representation of instructions should take up less space
-** TODO don't record lines and columns everywhere;
+** DONE don't record lines and columns everywhere;
    record only character indices within files and calculate
    line/column on demand; store the file names in a special dummy
    instruction; instruction start/end positions in source code should

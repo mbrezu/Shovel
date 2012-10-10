@@ -100,7 +100,7 @@ var stdlib = {
   (setf sources (shovel-utils:prepare-sources sources))
   (shovel-vm:run-vm
    (shovel-compiler:assemble-instructions
-    (shovel-compiler:compile-string-to-instructions sources))
+    (shovel-compiler:compile-sources-to-instructions sources))
    :sources sources
    :user-primitives user-primitives))
 
@@ -114,4 +114,4 @@ var stdlib = {
     (handle-errors
       (shovel-compiler:show-instructions
        sources
-       (shovel-compiler:compile-string-to-instructions sources)))))
+       (shovel-compiler:compile-sources-to-instructions sources)))))

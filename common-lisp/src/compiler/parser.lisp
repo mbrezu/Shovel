@@ -1,7 +1,7 @@
 
 (in-package #:shovel-compiler-parser)
 
-(defstruct parse-state tokens (previous-token nil) (source nil))
+(defstruct parse-state (file-name nil) tokens (previous-token nil) (source nil))
 
 (defvar *parse-state* nil)
 
@@ -16,8 +16,16 @@
                            (pop (parse-state-tokens *parse-state*))))
 
 (defun parse-tokens (tokens &key source)
-  (let ((*parse-state* (make-parse-state :tokens tokens :source source))
-        result)
+  (let* ((file-name (token-content (first tokens)))
+         (*parse-state* (make-parse-state :tokens (rest tokens)
+                                          :source source
+                                          :file-name file-name))
+         result)
+    (push (make-parse-tree :label :file-name
+                           :start-pos 0
+                           :end-pos 0
+                           :children file-name)
+          result)
     (loop
        while (parse-state-tokens *parse-state*)
        do (push (parse-statement) result))
@@ -137,8 +145,8 @@ token positions."
   (let ((token (current-token)))
     (unless (and token (tokenp possible-token-type
                                possible-token-content))
-      (require-token-error (list possible-token-type
-                                 possible-token-content)
+      (require-token-error (list (list possible-token-type
+                                       possible-token-content))
                            token))))
 
 (defun parse-var-decl ()
@@ -277,23 +285,35 @@ token positions."
               result)))
           (t start))))
 
+(defun get-position (char-position)
+  (when (and (parse-state-source *parse-state*)
+             (parse-state-file-name *parse-state*))
+    (alexandria:when-let*
+        ((shript-file (shovel-utils:find-source
+                       (parse-state-source *parse-state*)
+                       (parse-state-file-name *parse-state*)))
+         (content (shript-file-contents shript-file)))
+      (shovel-utils:find-position (parse-state-file-name *parse-state*)
+                                  content
+                                  char-position))))
+
 (defun raise-error (message)
   (let* ((token (current-token))
-         (pos (if token (token-start-pos token)))
+         (pos (if token (get-position (token-start-pos token))))
          (file-name (if pos (pos-file-name pos)))
          (line (if pos (pos-line pos)))
          (column (if pos (pos-column pos)))
          (at-eof (not token)))
     (when pos
       (alexandria:when-let (source (parse-state-source *parse-state*))
-        (let* ((start-pos (token-start-pos token))
-               (end-pos (token-end-pos token))
+        (let* ((start-pos pos)
+               (end-pos (get-position (token-end-pos token)))
                (lines (extract-relevant-source source start-pos end-pos)))
           (setf message
                 (format nil "~a~%~a~%~a" message
                         (first lines)
                         (second lines))))))
-    (error (make-condition 'shovel-compiler-error
+    (error (make-condition 'shovel-error
                            :message message
                            :line line
                            :file file-name
@@ -369,17 +389,8 @@ token positions."
     (if (token-is-required-primitive token)
         (if can-be-required-primitive
             (token-as-parse-tree :prim0)
-            (let* ((pos (token-start-pos (current-token)))
-                   (file-name (pos-file-name pos))
-                   (line (pos-line pos))
-                   (column (pos-column pos))
-                   (message (format nil "Name '~a' is reserved for a primitive."
-                                    content)))
-              (error (make-condition 'shovel-compiler-error
-                                     :message message
-                                     :file file-name
-                                     :line line
-                                     :column column))))
+            (raise-error (format nil "Name '~a' is reserved for a primitive."
+                                 content)))
         (token-as-parse-tree :name))))
 
 (defun parse-prim ()

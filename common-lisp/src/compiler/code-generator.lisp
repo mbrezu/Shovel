@@ -4,7 +4,9 @@
 (defstruct env-frame (vars nil))
 
 (declaim (optimize speed))
-(defstruct generator-state label-counter source (instructions nil))
+(defstruct generator-state label-counter source
+           (instructions nil)
+           (file-name nil))
 (declaim (optimize (speed 1)))
 
 (defvar *generator-state*)
@@ -19,6 +21,9 @@
   (when ast
     (let ((label (parse-tree-label ast)))
       (case label
+        (:file-name (setf (generator-state-file-name *generator-state*)
+                          (parse-tree-children ast))
+                    (gen :file-name :arguments (parse-tree-children ast)))
         (:var (validate-var ast)
               (let ((var-name (name-identifier (var-name ast))))
                 (extend-frame env var-name (var-name ast))
@@ -177,7 +182,7 @@ SVM_SET_INDEXED required primitive."
 (defun generate-instructions (ast &key source)
   (let ((*generator-state* (make-generator-state :label-counter 0
                                                  :source source)))
-    (compile-block ast (empty-env) t t)
+    (compile-block (rest ast) (empty-env) t t)
     (reverse (generator-state-instructions *generator-state*))))
 
 (defun last1 (list) (first (last list)))
@@ -252,32 +257,53 @@ SVM_SET_INDEXED required primitive."
 
 (defun name-identifier (name) (parse-tree-children name))
 
-(defun raise-error (start-pos end-pos message)
-  (alexandria:when-let (source (generator-state-source *generator-state*))
-    (let ((lines (extract-relevant-source source start-pos end-pos)))
-      (setf message
-            (format nil "~a~%~a~%~a"
-                    message (first lines) (second lines)))))
-  (error (make-condition 'shovel-compiler-error
-                         :message message
-                         :file (pos-file-name start-pos)
-                         :line (pos-line start-pos)
-                         :column (pos-column start-pos))))
+(defun raise-error (character-start-pos character-end-pos message)
+  (let (start-pos end-pos error-file-name line column)
+    (alexandria:when-let* ((source (generator-state-source *generator-state*))
+                           (file-name (generator-state-file-name *generator-state*))
+                           (shript-file (find-source source file-name))
+                           (content (shript-file-contents shript-file)))
+      (setf error-file-name file-name)
+      (setf start-pos (find-position file-name
+                                     content
+                                     character-start-pos)
+            line (pos-line start-pos)
+            column (pos-column start-pos)
+            end-pos (find-position file-name
+                                   content
+                                   character-end-pos))
+      (let ((lines (extract-relevant-source source start-pos end-pos)))
+        (setf message
+              (format nil "~a~%~a~%~a"
+                      message (first lines) (second lines)))))
+    (error (make-condition 'shovel-error
+                           :message message
+                           :file error-file-name
+                           :line line
+                           :column column))))
 
 (defun extend-frame (env name name-ast)
   (let ((top-frame (car env))
         (current-start-pos (parse-tree-start-pos name-ast)))
     (alexandria:when-let
         (var-record (assoc name (env-frame-vars top-frame) :test #'equal))
-      (raise-error current-start-pos
-                   (parse-tree-end-pos name-ast)
-                   (format nil
-                           "Variable '~a' is already defined in this frame at line ~d, column ~d."
-                           name
-                           (pos-line (third var-record))
-                           (pos-column (third var-record)))))
+      (let* ((file-name (third var-record))
+             (character-pos (fourth var-record))
+             (shript-file (find-source (generator-state-source *generator-state*)
+                                       file-name))
+             (pos (find-position file-name (shript-file-contents shript-file)
+                                 character-pos)))
+        (raise-error current-start-pos
+                     (parse-tree-end-pos name-ast)
+                     (format nil
+                             "Variable '~a' is already defined in this frame in file '~s', at line ~d, column ~d."
+                             name
+                             file-name (pos-line pos) (pos-column pos)))))
     (setf (env-frame-vars top-frame)
-          (cons (list name (length (env-frame-vars top-frame)) current-start-pos)
+          (cons (list name
+                      (length (env-frame-vars top-frame))
+                      (generator-state-file-name *generator-state*)
+                      current-start-pos)
                 (env-frame-vars top-frame)))))
 
 (defun find-name (name env start-pos end-pos &optional (frame-number 0))

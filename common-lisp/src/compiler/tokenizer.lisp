@@ -1,19 +1,9 @@
 
 (in-package #:shovel-compiler-tokenizer)
 
-(defstruct tokenizer-state source
-           (current-char 0 :type fixnum)
-           current-pos (previous-pos (make-pos)))
+(defstruct tokenizer-state file-name source (current-char 0 :type fixnum))
 
 (defvar *tokenizer-state*)
-
-(declaim (inline make-pos-from-current))
-(defun make-pos-from-current ()
-  (clone-pos (tokenizer-state-current-pos *tokenizer-state*)))
-
-(declaim (inline make-pos-from-previous))
-(defun make-pos-from-previous ()
-  (clone-pos (tokenizer-state-previous-pos *tokenizer-state*)))
 
 (declaim (inline extract-content))
 (defun extract-content (start-char end-char)
@@ -49,17 +39,7 @@
 (declaim (inline next-char))
 (defun next-char ()
   (declare (optimize (safety 0)))
-  (let ((pos (tokenizer-state-current-pos *tokenizer-state*)))
-    (declare (type pos pos))
-    (setf (tokenizer-state-previous-pos *tokenizer-state*)
-          (clone-pos pos))
-    (let ((ch (current-char)))
-      (if (and ch (char= #\newline ch))
-          (progn
-            (incf (pos-line pos))
-            (setf (pos-column pos) 1))
-          (incf (pos-column pos))))
-    (incf (tokenizer-state-current-char *tokenizer-state*))))
+  (incf (tokenizer-state-current-char *tokenizer-state*)))
 
 (declaim (inline is-white-space))
 (defun is-white-space (ch)
@@ -99,18 +79,16 @@
   holds, starting with the current character."
   (declare (optimize speed)
            (type (function (character) boolean) pred))
-  (let ((start-pos (make-pos-from-current))
-        (start-char (tokenizer-state-current-char *tokenizer-state*)))
+  (let ((start-char (tokenizer-state-current-char *tokenizer-state*)))
     (loop
        for ch of-type character = (current-char) then (current-char)
        while (and ch (funcall pred ch))
        do (next-char))
-    (let ((end-pos (make-pos-from-previous))
-          (end-char (tokenizer-state-current-char *tokenizer-state*)))
+    (let ((end-char (tokenizer-state-current-char *tokenizer-state*)))
       (make-token :type type
                   :content (extract-content start-char end-char)
-                  :start-pos start-pos
-                  :end-pos end-pos))))
+                  :start-pos start-char
+                  :end-pos (1- end-char)))))
 
 (defun tokenize-literal-string (quote)
   (let ((quote-counter 0)
@@ -127,8 +105,7 @@
         (error (make-condition
                 'shovel-error
                 :message "Expected an end quote, but reached the end of file."
-                :file (pos-file-name
-                       (tokenizer-state-current-pos *tokenizer-state*))
+                :file (tokenizer-state-file-name *tokenizer-state*)
                 :at-eof t))))))
 
 (defmacro on ((var-name object) &body body)
@@ -177,15 +154,13 @@
 (defun make-punctuation-token (length)
   (declare (optimize speed)
            (type fixnum length))
-  (let ((start-pos (make-pos-from-current))
-        (start-char (tokenizer-state-current-char *tokenizer-state*)))
+  (let ((start-char (tokenizer-state-current-char *tokenizer-state*)))
     (loop repeat length do (next-char))
-    (let ((end-pos (make-pos-from-previous))
-          (end-char (tokenizer-state-current-char *tokenizer-state*)))
+    (let ((end-char (tokenizer-state-current-char *tokenizer-state*)))
       (make-token :type :punctuation
                   :content (extract-content start-char end-char)
-                  :start-pos start-pos
-                  :end-pos end-pos))))
+                  :start-pos start-char
+                  :end-pos (1- end-char)))))
 
 (defun tokenize-punctuation ()
   (declare (optimize speed))
@@ -227,18 +202,35 @@
              (on (result (make-punctuation-token (if is-relational 2 1)))
                (when is-relational
                  (setf (token-is-relational-op result) t)))))
-      (t (let ((pos (make-pos-from-current)))
+      (t (let* ((pos (get-current-pos))
+                (message (format nil "Unexpected character '~a'." crt))
+                (source-lines (split-sequence:split-sequence
+                               #\newline
+                               (tokenizer-state-source *tokenizer-state*)))
+                (lines (shovel-utils:extract-relevant-source
+                        nil pos pos
+                        :source-lines source-lines)))
+           (setf message (format nil "~a~%~a~%~a" message
+                                 (first lines) (second lines)))
            (error (make-condition
                    'shovel-error
-                   :message (format nil "Unexpected character '~a'." crt)
+                   :message message
                    :file (pos-file-name pos)
                    :line (pos-line pos)
                    :column (pos-column pos))))))))
 
+(defun get-current-pos ()
+  (shovel-utils:find-position (tokenizer-state-file-name *tokenizer-state*)
+                              (tokenizer-state-source *tokenizer-state*)
+                              (tokenizer-state-current-char *tokenizer-state*)))
+
 (defun tokenize-source-file (source-file)
   (let* ((file-name (shript-file-name source-file))
          (contents (shript-file-contents source-file))
-         (*tokenizer-state* (make-tokenizer-state
-                             :source contents
-                             :current-pos (make-pos :file-name file-name))))
-    (tokenize)))
+         (*tokenizer-state* (make-tokenizer-state :source contents
+                                                  :file-name file-name)))
+    (cons (make-token :type :file-name
+                      :content file-name
+                      :start-pos 0
+                      :end-pos 0)
+          (tokenize))))
