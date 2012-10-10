@@ -96,11 +96,13 @@ var stdlib = {
   (defun stdlib ()
     stdlib-file))
 
+(defun get-bytecode (sources)
+  (shovel-compiler:assemble-instructions
+    (shovel-compiler:compile-sources-to-instructions sources)))
+
 (defun naked-run-code (sources &key user-primitives)
-  (setf sources (shovel-utils:prepare-sources sources))
   (shovel-vm:run-vm
-   (shovel-compiler:assemble-instructions
-    (shovel-compiler:compile-sources-to-instructions sources))
+   (get-bytecode sources)
    :sources sources
    :user-primitives user-primitives))
 
@@ -109,7 +111,6 @@ var stdlib = {
     (handle-errors (naked-run-code sources :user-primitives user-primitives))))
 
 (defun print-code (sources &key debug)
-  (setf sources (shovel-utils:prepare-sources sources))
   (let ((*print-circle* t))
     (handle-errors
       (shovel-compiler:show-instructions

@@ -22,6 +22,7 @@
             sources)))
 
 (defun find-source (sources file-name)
+  (setf sources (shovel-utils:prepare-sources sources))
   (dolist (source sources)
     (when (string= file-name (shovel-types:shript-file-name source))
       (return-from find-source source)))
@@ -178,3 +179,4 @@
                               struct-name '- (elt bitnames i))
                        ,(alexandria:symbolicate
                          'set- struct-name '- (elt bitnames i))))))
+

@@ -149,7 +149,11 @@
   (:use #:cl #:shovel-types #:shovel-utils)
   (:export
    :run-vm 
-   :*error-raiser*))
+   :step-vm
+   :serialize-vm-state
+   :deserialize-vm-state
+   :*error-raiser*
+   :*version*))
 
 (defpackage #:shovel
   (:use #:cl)
@@ -159,4 +163,5 @@
    :stdlib
    :naked-run-code
    :serialize-bytecode
-   :deserialize-bytecode))
+   :deserialize-bytecode
+   :get-bytecode))

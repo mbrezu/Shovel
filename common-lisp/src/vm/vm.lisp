@@ -3,6 +3,8 @@
 
 (defvar *error-raiser*)
 
+(defvar *version* 1)
+
 (defstruct vm
   bytecode program-counter
   current-environment
@@ -10,7 +12,8 @@
   user-primitives
   (last-start-pos nil)
   (last-end-pos nil)
-  (sources nil))
+  (sources nil)
+  (should-take-a-nap nil))
 
 (defstruct return-address
   program-counter
@@ -210,21 +213,25 @@
       (raise-shovel-error vm (format nil "Unknown prim0 '~a'." name)))
     primitive))
 
-(defun run-vm (bytecode &key sources user-primitives)
+(defun run-vm (bytecode &key sources user-primitives state)
   (let ((vm (make-vm :bytecode bytecode
                      :program-counter 0
                      :current-environment nil
                      :stack nil
                      :user-primitives (make-hash-table :test #'equal)
                      :sources sources)))
+    (when state
+      (deserialize-vm-state vm state))
     (dolist (user-primitive user-primitives)
       (setf (gethash (first user-primitive) (vm-user-primitives vm))
             (rest user-primitive)))
     (loop while (step-vm vm))
-    (first (vm-stack vm))))
+    (values (first (vm-stack vm)) vm)))
 
 (defun vm-not-finished (vm)
-  (< (vm-program-counter vm) (length (vm-bytecode vm))))
+  (and 
+   (< (vm-program-counter vm) (length (vm-bytecode vm)))
+   (not (vm-should-take-a-nap vm))))
 
 (defun check-bool (vm)
   (unless (shovel-vm-prim0:is-bool (first (vm-stack vm)))
@@ -364,15 +371,34 @@
                                (alexandria:if-let (prim (callable-prim callable))
                                  (find-user-primitive vm prim))))
          (primitive (first primitive-record))
-         (primitive-arity (second primitive-record)))
+         (is-required-primitive (callable-prim0 callable))
+         (primitive-arity (second primitive-record))
+         (current-program-counter (vm-program-counter vm)))
     (when (and primitive-arity (/= primitive-arity num-args))
       (arity-error vm primitive-arity num-args))
-    (let ((result (apply primitive (reverse arg-values))))
-      (setf (vm-stack vm) (subseq (vm-stack vm) num-args))
-      (if save-return-address
-          (incf (vm-program-counter vm))
-          (apply-return-address vm (pop (vm-stack vm))))
-      (push result (vm-stack vm)))))
+    (multiple-value-bind(result what-next)
+        (apply primitive (reverse arg-values))
+      (let (should-finish-this-call)
+        (cond ((or is-required-primitive
+                   (null what-next)
+                   (eq :continue what-next))
+               (setf should-finish-this-call t))
+              ((eq :nap what-next)
+               (setf (vm-should-take-a-nap vm) t)
+               (setf should-finish-this-call t))
+              ((eq :nap-and-retry-on-wake-up what-next)
+               (setf (vm-should-take-a-nap vm) t)
+               (setf (vm-program-counter vm) current-program-counter)
+               (push callable (vm-stack vm)))
+              (t (raise-shovel-error
+                  vm
+                  "A user-defined primitive returned an unknown second value.")))
+        (when should-finish-this-call
+          (setf (vm-stack vm) (subseq (vm-stack vm) num-args))
+          (if save-return-address
+              (incf (vm-program-counter vm))
+              (apply-return-address vm (pop (vm-stack vm))))
+          (push result (vm-stack vm)))))))
 
 (defun set-in-environment (environment frame-number var-index value)
   (setf (cdr (aref (nth frame-number environment) var-index)) value))
@@ -482,7 +508,7 @@
                       (let ((result (make-hash-table :test #'equal)))
                         (setf object-ref result)
                         (loop
-                           for i from 0 to (1- (length serialized-object)) by 2
+                           for i from 0 to (- (length serialized-object) 2) by 2
                            do (let ((key (deserialize
                                           (aref serialized-object (1+ i)) ds))
                                     (value (deserialize
@@ -549,4 +575,3 @@
     (setf (vm-stack vm) (deserialize stack-index ds))
     (setf (vm-current-environment vm) (deserialize current-environment-index ds))
     (setf (vm-program-counter vm) (deserialize program-counter-index ds))))
-

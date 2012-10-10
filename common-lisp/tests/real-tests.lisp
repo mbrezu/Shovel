@@ -222,16 +222,93 @@ NIL
 
 (test bytecode-serializer
   (let* ((instructions (shovel-compiler:assemble-instructions
-                        (shovel-compiler-code-generator:generate-instructions
-                         (shovel-compiler-parser:parse-tokens
-                          (shovel-compiler-tokenizer:tokenize-source-file
-                           (shovel:stdlib))
-                          :source (list (shovel:stdlib)))
-                         :source (list (shovel:stdlib)))))
+                        (shovel-compiler:compile-sources-to-instructions
+                         (list (shovel:stdlib)))))
          (serialized-instructions (shovel:serialize-bytecode instructions))
          (deserialized-instructions (shovel:deserialize-bytecode
                                      serialized-instructions)))
     (is (equalp instructions deserialized-instructions))))
+
+(defun test-serializer (program user-primitives)
+  (let* ((sources (list (shovel:stdlib)
+                        program))
+         (bytecode (shovel-compiler:assemble-instructions
+                    (shovel-compiler:compile-sources-to-instructions
+                     sources))))
+    (multiple-value-bind (first-run vm)
+        (shovel-vm:run-vm
+         bytecode
+         :sources sources
+         :user-primitives user-primitives)
+      (declare (ignore first-run))
+      (let* ((bytes (shovel-vm:serialize-vm-state vm))
+             (second-run (shovel-vm:run-vm
+                          bytecode
+                          :sources sources
+                          :user-primitives user-primitives
+                          :state bytes)))
+        second-run))))
+
+(test vm-serializer-1
+  (let (flag)
+    (labels ((halt ()
+               (cond ((not flag)
+                      (setf flag t)
+                      (values nil :nap-and-retry-on-wake-up))
+                     (t "It works!"))))
+      (let* ((my-program "@halt()")
+             (user-primitives (list (list "halt" #'halt 0))))
+        (is (string= (test-serializer my-program user-primitives) "It works!"))))))
+
+(test vm-serializer-2
+  (let (flag)
+    (labels ((halt (a b c)
+               (cond ((not flag)
+                      (setf flag t)
+                      (values nil :nap))
+                     (t (+ a b c)))))
+      (let* ((my-program "
+var a = 1
+var b = 2
+var c = 3
+var d = fn () {
+  @halt(a, b, c)
+}
+d()
+c = 4
+@halt(a, b, c)
+")
+             (user-primitives (list (list "halt" #'halt 3))))
+        (is (= (test-serializer my-program user-primitives) 7))))))
+
+(test vm-serializer-3
+  (let (flag)
+    (labels ((halt (name age)
+               (cond ((not flag)
+                      (setf flag t)
+                      (values nil :nap-and-retry-on-wake-up))
+                     (t (format nil "~a is ~d years old." name age)))))
+      (let* ((my-program "
+var person = fn (name, age) {
+  var this = hash('name', name, 'age', age)
+  this.print = fn () { @halt(this.name, this.age) }
+  return this
+}
+var makeFamily = fn () {
+  var names = array('John', 'Jane', 'Andrew')
+  var ages = array(22, 23, 2)
+  var makePerson = fn (x) {
+    person(names[x], ages[x]).print()
+  }
+  array(makePerson(0), makePerson(1), makePerson(2))
+}
+var family = makeFamily()
+")
+             (user-primitives (list (list "halt" #'halt 2))))
+        (is (equalp (test-serializer my-program user-primitives)
+                    #("John is 22 years old."
+                      "Jane is 23 years old."
+                      "Andrew is 2 years old.")))))))
 
 (defun run-tests ()
   (fiveam:run! :shovel-tests))

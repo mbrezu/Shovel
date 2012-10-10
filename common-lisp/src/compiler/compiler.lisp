@@ -2,6 +2,7 @@
 (in-package #:shovel-compiler)
 
 (defun compile-sources-to-instructions (sources)
+  (setf sources (shovel-utils:prepare-sources sources))
   (let* ((all-tokens (mapcar (lambda (shript-file)
                                (shovel-compiler-tokenizer:tokenize-source-file
                                 shript-file))
@@ -47,6 +48,7 @@
       (assemble-pass-2 instructions length labels-hash))))
 
 (defun show-instructions (sources instructions)
+  (setf sources (shovel-utils:prepare-sources sources))
   (include-relevant-source-as-comments sources instructions)
   (dolist (instruction instructions)
     (let ((opcode (instruction-opcode instruction))
