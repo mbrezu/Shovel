@@ -47,3 +47,56 @@ Profiler incantations:
              (loop repeat 4000 do
                   (length (shovel-compiler:compile-sources-to-instructions
                             (list (shovel:stdlib))))))
+
+Serializer tests (in pachetul SHOVEL-VM):
+
+    (let* ((ss (make-serializer-state))
+           (to-serialize '(1 2))
+           (result (serialize to-serialize ss))
+           (*print-circle* t)
+           (ser-array (coerce (reverse (serializer-state-array ss))
+                              'vector))
+           (ds (make-deserializer-state
+                :array ser-array
+                :objects (make-array (length ser-array) :initial-element nil)))
+           (deserialized (deserialize result ds)))
+      (setf (serializer-state-array ss)
+            (reverse (serializer-state-array ss)))
+      (print (serializer-state-array ss))
+      (print "to-serialize")
+      (print to-serialize)
+      (print result)
+      (print ser-array)
+      (print "deserialized")
+      (print deserialized)
+      (values))      
+
+Sau in afara pachetului SHOVEL-VM (si cu testare ca re-serializarea da
+acelasi rezultat):
+
+    (let* ((ss (shovel-vm::make-serializer-state))
+           (to-serialize '#1=(1 2 #1# #2=#(3 4 #1# #2#)))
+           (result (shovel-vm::serialize to-serialize ss))
+           (*print-circle* t)
+           (ser-array (coerce
+                       (reverse (shovel-vm::serializer-state-array ss))
+                       'vector))
+           (ds (shovel-vm::make-deserializer-state
+                :array ser-array
+                :objects (make-array (length ser-array) :initial-element nil)))
+           (deserialized (shovel-vm::deserialize result ds)))
+      (setf (shovel-vm::serializer-state-array ss)
+            (reverse (shovel-vm::serializer-state-array ss)))
+      (print (shovel-vm::serializer-state-array ss))
+      (print "to-serialize")
+      (print to-serialize)
+      (print result)
+      (print ser-array)
+      (print "deserialized")
+      (print deserialized)
+      (setf ss (shovel-vm::make-serializer-state))
+      (setf result (shovel-vm::serialize to-serialize ss))
+      (setf (shovel-vm::serializer-state-array ss)
+            (reverse (shovel-vm::serializer-state-array ss)))
+      (print (shovel-vm::serializer-state-array ss))
+      (values))

@@ -33,7 +33,7 @@
   (so we can show useful line/column information for multiple files).
 * TODO serialization and deserialization
 ** DONE for the bytecode
-** TODO for the VM state
+** DONE for the VM state
 ** TODO the state should be serialized with
    - the MD5 of the serialization of the bytecode for the current VM
    - the Shovel version
@@ -49,8 +49,8 @@
    instruction; instruction start/end positions in source code should
    be only deltas from previous start/end positions;
 * DONE figure out how interruptible user primitives are written
-  they return three extra values:
-  - :continue, which means keep on going;
+  they return an extra value, which is one of:
+  - :continue or nil, which means keep on going;
   - :nap-and-retry-on-wake-up, go to sleep and retry the primitive call on
     wake-up;
   - :nap, go to sleep and go on from the next instruction after the
