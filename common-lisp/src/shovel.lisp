@@ -98,7 +98,7 @@ var stdlib = {
 
 (defun get-bytecode (sources)
   (shovel-compiler:assemble-instructions
-    (shovel-compiler:compile-sources-to-instructions sources)))
+   (shovel-compiler:compile-sources-to-instructions sources)))
 
 (defun naked-run-code (sources &key user-primitives)
   (shovel-vm:run-vm
@@ -117,26 +117,32 @@ var stdlib = {
        sources
        (shovel-compiler:compile-sources-to-instructions sources)))))
 
-(defvar *opcode-int-table*)
+(defmacro get-serialization-code (symbol)
+  (case symbol
+    (:verbatim 0)
+    (:true 1)
+    (:false 2)
+    (:guest-null 3)))
 
-(setf *opcode-int-table*
-      (messagepack:get-symbol-int-table '((:new-frame 1)
-                                          (:drop-frame 2)
-                                          (:const 3)
-                                          (:prim0 4)
-                                          (:prim 5)
-                                          (:call 6)
-                                          (:callj 7)
-                                          (:lset 8)
-                                          (:pop 9)
-                                          (:lget 10)
-                                          (:jump 11)
-                                          (:tjump 12)
-                                          (:fjump 13)
-                                          (:fn 14)
-                                          (:args 15)
-                                          (:return 16)
-                                          (:file-name 17))))
+(defun encode-arguments (arguments)
+  (cond ((eq :null arguments)
+         (make-array 1 :initial-element (get-serialization-code :guest-null)))
+        ((eq :true arguments)
+         (make-array 1 :initial-element (get-serialization-code :true)))
+        ((eq :false arguments)
+         (make-array 1 :initial-element (get-serialization-code :false)))
+        (t (let ((result (make-array 2)))
+             (setf (aref result 0) (get-serialization-code :verbatim))
+             (setf (aref result 1) arguments)
+             result))))
+
+(defun decode-arguments (encoded-arguments)
+  (let ((head (first encoded-arguments)))
+    (cond
+      ((= (get-serialization-code :verbatim) head) (second encoded-arguments))
+      ((= (get-serialization-code :guest-null) head) :null)
+      ((= (get-serialization-code :true) head) :true)
+      ((= (get-serialization-code :false) head) :false))))
 
 (defun serialize-bytecode (bytecode)
   "Serializes the output of SHOVEL-COMPILER:ASSEMBLE-INSTRUCTIONS into
@@ -144,29 +150,26 @@ an array of bytes."
   (let ((transformed-bytecode
          (mapcar (lambda (instruction)
                    (list (shovel-types:instruction-opcode instruction)
-                         (shovel-types:instruction-arguments instruction)
+                         (encode-arguments
+                          (shovel-types:instruction-arguments instruction))
                          (shovel-types:instruction-start-pos instruction)
                          (shovel-types:instruction-end-pos instruction)
                          (shovel-types:instruction-comments instruction)))
                  (coerce bytecode 'list))))
-    (let ((messagepack:*use-extensions* t))
-      (messagepack:with-symbol-int-table *opcode-int-table*
-        (messagepack:encode transformed-bytecode)))))
+    (messagepack:encode transformed-bytecode)))
 
 (defun deserialize-bytecode (bytes)
   "Deserializes an array of bytes into a vector of instructions."
-  (let ((messagepack:*use-extensions* t)
-        (messagepack:*decoder-prefers-lists* t))
-    (let* ((bytecode-list (messagepack:with-symbol-int-table *opcode-int-table*
-                           (messagepack:decode bytes)))
+  (let ((messagepack:*decoder-prefers-lists* t))
+    (let* ((bytecode-list (messagepack:decode bytes))
            (result (make-array (length bytecode-list))))
       (loop
          for bytecode in bytecode-list
          for i from 0
          do (setf (aref result i)
                   (shovel-types:make-instruction
-                   :opcode (first bytecode)
-                   :arguments (second bytecode)
+                   :opcode (intern (string-upcase (first bytecode)) :keyword)
+                   :arguments (decode-arguments (second bytecode))
                    :start-pos (third bytecode)
                    :end-pos (fourth bytecode)
                    :comments (fifth bytecode))))

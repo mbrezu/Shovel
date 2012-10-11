@@ -413,28 +413,54 @@
 
 (defstruct serializer-state (hash (make-hash-table)) (array nil))
 
+(defmacro get-serialization-code (symbol)
+  (case symbol
+    (:host-null 1)
+    (:true 2)
+    (:false 3)
+    (:guest-null 4)
+    (:cons 5)
+    (:array 6)
+    (:hash 7)
+    (:callable 8)
+    (:return-address 9)))
+
 (defun serialize (object ss)
   (labels ((store-one (obj &key (store-as obj))
              (let ((new-index (length (serializer-state-array ss))))
                (setf (gethash store-as (serializer-state-hash ss)) new-index)
                (push obj (serializer-state-array ss))
-               new-index)))
+               new-index))
+           (make-array-1 (value)
+             (make-array 1 :initial-element value)))
     (alexandria:if-let (object-index (gethash object (serializer-state-hash ss)))
       object-index
-      (cond ((or (null object) (stringp object) (numberp object) (symbolp object))
-             (store-one object))
+      (cond ((or (stringp object) (numberp object)) (store-one object))
+            ((null object) (store-one (make-array-1
+                                       (get-serialization-code :host-null))
+                                      :store-as object))
+            ((eq :true object) (store-one (make-array-1
+                                           (get-serialization-code :true))
+                                          :store-as object))
+            ((eq :false object) (store-one (make-array-1
+                                            (get-serialization-code :false))
+                                           :store-as object))
+            ((eq :null object) (store-one (make-array-1
+                                           (get-serialization-code :guest-null))
+                                          :store-as object))
             ((consp object)
-             (let* ((result-cons (cons 0 0))
-                    (result (store-one result-cons :store-as object)))
+             (let* ((result-array (make-array 3))
+                    (result (store-one result-array :store-as object)))
+               (setf (aref result-array 0) (get-serialization-code :cons))
                (let* ((car-index (serialize (car object) ss))
                       (cdr-index (serialize (cdr object) ss)))
-                 (setf (car result-cons) car-index)
-                 (setf (cdr result-cons) cdr-index))
+                 (setf (aref result-array 1) car-index)
+                 (setf (aref result-array 2) cdr-index))
                result))
             ((vectorp object)
              (let* ((result-array (make-array (1+ (length object))))
                     (result (store-one result-array :store-as object)))
-               (setf (aref result-array 0) :array)
+               (setf (aref result-array 0) (get-serialization-code :array))
                (loop
                   for i from 0 to (1- (length object))
                   do (setf (aref result-array (1+ i))
@@ -444,7 +470,7 @@
              (let* ((result-array (make-array (1+ (* 2 (hash-table-count object)))))
                     (i 0)
                     (result (store-one result-array :store-as object)))
-               (setf (aref result-array i) :hash)
+               (setf (aref result-array i) (get-serialization-code :hash))
                (incf i)
                (maphash (lambda (key value)
                           (setf (aref result-array i) (serialize key ss))
@@ -456,7 +482,7 @@
             ((callable-p object)
              (let* ((result-array (make-array 6))
                     (result (store-one result-array :store-as object)))
-               (setf (aref result-array 0) :callable)
+               (setf (aref result-array 0) (get-serialization-code :callable))
                (setf (aref result-array 1) (serialize (callable-prim0 object) ss))
                (setf (aref result-array 2) (serialize (callable-prim object) ss))
                (setf (aref result-array 3)
@@ -469,7 +495,7 @@
             ((return-address-p object)
              (let* ((result-array (make-array 3))
                     (result (store-one result-array :store-as object)))
-               (setf (aref result-array 0) :return-address)
+               (setf (aref result-array 0) (get-serialization-code :return-address))
                (setf (aref result-array 1)
                      (serialize (return-address-program-counter object) ss))
                (setf (aref result-array 2)
@@ -499,63 +525,68 @@
                    (if (= 0 (length serialized-object))
                        (error
                         "Internal error: Don't know how to deserialize object!"))
-                   (case (aref serialized-object 0)
-                     (:array
-                      (let* ((n (1- (length serialized-object)))
-                             (result (make-array n
-                                                 :adjustable t
-                                                 :fill-pointer n)))
-                        (setf object-ref result)
-                        (loop
-                           for i from 0 to (1- (length result))
-                           do (setf (aref result i)
-                                    (deserialize (aref serialized-object (1+ i))
-                                                 ds)))
-                        result))
-                     (:hash
-                      (let ((result (make-hash-table :test #'equal)))
-                        (setf object-ref result)
-                        (loop
-                           for i from 0 to (- (length serialized-object) 2) by 2
-                           do (let ((key (deserialize
-                                          (aref serialized-object (1+ i)) ds))
-                                    (value (deserialize
-                                            (aref serialized-object (+ 2 i)) ds)))
-                                (setf (gethash key result) value)))
-                        result))
-                     (:callable
-                      (let ((result (make-callable)))
-                        (setf object-ref result)
-                        (setf (callable-prim0 result)
-                              (deserialize (aref serialized-object 1) ds))
-                        (setf (callable-prim result)
-                              (deserialize (aref serialized-object 2) ds))
-                        (setf (callable-num-args result)
-                              (deserialize (aref serialized-object 3) ds))
-                        (setf (callable-program-counter result)
-                              (deserialize (aref serialized-object 4) ds))
-                        (setf (callable-environment result)
-                              (deserialize (aref serialized-object 5) ds))
-                        result))
-                     (:return-address
-                      (let ((result (make-return-address)))
-                        (setf object-ref result)
-                        (setf (return-address-program-counter result)
-                              (deserialize (aref serialized-object 1) ds))
-                        (setf (return-address-environment result)
-                              (deserialize (aref serialized-object 2) ds))
-                        result))))
+                   (let ((code (aref serialized-object 0)))
+                     (cond
+                       ((= code (get-serialization-code :host-null)) nil)
+                       ((= code (get-serialization-code :guest-null)) :null)
+                       ((= code (get-serialization-code :true)) :true)
+                       ((= code (get-serialization-code :false)) :false)
+                       ((= code (get-serialization-code :cons))
+                        (let ((result (cons nil nil)))
+                          (setf object-ref result)
+                          (setf (car result)
+                                (deserialize (aref serialized-object 1) ds))
+                          (setf (cdr result)
+                                (deserialize (aref serialized-object 2) ds))
+                          result))
+                       ((= code (get-serialization-code :array))
+                        (let* ((n (1- (length serialized-object)))
+                               (result (make-array n
+                                                   :adjustable t
+                                                   :fill-pointer n)))
+                          (setf object-ref result)
+                          (loop
+                             for i from 0 to (1- (length result))
+                             do (setf (aref result i)
+                                      (deserialize (aref serialized-object (1+ i))
+                                                   ds)))
+                          result))
+                       ((= code (get-serialization-code :hash))
+                        (let ((result (make-hash-table :test #'equal)))
+                          (setf object-ref result)
+                          (loop
+                             for i from 0 to (- (length serialized-object) 2) by 2
+                             do (let ((key (deserialize
+                                            (aref serialized-object (1+ i)) ds))
+                                      (value (deserialize
+                                              (aref serialized-object (+ 2 i)) ds)))
+                                  (setf (gethash key result) value)))
+                          result))
+                       ((= code (get-serialization-code :callable))
+                        (let ((result (make-callable)))
+                          (setf object-ref result)
+                          (setf (callable-prim0 result)
+                                (deserialize (aref serialized-object 1) ds))
+                          (setf (callable-prim result)
+                                (deserialize (aref serialized-object 2) ds))
+                          (setf (callable-num-args result)
+                                (deserialize (aref serialized-object 3) ds))
+                          (setf (callable-program-counter result)
+                                (deserialize (aref serialized-object 4) ds))
+                          (setf (callable-environment result)
+                                (deserialize (aref serialized-object 5) ds))
+                          result))
+                       ((= code (get-serialization-code :return-address))
+                        (let ((result (make-return-address)))
+                          (setf object-ref result)
+                          (setf (return-address-program-counter result)
+                                (deserialize (aref serialized-object 1) ds))
+                          (setf (return-address-environment result)
+                                (deserialize (aref serialized-object 2) ds))
+                          result)))))
                   (t
                    (error
                     "Internal error: Don't know how to deserialize object!"))))))))
-
-(defvar *state-int-table*)
-
-(setf *state-int-table*
-      (messagepack:get-symbol-int-table '((:array 1)
-                                          (:hash 2)
-                                          (:callable 3)
-                                          (:return-address 4))))
 
 (defun serialize-vm-state (vm)
   (let ((ss (make-serializer-state))
@@ -563,16 +594,12 @@
     (setf stack (serialize (vm-stack vm) ss))
     (setf current-environment (serialize (vm-current-environment vm) ss))
     (setf program-counter (serialize (vm-program-counter vm) ss))
-    (let ((messagepack:*use-extensions* t)
-          (serialized-state (list stack current-environment program-counter
+    (let ((serialized-state (list stack current-environment program-counter
                                   (nreverse (serializer-state-array ss)))))
-      (messagepack:with-symbol-int-table *state-int-table*
-        (messagepack:encode serialized-state)))))
+      (messagepack:encode serialized-state))))
 
 (defun deserialize-vm-state (vm state-bytes)
-  (let* ((vm-state (let ((messagepack:*use-extensions* t))
-                     (messagepack:with-symbol-int-table *state-int-table*
-                       (messagepack:decode state-bytes))))
+  (let* ((vm-state (messagepack:decode state-bytes))
          (array (aref vm-state 3))
          (stack-index (aref vm-state 0))
          (current-environment-index (aref vm-state 1))
