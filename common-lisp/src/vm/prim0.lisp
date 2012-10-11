@@ -53,7 +53,8 @@
 
 ;; Logic operators:
 (defun is-bool (var)
-  (member var '(:true :false)))
+  (or (eq var :true)
+      (eq var :false)))
 
 (defun make-bool (var)
   (if var :true :false))
@@ -91,8 +92,17 @@
 (defun greater-than (t1 t2) (make-bool (both-numbers-or-strings > string>)))
 (defun greater-than-or-equal (t1 t2)
   (make-bool (both-numbers-or-strings >= string>=)))
-(defun are-equal (t1 t2) (make-bool (both-numbers-or-strings = string=)))
-(defun are-not-equal (t1 t2) (make-bool (both-numbers-or-strings /= string/=)))
+(defun are-equal (t1 t2)
+  (cond
+    ((and (eq :null t1) (eq :null t2)) :true)
+    ((or (eq :null t1) (eq :null t2)) :false)
+    ((and (numberp t1) (numberp t2)) (make-bool (= t1 t2)))
+    ((and (stringp t1) (stringp t2)) (make-bool (string= t1 t2)))
+    ((and (is-bool t1) (is-bool t2)) (make-bool (eq t1 t2)))
+    ((and (vectorp t1) (vectorp t2)) (make-bool (eq t1 t2)))
+    ((and (hash-table-p t1) (hash-table-p t2)) (make-bool (eq t1 t2)))
+    (t (vm-error "At least one of the arguments must be null or they must have the same type (numbers, strings, booleans, hashes or arrays)."))))
+(defun are-not-equal (t1 t2) (logical-not (are-equal t1 t2)))
 
 ;; Bitwise operators:
 (defun bitwise-and (t1 t2)

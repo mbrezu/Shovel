@@ -457,5 +457,42 @@ pop(a)
         (is (equalp (test-serializer my-program user-primitives)
                     #(10 20)))))))
 
+(test comparison
+  (is (= 1 (shovel:naked-run-code (list "var a = true if a == true 1 else 2"))))
+  (is (= 2 (shovel:naked-run-code (list "var a = false if a == true 1 else 2"))))
+  (is (= 1 (shovel:naked-run-code (list "var a = null if a == null 1 else 2"))))
+  (is (= 2 (shovel:naked-run-code (list "var a = null if a != null 1 else 2"))))
+  (is (= 2 (shovel:naked-run-code (list "var a = 3 if a == null 1 else 2"))))
+  (is (string= (with-output-to-string (str)
+                 (let ((*standard-output* str))
+                   (shovel:run-code (list "var a = 30 if a == true 1 else 2"))))
+               "Shovel error in file '<unspecified-1>' at line 1, column 15: At least one of the arguments must be null or they must have the same type (numbers, strings, booleans, hashes or arrays).
+
+Current stack trace:
+file '<unspecified-1>' line 1: var a = 30 if a == true 1 else 2
+file '<unspecified-1>' line 1:               ^^^^^^^^^
+
+Current environment:
+a = 30
+
+
+"))
+  (is (= 1 (shovel:naked-run-code (list "
+var a = array(1)
+var b = a
+if a == b 1 else 2"))))
+  (is (= 2 (shovel:naked-run-code (list "
+var a = array(1)
+var b = array(1)
+if a == b 1 else 2"))))
+  (is (= 1 (shovel:naked-run-code (list "
+var a = hash('a', 1)
+var b = a
+if a == b 1 else 2"))))
+  (is (= 2 (shovel:naked-run-code (list "
+var a = hash('a', 1)
+var b = hash('a', 1)
+if a == b 1 else 2")))))
+
 (defun run-tests ()
   (fiveam:run! :shovel-tests))
