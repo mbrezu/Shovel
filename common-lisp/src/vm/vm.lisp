@@ -89,6 +89,10 @@
 
           ;; String or array slice:
           (def-prim0 "slice" shovel-vm-prim0:get-slice 3)
+          
+          ;; String 'upper' and 'lower':
+          (def-prim0 "upper" shovel-vm-prim0:string-upper 1)
+          (def-prim0 "lower" shovel-vm-prim0:string-lower 1)
 
           ;; Current date/time:
           (def-prim0 "utcSecondsSinceUnixEpoch"

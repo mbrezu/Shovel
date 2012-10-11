@@ -212,6 +212,14 @@
          (length array-or-string))
         (t (vm-error "Argument must be a string or an array."))))
 
+(defun string-upper (string)
+  (check-string string)
+  (string-upcase string))
+
+(defun string-lower (string)
+  (check-string string)
+  (string-downcase string))
+
 ;; Keys of a hash as an array:
 
 (defun get-hash-table-keys (hash-table)

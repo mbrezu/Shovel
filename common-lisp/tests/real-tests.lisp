@@ -494,5 +494,9 @@ var a = hash('a', 1)
 var b = hash('a', 1)
 if a == b 1 else 2")))))
 
+(test string-upper-lower
+  (is (string= "john" (shovel:naked-run-code (list "lower('John')"))))
+  (is (string= "JOHN" (shovel:naked-run-code (list "upper('John')")))))
+
 (defun run-tests ()
   (fiveam:run! :shovel-tests))

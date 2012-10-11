@@ -35,11 +35,11 @@
 ** DONE for the bytecode
 ** DONE for the VM state
 ** TODO the state should be serialized with
-   - the MD5 of the serialization of the bytecode for the current VM
-   - the Shovel version
+   - the MD5 of the serialization of the source for the current VM
+   - the Shovel VM version
      
    This way we can make sure that we throw an error if an attempt is
-   made to restart a virtual machine with the wrong state (such an
+   made to restart a virtual machine with another VM's state (such an
    attempt would most likely result in an error down the road, but
    it's better not to corrupt data and throw an error ASAP).
 * DONE maybe the representation of instructions should take up less space
@@ -72,5 +72,5 @@
   operands is guest-null; also do reference comparison for arrays and hashes; 
 * TODO results of string slice or indexing should be strings
 * TODO it should be possible to assign strings of length 1 to string indices
-* TODO add 'upper' and 'lower' primitives for strings
+* DONE add 'upper' and 'lower' primitives for strings
 

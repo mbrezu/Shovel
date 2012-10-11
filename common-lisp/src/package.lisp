@@ -145,7 +145,9 @@
    :hash-get-dot
    :panic
    :array-pop
-   :array-push))
+   :array-push
+   :string-upper
+   :string-lower))
 
 (defpackage #:shovel-vm
   (:use #:cl #:shovel-types #:shovel-utils)

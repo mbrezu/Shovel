@@ -130,6 +130,7 @@
       (shovel-utils:when-one-of-strings (token-content result)
         (("pow"
           "array" "arrayN" "length" "slice" "push" "pop"
+          "lower" "upper"
           "hash" "keys" "hasKey"
           "utcSecondsSinceUnixEpoch" "decodeTime" "encodeTime"
           "isString" "isHash" "isBool" "isArray" "isNumber" "isCallable"
