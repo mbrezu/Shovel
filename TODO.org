@@ -70,7 +70,7 @@
    swallowed and guest-null is pushed on the stack.
 *** TODO document the fact that user primitives should handle their exceptions;
 * DONE exception raising and handling
-  We don't have any (document this)
+  We don't have any, but we'll have non-local exits (document this)
 * DONE error checking for arrays (check that indices are in range)
 * DONE push and pop for vectors (make them adjustable)
 * DONE comparison (== and !=) must work for booleans and when one of the
@@ -81,3 +81,26 @@
 * TODO maybe environment frames should have contain information about
   the location where they were introduced? (file and character
   position) This would help when debugging.
+* TODO the VM version should be stored before the payload
+  for both bytecode and VM state.
+
+  VM versions are backward compatible. This way it is possible to
+  check that we're not trying to decode a version n+m state/bytecode
+  on code that only knows how to handle version n state/bytecode.
+* TODO non local exits
+** TODO reserve keyword 'block'
+   used as in 'block name { ... block ... }'
+** TODO reserve keyword 'block_return'
+   used as in 'block_return name, return-value'
+** TODO add VM instruction 'BLOCK name, address'
+   which pushes a 'block' structure made of name and address on the
+   stack.
+** TODO add VM instruction 'BLOCK_RETURN name'
+   which returns to the address associated with BLOCK *name* and
+   leaves the top of the stack (before BLOCK_RETURN) as the top of the
+   stack after address.
+* TODO documentation
+** TODO Shript (language, required primitives)
+** TODO VM (instructions, state)
+** TODO how to use things
+*** TODO from Common Lisp
