@@ -375,6 +375,23 @@
   (setf (vm-program-counter vm) (callable-program-counter callable)
         (vm-current-environment vm) (callable-environment callable)))
 
+(defun is-shovel-type (data)
+  (cond ((or (stringp data) (numberp data)
+             (eq :true data) (eq :false data) (eq :null data)
+             (callable-p data))
+         t)
+        ((vectorp data)
+         (dotimes (i (length data))
+           (unless (is-shovel-type (aref data i))
+             (return-from is-shovel-type nil)))
+         t)
+        ((hash-table-p data)
+         (maphash (lambda (key value)
+                    (unless (and (stringp key) (is-shovel-type value))
+                      (return-from is-shovel-type nil)))
+                  data)
+         t)))
+
 (defun call-primitive (callable vm num-args save-return-address)
   (let* ((arg-values (subseq (vm-stack vm) 0 num-args))
          (primitive-record (or (alexandria:if-let (prim0 (callable-prim0 callable))
@@ -389,6 +406,21 @@
       (arity-error vm primitive-arity num-args))
     (multiple-value-bind(result what-next)
         (apply primitive (reverse arg-values))
+      (unless is-required-primitive
+        (unless (is-shovel-type result)
+          (raise-shovel-error
+           vm
+           (format nil "User defined primitive returned invalid value (~a).
+
+A 'valid value' (with Common Lisp as the host language) is:
+
+ * :null, :true or :false;
+ * a string;
+ * a number;
+ * an array of elements that are themselves valid values;
+ * a hash with strings as keys and valid values.
+"
+                   result))))
       (let (should-finish-this-call)
         (cond ((or is-required-primitive
                    (null what-next)

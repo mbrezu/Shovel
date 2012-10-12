@@ -61,7 +61,7 @@
     primitive call with the result returned by the primitive call
     (which is pushed on the stack before going to sleep).
 * DONE implement interruptible user primitives
-* TODO checking of return values for user primitives
+* DONE checking of return values for user primitives
   to make sure that they return an instance of a shovel type; tests
   should make sure that required primitives return an instance of a
   shovel type.
