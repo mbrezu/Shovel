@@ -199,26 +199,30 @@
      (ash (aref bytes 2) 8)
      (aref bytes 3)))
 
-(defun concatenate-byte-arrays (&rest byte-arrays)
-  (apply #'concatenate '(simple-array (unsigned-byte 8) (*)) byte-arrays))
+(let ((result (make-array 16
+                          :element-type '(unsigned-byte 8)
+                          :initial-element 0)))
+  (defun 16-zeroes ()
+    result))
 
 (defun messagepack-encode-with-md5-checksum (data)
-  (let* ((version (encode-32-bit-integer-to-4-bytes shovel-vm:*version*))
-         (bytes (concatenate-byte-arrays version
-                                         (messagepack:encode data)))
-         (checksum (get-md5-checksum bytes)))
-    (concatenate-byte-arrays checksum
-                             bytes)))
+  (let ((sequence (flexi-streams:with-output-to-sequence (stream)
+                    (write-sequence (16-zeroes) stream)
+                    (write-sequence (encode-32-bit-integer-to-4-bytes
+                                     shovel-vm:*version*) stream)
+                    (messagepack:encode-stream data stream))))
+    (let ((checksum (get-md5-checksum sequence)))
+      (replace sequence checksum :start1 0 :start2 0)
+      sequence)))
 
 (defun check-md5-checksum-and-messagepack-decode (data)
-  (let* ((checksum-bytes (subseq data 16))
-         (bytes (subseq checksum-bytes 4))
-         (stored-checksum (subseq data 0 16))
-         (stored-version (decode-4-bytes-to-32-bit-integer
-                          (subseq checksum-bytes 0 4)))
-         (calculated-checksum (get-md5-checksum checksum-bytes)))
-    (unless (<= stored-version shovel-vm:*version*)
-      (error (make-condition 'shovel-version-too-large)))
-    (unless (equalp stored-checksum calculated-checksum)
+  (let ((stored-checksum (subseq data 0 16)))
+    (replace data (16-zeroes) :start1 0 :start2 0)
+    (unless (equalp stored-checksum (get-md5-checksum data))
       (error (make-condition 'shovel-broken-checksum)))
-    (messagepack:decode bytes)))
+    (let ((stored-version (decode-4-bytes-to-32-bit-integer
+                           (subseq data 16 20))))
+      (unless (<= stored-version shovel-vm:*version*)
+        (error (make-condition 'shovel-version-too-large)))
+      (flexi-streams:with-input-from-sequence (stream data :start 20)
+        (messagepack:decode-stream stream)))))

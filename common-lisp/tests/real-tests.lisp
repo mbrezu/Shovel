@@ -580,7 +580,6 @@ a = \"test\"
          (serialized-instructions
           (let ((shovel-vm:*version* (1+ shovel-vm:*version*)))
             (shovel:serialize-bytecode instructions))))
-    (mess-with serialized-instructions)
     (signals shovel-types:shovel-version-too-large
       (shovel:deserialize-bytecode serialized-instructions))))
 
@@ -625,7 +624,6 @@ a = \"test\"
             (declare (ignore first-run))
             (let ((bytes (let ((shovel-vm:*version* (1+ shovel-vm:*version*)))
                            (shovel-vm:serialize-vm-state vm))))
-              (mess-with bytes)
               (signals shovel-types:shovel-version-too-large
                 (shovel-vm:deserialize-vm-state vm bytes)))))))))
 
