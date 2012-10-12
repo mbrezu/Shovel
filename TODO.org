@@ -81,7 +81,7 @@
 * TODO maybe environment frames should have contain information about
   the location where they were introduced? (file and character
   position) This would help when debugging.
-* TODO the VM version should be stored before the payload
+* DONE the VM version should be stored before the payload
   for both bytecode and VM state.
 
   VM versions are backward compatible. This way it is possible to
@@ -104,3 +104,5 @@
 ** TODO VM (instructions, state)
 ** TODO how to use things
 *** TODO from Common Lisp
+
+  

@@ -185,17 +185,40 @@
    :md5
    (coerce bytes '(simple-array (unsigned-byte 8) (*)))))
 
+(defun encode-32-bit-integer-to-4-bytes (integer)
+  (let ((result (make-array 4 :element-type '(unsigned-byte 8))))
+    (setf (aref result 0) (ash integer -24))
+    (setf (aref result 1) (logand (ash integer -16) 255))
+    (setf (aref result 2) (logand (ash integer -8) 255))
+    (setf (aref result 3) (logand integer 255))
+    result))
+
+(defun decode-4-bytes-to-32-bit-integer (bytes)
+  (+ (ash (aref bytes 0) 24)
+     (ash (aref bytes 1) 16)
+     (ash (aref bytes 2) 8)
+     (aref bytes 3)))
+
+(defun concatenate-byte-arrays (&rest byte-arrays)
+  (apply #'concatenate '(simple-array (unsigned-byte 8) (*)) byte-arrays))
+
 (defun messagepack-encode-with-md5-checksum (data)
-  (let* ((bytes (messagepack:encode data))
+  (let* ((version (encode-32-bit-integer-to-4-bytes shovel-vm:*version*))
+         (bytes (concatenate-byte-arrays version
+                                         (messagepack:encode data)))
          (checksum (get-md5-checksum bytes)))
-    (concatenate '(simple-array (unsigned-byte 8) (*))
-                 checksum
-                 bytes)))
+    (concatenate-byte-arrays checksum
+                             bytes)))
 
 (defun check-md5-checksum-and-messagepack-decode (data)
-  (let* ((bytes (subseq data 16))
+  (let* ((checksum-bytes (subseq data 16))
+         (bytes (subseq checksum-bytes 4))
          (stored-checksum (subseq data 0 16))
-         (calculated-checksum (get-md5-checksum bytes)))
+         (stored-version (decode-4-bytes-to-32-bit-integer
+                          (subseq checksum-bytes 0 4)))
+         (calculated-checksum (get-md5-checksum checksum-bytes)))
+    (unless (<= stored-version shovel-vm:*version*)
+      (error (make-condition 'shovel-version-too-large)))
     (unless (equalp stored-checksum calculated-checksum)
       (error (make-condition 'shovel-broken-checksum)))
     (messagepack:decode bytes)))

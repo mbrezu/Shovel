@@ -575,7 +575,16 @@ a = \"test\"
     (signals shovel-types:shovel-broken-checksum
       (shovel:deserialize-bytecode serialized-instructions))))
 
-(test vm-state-serializare-checksum-failure
+(test bytecode-serializer-version-failure
+  (let* ((instructions (shovel:get-bytecode (list (shovel:stdlib))))
+         (serialized-instructions
+          (let ((shovel-vm:*version* (1+ shovel-vm:*version*)))
+            (shovel:serialize-bytecode instructions))))
+    (mess-with serialized-instructions)
+    (signals shovel-types:shovel-version-too-large
+      (shovel:deserialize-bytecode serialized-instructions))))
+
+(test vm-state-serializer-checksum-failure
   (let (flag)
     (labels ((halt (a)
                (cond ((not flag)
@@ -595,6 +604,29 @@ a = \"test\"
             (let ((bytes (shovel-vm:serialize-vm-state vm)))
               (mess-with bytes)
               (signals shovel-types:shovel-broken-checksum
+                (shovel-vm:deserialize-vm-state vm bytes)))))))))
+
+(test vm-state-serializer-version-failure
+  (let (flag)
+    (labels ((halt (a)
+               (cond ((not flag)
+                      (setf flag t)
+                      (values nil :nap-and-retry-on-wake-up))
+                     (t a))))
+      (let* ((my-program "var a = 10 @halt(a)")
+             (user-primitives (list (list "halt" #'halt 1))))
+        (let* ((sources (list (shovel:stdlib) my-program))
+               (bytecode (shovel:get-bytecode sources)))
+          (multiple-value-bind (first-run vm)
+              (shovel-vm:run-vm
+               bytecode
+               :sources sources
+               :user-primitives user-primitives)
+            (declare (ignore first-run))
+            (let ((bytes (let ((shovel-vm:*version* (1+ shovel-vm:*version*)))
+                           (shovel-vm:serialize-vm-state vm))))
+              (mess-with bytes)
+              (signals shovel-types:shovel-version-too-large
                 (shovel-vm:deserialize-vm-state vm bytes)))))))))
 
 (defun run-tests ()

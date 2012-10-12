@@ -32,7 +32,8 @@
    :error-column
    :error-message
    :shovel-vm-match-error
-   :shovel-broken-checksum))
+   :shovel-broken-checksum
+   :shovel-version-too-large))
 
 (defpackage #:shovel-utils
   (:use #:cl #:shovel-types)

@@ -43,3 +43,5 @@
   (format stream ": ~a~%" (error-message object)))
 
 (define-condition shovel-broken-checksum (error) ())
+
+(define-condition shovel-version-too-large (error) ())
