@@ -27,6 +27,8 @@
   (program-counter nil)
   (environment nil))
 
+(defstruct env-frame introduced-at-program-counter vars)
+
 (defmacro def-prim0 (op lisp-op &optional (arity 2))
   `(list ,(format nil "~a" op) ',lisp-op ,arity))
 
@@ -125,16 +127,25 @@
           )))
     (alexandria:alist-hash-table prim0-alist :test #'equal)))
 
-(defun write-environment (env stream)
+(defun write-environment (env vm stream)
   (when env
     (let ((frame (car env)))
+      (alexandria:when-let (pc (env-frame-introduced-at-program-counter frame))
+        (let ((instruction (aref (vm-bytecode vm) pc)))
+          (format stream "Frame starts at:~%")
+          (print-line-for vm stream
+                          (env-frame-introduced-at-program-counter frame)
+                          (instruction-start-pos instruction)
+                          (instruction-end-pos instruction))))
+      (format stream "Frame variables are:~%")
       (loop
-         for i from 0 to (1- (length frame))
-         do (let ((var (elt frame i)))
+         for i from 0 to (1- (length (env-frame-vars frame)))
+         do (let ((var (elt (env-frame-vars frame) i)))
               (format stream "~a = ~a~%"
                       (car var)
-                      (shovel-vm-prim0:shovel-string-representation (cdr var))))))
-    (write-environment (cdr env) stream)))
+                      (shovel-vm-prim0:shovel-string-representation (cdr var)))))
+      (terpri stream))
+    (write-environment (cdr env) vm stream)))
 
 (defun find-file-name (vm program-counter)
   (let (result)
@@ -146,49 +157,52 @@
          (loop-finish))
     result))
 
+(defun print-line-for (vm stream
+                       program-counter
+                       character-start-pos character-end-pos)
+  (let (found-location)
+    (when (and character-start-pos character-end-pos)
+      (alexandria:when-let (sources (vm-sources vm))
+        (alexandria:when-let*
+            ((file-name (find-file-name vm program-counter))
+             (shript-file (find-source sources file-name))
+             (content (shript-file-contents shript-file))
+             (start-pos (find-position file-name
+                                       content
+                                       character-start-pos))
+             (end-pos (find-position file-name
+                                     content
+                                     character-end-pos)))
+          (dolist (line (extract-relevant-source sources
+                                                 start-pos end-pos))
+            (write-string line stream)
+            (terpri stream))
+          (setf found-location t))))
+    (unless found-location
+      (format stream "... unknown source location, program counter ~d ..."
+              program-counter)
+      (terpri stream))))
+
 (defun write-stack-trace (vm stream &optional stack-dump)
-  (let ((sources (vm-sources vm)))
-    (labels ((print-call-site (program-counter
-                               character-start-pos character-end-pos)
-               (let (found-location)
-                 (when (and character-start-pos character-end-pos)
-                   (when sources
-                     (alexandria:when-let*
-                         ((file-name (find-file-name vm program-counter))
-                          (shript-file (find-source sources file-name))
-                          (content (shript-file-contents shript-file))
-                          (start-pos (find-position file-name
-                                                    content
-                                                    character-start-pos))
-                          (end-pos (find-position file-name
-                                                  content
-                                                  character-end-pos)))
-                       (dolist (line (extract-relevant-source sources
-                                                              start-pos end-pos))
-                         (write-string line stream)
-                         (terpri stream))
-                       (setf found-location t))))
-                 (unless found-location
-                   (format stream "Call from unknown source location.")
-                   (terpri stream))))
-             (iter (stack)
-               (when stack
-                 (if (return-address-p (car stack))
-                     (let* ((pc (return-address-program-counter (car stack)))
-                            (call-site (elt (vm-bytecode vm) (1- pc))))
-                       (print-call-site pc
-                                        (instruction-start-pos call-site)
-                                        (instruction-end-pos call-site)))
-                     (if stack-dump
-                         (format stream "~a~%"
-                                 (shovel-vm-prim0:shovel-string-representation
-                                  (car stack)))))
-                 (iter (cdr stack)))))
-      (unless stack-dump
-        (print-call-site (vm-program-counter vm)
-                         (vm-last-start-pos vm)
-                         (vm-last-end-pos vm)))
-      (iter (vm-stack vm)))))
+  (labels ((iter (stack)
+             (when stack
+               (if (return-address-p (car stack))
+                   (let* ((pc (return-address-program-counter (car stack)))
+                          (call-site (elt (vm-bytecode vm) (1- pc))))
+                     (print-line-for vm stream pc
+                                     (instruction-start-pos call-site)
+                                     (instruction-end-pos call-site)))
+                   (if stack-dump
+                       (format stream "~a~%"
+                               (shovel-vm-prim0:shovel-string-representation
+                                (car stack)))))
+               (iter (cdr stack)))))
+    (unless stack-dump
+      (print-line-for vm stream
+                      (vm-program-counter vm)
+                      (vm-last-start-pos vm)
+                      (vm-last-end-pos vm)))
+    (iter (vm-stack vm))))
 
 (defun raise-shovel-error (vm message)
   (setf message
@@ -197,8 +211,8 @@
           (write-string "Current stack trace:" str) (terpri str)
           (write-stack-trace vm str)
           (terpri str)
-          (write-string "Current environment:" str) (terpri str)
-          (write-environment (vm-current-environment vm) str)))
+          (write-string "Current environment:" str) (terpri str) (terpri str)
+          (write-environment (vm-current-environment vm) vm str)))
   (let (pos file-name line column)
     (setf file-name (find-file-name vm (vm-program-counter vm)))
     (when (and file-name (vm-sources vm))
@@ -294,11 +308,13 @@
                (vm-stack vm))
          (incf (vm-program-counter vm)))
         (:new-frame
-         (let ((new-frame (make-array (length args))))
+         (let ((new-frame (make-env-frame
+                           :introduced-at-program-counter (vm-program-counter vm)
+                           :vars (make-array (length args)))))
            (loop
               for i = 0 then (1+ i)
               for var in args
-              do (setf (aref new-frame i) (cons var :null)))
+              do (setf (aref (env-frame-vars new-frame) i) (cons var :null)))
            (push new-frame (vm-current-environment vm)))
          (incf (vm-program-counter vm)))
         (:drop-frame
@@ -449,10 +465,13 @@ A 'valid value' (with Common Lisp as the host language) is:
           (push result (vm-stack vm)))))))
 
 (defun set-in-environment (environment frame-number var-index value)
-  (setf (cdr (aref (nth frame-number environment) var-index)) value))
+  (setf (cdr (aref (env-frame-vars (nth frame-number environment))
+                   var-index))
+        value))
 
 (defun get-from-environment (enviroment frame-number var-index)
-  (cdr (aref (nth frame-number enviroment) var-index)))
+  (cdr (aref (env-frame-vars (nth frame-number enviroment))
+             var-index)))
 
 (defstruct serializer-state (hash (make-hash-table)) (array nil))
 
@@ -466,7 +485,8 @@ A 'valid value' (with Common Lisp as the host language) is:
     (:array 6)
     (:hash 7)
     (:callable 8)
-    (:return-address 9)))
+    (:return-address 9)
+    (:env-frame 10)))
 
 (defun serialize (object ss)
   (labels ((store-one (obj &key (store-as obj))
@@ -543,6 +563,15 @@ A 'valid value' (with Common Lisp as the host language) is:
                      (serialize (return-address-program-counter object) ss))
                (setf (aref result-array 2)
                      (serialize (return-address-environment object) ss))
+               result))
+            ((env-frame-p object)
+             (let* ((result-array (make-array 3))
+                    (result (store-one result-array :store-as object)))
+               (setf (aref result-array 0) (get-serialization-code :env-frame))
+               (setf (aref result-array 1)
+                     (serialize (env-frame-introduced-at-program-counter object) ss))
+               (setf (aref result-array 2)
+                     (serialize (env-frame-vars object) ss))
                result))
             (t (error "Internal error: Don't know how to serialize object!"))))))
 
@@ -625,6 +654,16 @@ A 'valid value' (with Common Lisp as the host language) is:
                           (setf (return-address-program-counter result)
                                 (deserialize (aref serialized-object 1) ds))
                           (setf (return-address-environment result)
+                                (deserialize (aref serialized-object 2) ds))
+                          result))
+                       ((= code (get-serialization-code :env-frame))
+                        (let ((result (make-env-frame
+                                       :introduced-at-program-counter nil
+                                       :vars nil)))
+                          (setf object-ref result)
+                          (setf (env-frame-introduced-at-program-counter result)
+                                (deserialize (aref serialized-object 1) ds))
+                          (setf (env-frame-vars result)
                                 (deserialize (aref serialized-object 2) ds))
                           result)))))
                   (t

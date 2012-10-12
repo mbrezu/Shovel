@@ -163,10 +163,21 @@ file 'test.shr' line 4: f('1')
 file 'test.shr' line 4: ^^^^^^
 
 Current environment:
+
+Frame starts at:
+file 'test.shr' line 2: var g = fn x x + 2
+file 'test.shr' line 2:            ^
+Frame variables are:
 x = \"1\"
+
+Frame starts at:
+file 'stdlib.shr' line 2: var stdlib = { [...content snipped...]
+file 'stdlib.shr' line 2: ^^^^^^^^^^^^^^
+Frame variables are:
 stdlib = hash(\"filter\", [...callable...], \"forEach\", [...callable...], \"forEachWithIndex\", [...callable...], \"forIndex\", [...callable...], \"map\", [...callable...], \"mapWithIndex\", [...callable...], \"max\", [...callable...], \"min\", [...callable...], \"reduceFromLeft\", [...callable...], \"reverse\", [...callable...], \"sort\", [...callable...], \"while\", [...callable...])
 g = [...callable...]
 f = [...callable...]
+
 
 
 ")))
@@ -178,48 +189,74 @@ f = [...callable...]
 var b = 2
 var c = fn (x, y) x + y"))))
                "    VM-VERSION 1
+
     VM-SOURCES-MD5 352CC9384F33B7778F01A32F66438B39
+
     VM-BYTECODE-MD5 ?
-    NEW-FRAME a, b, c
+
     FILE-NAME <unspecified-1>
+
+    ; file '<unspecified-1>' line 1: var a = 1 [...content snipped...]
+    ; file '<unspecified-1>' line 1: ^^^^^^^^^
+    NEW-FRAME a, b, c
+
     ; file '<unspecified-1>' line 1: var a = 1
     ; file '<unspecified-1>' line 1:         ^
     CONST 1
+
     ; file '<unspecified-1>' line 1: var a = 1
     ; file '<unspecified-1>' line 1: ^^^^^^^^^
     LSET 0, 0
+
     POP
+
     ; file '<unspecified-1>' line 2: var b = 2
     ; file '<unspecified-1>' line 2:         ^
     CONST 2
+
     ; file '<unspecified-1>' line 2: var b = 2
     ; file '<unspecified-1>' line 2: ^^^^^^^^^
     LSET 0, 1
+
     POP
+
     JUMP L2
+
     ; file '<unspecified-1>' line 3: var c = fn (x, y) x + y
     ; file '<unspecified-1>' line 3:         ^^^^^^^^^^^^^^^
 FN1:
+
+    ; file '<unspecified-1>' line 3: var c = fn (x, y) x + y
+    ; file '<unspecified-1>' line 3:             ^^^^
     NEW-FRAME x, y
+
     ARGS 2
+
     ; file '<unspecified-1>' line 3: var c = fn (x, y) x + y
     ; file '<unspecified-1>' line 3:                   ^
     LGET 0, 0
+
     ; file '<unspecified-1>' line 3: var c = fn (x, y) x + y
     ; file '<unspecified-1>' line 3:                       ^
     LGET 0, 1
+
     ; file '<unspecified-1>' line 3: var c = fn (x, y) x + y
     ; file '<unspecified-1>' line 3:                     ^
     PRIM0 +
+
     ; file '<unspecified-1>' line 3: var c = fn (x, y) x + y
     ; file '<unspecified-1>' line 3:                   ^^^^^
     CALLJ 2
+
 L2:
     FN FN1, 2
+
     ; file '<unspecified-1>' line 3: var c = fn (x, y) x + y
     ; file '<unspecified-1>' line 3: ^^^^^^^^^^^^^^^^^^^^^^^
     LSET 0, 2
+
     DROP-FRAME
+
 NIL
 ")))
 
@@ -326,8 +363,14 @@ file 'test.shr' line 3: a[10] = 1
 file 'test.shr' line 3: ^^^^^^^^^
 
 Current environment:
+
+Frame starts at:
+file 'stdlib.shr' line 2: var stdlib = { [...content snipped...]
+file 'stdlib.shr' line 2: ^^^^^^^^^^^^^^
+Frame variables are:
 stdlib = hash(\"filter\", [...callable...], \"forEach\", [...callable...], \"forEachWithIndex\", [...callable...], \"forIndex\", [...callable...], \"map\", [...callable...], \"mapWithIndex\", [...callable...], \"max\", [...callable...], \"min\", [...callable...], \"reduceFromLeft\", [...callable...], \"reverse\", [...callable...], \"sort\", [...callable...], \"while\", [...callable...])
 a = array(null, null, null, null, null, null, null, null, null, null)
+
 
 
 "))
@@ -347,8 +390,14 @@ file 'test.shr' line 3: a[-1] = 1
 file 'test.shr' line 3: ^^^^^^^^^
 
 Current environment:
+
+Frame starts at:
+file 'stdlib.shr' line 2: var stdlib = { [...content snipped...]
+file 'stdlib.shr' line 2: ^^^^^^^^^^^^^^
+Frame variables are:
 stdlib = hash(\"filter\", [...callable...], \"forEach\", [...callable...], \"forEachWithIndex\", [...callable...], \"forIndex\", [...callable...], \"map\", [...callable...], \"mapWithIndex\", [...callable...], \"max\", [...callable...], \"min\", [...callable...], \"reduceFromLeft\", [...callable...], \"reverse\", [...callable...], \"sort\", [...callable...], \"while\", [...callable...])
 a = array(null, null, null, null, null, null, null, null, null, null)
+
 
 
 ")))
@@ -384,8 +433,14 @@ file 'test.shr' line 3: push(a, 1)
 file 'test.shr' line 3: ^^^^^^^^^^
 
 Current environment:
+
+Frame starts at:
+file 'stdlib.shr' line 2: var stdlib = {
+file 'stdlib.shr' line 2: ^^^^^^^^^
+Frame variables are:
 stdlib = hash(\"filter\", [...callable...], \"forEach\", [...callable...], \"forEachWithIndex\", [...callable...], \"forIndex\", [...callable...], \"map\", [...callable...], \"mapWithIndex\", [...callable...], \"max\", [...callable...], \"min\", [...callable...], \"reduceFromLeft\", [...callable...], \"reverse\", [...callable...], \"sort\", [...callable...], \"while\", [...callable...])
 a = 1
+
 
 
 ")))
@@ -431,8 +486,14 @@ file 'test.shr' line 3: pop(a)
 file 'test.shr' line 3: ^^^^^^
 
 Current environment:
+
+Frame starts at:
+file 'stdlib.shr' line 2: var stdlib = { [...content snipped...]
+file 'stdlib.shr' line 2: ^^^^^^^^^^^^^^
+Frame variables are:
 stdlib = hash(\"filter\", [...callable...], \"forEach\", [...callable...], \"forEachWithIndex\", [...callable...], \"forIndex\", [...callable...], \"map\", [...callable...], \"mapWithIndex\", [...callable...], \"max\", [...callable...], \"min\", [...callable...], \"reduceFromLeft\", [...callable...], \"reverse\", [...callable...], \"sort\", [...callable...], \"while\", [...callable...])
 a = array()
+
 
 
 ")))
@@ -472,7 +533,13 @@ file '<unspecified-1>' line 1: var a = 30 if a == true 1 else 2
 file '<unspecified-1>' line 1:               ^^^^^^^^^
 
 Current environment:
+
+Frame starts at:
+file '<unspecified-1>' line 1: var a = 30 if a == true 1 else 2
+file '<unspecified-1>' line 1: ^^^^^^^^^^
+Frame variables are:
 a = 30
+
 
 
 "))
@@ -522,7 +589,13 @@ file '<unspecified-1>' line 3: a[2] = 'x1'
 file '<unspecified-1>' line 3: ^^^^^^^^^^^
 
 Current environment:
+
+Frame starts at:
+file '<unspecified-1>' line 2: var a = 'test'
+file '<unspecified-1>' line 2: ^^^^^^^^^^^^^^
+Frame variables are:
 a = \"test\"
+
 
 
 ")))

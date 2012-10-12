@@ -185,6 +185,9 @@ SVM_SET_INDEXED required primitive."
     (gen :vm-version :arguments shovel-vm:*version*)
     (gen :vm-sources-md5 :arguments (shovel-compiler:compute-sources-md5 source))
     (gen :vm-bytecode-md5 :arguments "?")
+    (when (and (first ast) (eq :file-name (parse-tree-label (first ast))))
+      (compile-ast (first ast) (empty-env) t t)
+      (pop ast))
     (compile-block ast (empty-env) t t)
     (reverse (generator-state-instructions *generator-state*))))
 
@@ -202,13 +205,17 @@ SVM_SET_INDEXED required primitive."
          (new-env (cons new-frame env))
          (drop-values-asts (butlast ast))
          (value-ast (last1 ast))
+         (vars (remove-if (lambda (stmt)
+                            (not (var-p stmt)))
+                          ast))
          (var-names (mapcar (lambda (var)
                               (name-identifier (var-name var)))
-                            (remove-if (lambda (stmt)
-                                         (not (var-p stmt)))
-                                       ast))))
+                            vars)))
     (cond ((> (length var-names) 0)
-           (gen :new-frame :arguments var-names)
+           (gen :new-frame
+                :arguments var-names
+                :start-pos (parse-tree-start-pos (first vars))
+                :end-pos (parse-tree-end-pos (last1 vars)))
            (compile-statements new-env drop-values-asts value-ast more?)
            (if more? (gen :drop-frame))
            (unless val? (gen :pop)))
@@ -223,7 +230,10 @@ SVM_SET_INDEXED required primitive."
       (extend-frame new-env (name-identifier arg) arg))
     (let ((var-names (mapcar #'name-identifier args)))
       (cond ((> (length (the list var-names)) 0)
-             (gen :new-frame :arguments var-names)
+             (gen :new-frame
+                  :arguments var-names
+                  :start-pos (parse-tree-start-pos (first args))
+                  :end-pos (parse-tree-end-pos (last1 args)))
              (gen :args :arguments (length (the list args)))
              (compile-ast body new-env t nil))
             (t (compile-ast body env t nil))))))
@@ -342,11 +352,18 @@ SVM_SET_INDEXED required primitive."
       (error "Internal Shovel WTF.")))
 
 (declaim (inline gen))
-(defun gen (opcode &key (arguments nil) (pos nil) (comments nil))
+(defun gen (opcode &key
+                     (arguments nil)
+                     (pos nil)
+                     (comments nil)
+                     (start-pos nil)
+                     (end-pos nil))
   (declare (optimize speed))
   (push (make-instruction :opcode opcode
                           :arguments arguments
-                          :start-pos (if pos (parse-tree-start-pos pos))
-                          :end-pos (if pos (parse-tree-end-pos pos))
+                          :start-pos (or start-pos
+                                         (if pos (parse-tree-start-pos pos)))
+                          :end-pos (or end-pos
+                                       (if pos (parse-tree-end-pos pos)))
                           :comments comments)
         (generator-state-instructions *generator-state*)))

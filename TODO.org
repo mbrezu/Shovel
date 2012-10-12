@@ -75,7 +75,7 @@
 * DONE results of string slice or indexing should be strings
 * DONE it should be possible to assign strings of length 1 to string indices
 * DONE add 'upper' and 'lower' primitives for strings
-* TODO maybe environment frames should have contain information about
+* DONE maybe environment frames should have contain information about
   the location where they were introduced? (file and character
   position). This would help when debugging.
 * DONE the VM version should be stored before the payload
@@ -84,6 +84,7 @@
   VM versions are backward compatible. This way it is possible to
   check that we're not trying to decode a version n+m state/bytecode
   on code that only knows how to handle version n state/bytecode.
+* TODO tests for all the required primitives
 * TODO non local exits
 ** TODO reserve keyword 'block'
    used as in 'block name { ... block ... }'; starts a named block and

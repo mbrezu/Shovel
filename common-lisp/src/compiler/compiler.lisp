@@ -102,6 +102,8 @@ don't know how to compute MD5 hash.")))))
                    (if args
                        (format t "    ~a ~a" opcode args)
                        (format t "    ~a" opcode)))))
+      (unless (and (eq :label opcode) (not (instruction-comments instruction)))
+        (terpri))
       (terpri))))
 
 (defun include-relevant-source-as-comments (sources instructions)
