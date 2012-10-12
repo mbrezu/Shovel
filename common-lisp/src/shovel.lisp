@@ -168,7 +168,7 @@ an array of bytes."
          for i from 0
          do (setf (aref result i)
                   (shovel-types:make-instruction
-                   :opcode (intern (string-upcase (first bytecode)) :keyword)
+                   :opcode (find-symbol (string-upcase (first bytecode)) :keyword)
                    :arguments (decode-arguments (second bytecode))
                    :start-pos (third bytecode)
                    :end-pos (fourth bytecode)
