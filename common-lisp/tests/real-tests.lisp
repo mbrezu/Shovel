@@ -498,5 +498,12 @@ if a == b 1 else 2")))))
   (is (string= "john" (shovel:naked-run-code (list "lower('John')"))))
   (is (string= "JOHN" (shovel:naked-run-code (list "upper('John')")))))
 
+(test string-accesses-are-strings
+  (is (string= "tt" (shovel:naked-run-code (list "var a = 'test' a[0] + a[3]"))))
+  (is (string= "tt" (shovel:naked-run-code
+                     (list "var a = 'test' slice(a, 0, 1) + slice(a, 3, 4)"))))
+  (is (= 5 (shovel:naked-run-code
+            (list "var a = array(1, 2, 3, 4) a[0] + a[3]")))))
+
 (defun run-tests ()
   (fiveam:run! :shovel-tests))

@@ -173,7 +173,10 @@
          (if (integerp index)
              (progn
                (validate-index-access array-or-hash index)
-               (aref array-or-hash index))
+               (let ((result (aref array-or-hash index)))
+                 (if (stringp array-or-hash)
+                     (string result)
+                     result)))
              (vm-error "Getting an array element requires an integer index.")))
         ((hash-table-p array-or-hash)
          (if (stringp index)
