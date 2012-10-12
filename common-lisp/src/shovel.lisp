@@ -97,8 +97,15 @@ var stdlib = {
     stdlib-file))
 
 (defun get-bytecode (sources)
-  (shovel-compiler:assemble-instructions
-   (shovel-compiler:compile-sources-to-instructions sources)))
+  (let* ((result (shovel-compiler:assemble-instructions
+                  (shovel-compiler:compile-sources-to-instructions sources))))
+    (dotimes (i (length result))
+      (let ((instruction (aref result i)))
+        (when (eq :vm-bytecode-md5
+                  (shovel-types:instruction-opcode instruction))
+          (setf (shovel-types:instruction-arguments instruction)
+                (shovel-compiler:compute-instructions-md5 result)))))
+    result))
 
 (defun naked-run-code (sources &key user-primitives)
   (shovel-vm:run-vm

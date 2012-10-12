@@ -89,7 +89,7 @@
 
           ;; String or array slice:
           (def-prim0 "slice" shovel-vm-prim0:get-slice 3)
-          
+
           ;; String 'upper' and 'lower':
           (def-prim0 "upper" shovel-vm-prim0:string-upper 1)
           (def-prim0 "lower" shovel-vm-prim0:string-lower 1)
@@ -258,17 +258,7 @@
         (setf (vm-last-start-pos vm) start-pos
               (vm-last-end-pos vm) end-pos))
       (case opcode
-        (:new-frame
-         (let ((new-frame (make-array (length args))))
-           (loop
-              for i = 0 then (1+ i)
-              for var in args
-              do (setf (aref new-frame i) (cons var :null)))
-           (push new-frame (vm-current-environment vm)))
-         (incf (vm-program-counter vm)))
-        (:drop-frame
-         (pop (vm-current-environment vm))
-         (incf (vm-program-counter vm)))
+        (:jump (setf (vm-program-counter vm) args))
         (:const
          (push args (vm-stack vm))
          (incf (vm-program-counter vm)))
@@ -280,6 +270,9 @@
          (incf (vm-program-counter vm)))
         (:call (handle-call vm args t))
         (:callj (handle-call vm args nil))
+        (:fjump
+         (check-bool vm)
+         (jump-if (shovel-vm-prim0:logical-not (pop (vm-stack vm))) vm args))
         (:lset
          (set-in-environment (vm-current-environment vm)
                              (first args) (second args)
@@ -293,18 +286,22 @@
                                      (first args) (second args))
                (vm-stack vm))
          (incf (vm-program-counter vm)))
-        (:jump (setf (vm-program-counter vm) args))
-        (:tjump
-         (check-bool vm)
-         (jump-if (pop (vm-stack vm)) vm args))
-        (:fjump
-         (check-bool vm)
-         (jump-if (shovel-vm-prim0:logical-not (pop (vm-stack vm))) vm args))
         (:fn
          (push (make-callable :program-counter (first args)
                               :environment (vm-current-environment vm)
                               :num-args (second args))
                (vm-stack vm))
+         (incf (vm-program-counter vm)))
+        (:new-frame
+         (let ((new-frame (make-array (length args))))
+           (loop
+              for i = 0 then (1+ i)
+              for var in args
+              do (setf (aref new-frame i) (cons var :null)))
+           (push new-frame (vm-current-environment vm)))
+         (incf (vm-program-counter vm)))
+        (:drop-frame
+         (pop (vm-current-environment vm))
          (incf (vm-program-counter vm)))
         (:args (handle-args vm args))
         (:return
@@ -314,7 +311,12 @@
             (apply-return-address vm retaddr)
             (setf (vm-stack vm)
                   (cons result other-stack))))
-        (:file-name ; This is just a file name marker, skip it.
+        (:tjump
+         (check-bool vm)
+         (jump-if (pop (vm-stack vm)) vm args))
+        ((:file-name :vm-version :vm-sources-md5 :vm-bytecode-md5)
+                                        ; These are just informational
+                                        ; instructions, skip them.
          (incf (vm-program-counter vm)))
         (t (error "Shovel internal WTF: unknown instruction '~a'." opcode)))))
   (vm-not-finished vm))
@@ -592,6 +594,26 @@
                    (error
                     "Internal error: Don't know how to deserialize object!"))))))))
 
+(defun get-vm-arguments-for-opcode (vm opcode)
+  (dotimes (i (length (vm-bytecode vm)))
+    (let ((instruction (aref (vm-bytecode vm) i)))
+      (when (eq opcode (instruction-opcode instruction))
+        (alexandria:when-let (result (instruction-arguments instruction))
+          (return-from get-vm-arguments-for-opcode result)))))
+  (error "Shovel Internal WTF: VM without ~a." opcode))
+
+(defun get-vm-version (vm)
+  (get-vm-arguments-for-opcode vm :vm-version))
+
+(defun get-vm-bytecode-md5 (vm)
+  (let ((result (get-vm-arguments-for-opcode vm :vm-bytecode-md5)))
+    (when (string= "?" result)
+      (error "Shovel Internal WTF: VM without bytecode MD5 hash."))
+    result))
+
+(defun get-vm-sources-md5 (vm)
+  (get-vm-arguments-for-opcode vm :vm-sources-md5))
+
 (defun serialize-vm-state (vm)
   (let ((ss (make-serializer-state))
         stack current-environment program-counter)
@@ -599,18 +621,38 @@
     (setf current-environment (serialize (vm-current-environment vm) ss))
     (setf program-counter (serialize (vm-program-counter vm) ss))
     (let ((serialized-state (list stack current-environment program-counter
-                                  (nreverse (serializer-state-array ss)))))
+                                  (nreverse (serializer-state-array ss))
+                                  (get-vm-version vm)
+                                  (get-vm-bytecode-md5 vm)
+                                  (get-vm-sources-md5 vm))))
       (messagepack:encode serialized-state))))
 
 (defun deserialize-vm-state (vm state-bytes)
   (let* ((vm-state (messagepack:decode state-bytes))
-         (array (aref vm-state 3))
          (stack-index (aref vm-state 0))
          (current-environment-index (aref vm-state 1))
          (program-counter-index (aref vm-state 2))
+         (array (aref vm-state 3))
+         (vm-version (aref vm-state 4))
+         (vm-bytecode-md5 (aref vm-state 5))
+         (vm-sources-md5 (aref vm-state 6))
          (ds (make-deserializer-state :array array
                                       :objects (make-array (length array)
                                                            :initial-element nil))))
+    (unless (= vm-version (get-vm-version vm))
+      (error (make-condition
+              'shovel-vm-match-error
+              :message "VM version and serialized VM version do not match.")))
+    (unless (string= vm-bytecode-md5 (get-vm-bytecode-md5 vm))
+      (error (make-condition
+              'shovel-vm-match-error
+              :message
+              "VM bytecode MD5 and serialized VM bytecode MD5 do not match.")))
+    (unless (string= vm-sources-md5 (get-vm-sources-md5 vm))
+      (error (make-condition
+              'shovel-vm-match-error
+              :message
+              "VM sources MD5 and serialized VM sources MD5 do not match.")))
     (setf (vm-stack vm) (deserialize stack-index ds))
     (setf (vm-current-environment vm) (deserialize current-environment-index ds))
     (setf (vm-program-counter vm) (deserialize program-counter-index ds))))

@@ -182,6 +182,9 @@ SVM_SET_INDEXED required primitive."
 (defun generate-instructions (ast &key source)
   (let ((*generator-state* (make-generator-state :label-counter 0
                                                  :source source)))
+    (gen :vm-version :arguments shovel-vm:*version*)
+    (gen :vm-sources-md5 :arguments (shovel-compiler:compute-sources-md5 source))
+    (gen :vm-bytecode-md5 :arguments "?")
     (compile-block ast (empty-env) t t)
     (reverse (generator-state-instructions *generator-state*))))
 

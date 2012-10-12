@@ -16,6 +16,46 @@
            parse-tree :source sources)))
     instructions))
 
+(defun produce-digest-as-string (digester)
+  (format nil "~{~2,'0x~}"
+          (coerce (ironclad:produce-digest digester) 'list)))
+
+(defun compute-sources-md5 (sources)
+  (let ((digester (ironclad:make-digest :md5)))
+    (dolist (source (prepare-sources sources))
+      (ironclad:update-digest digester
+                              (babel:string-to-octets
+                               (shript-file-contents source))))
+    (produce-digest-as-string digester)))
+
+(defun compute-instructions-md5 (instructions)
+  (let ((digester (ironclad:make-digest :md5)))
+    (labels ((update-with-arguments (args)
+               (cond ((null args))
+                     ((stringp args)
+                      (ironclad:update-digest digester
+                                              (babel:string-to-octets args)))
+                     ((or (eq :true args) (eq :false args) (eq :null args))
+                      (ironclad:update-digest digester
+                                              (babel:string-to-octets
+                                               (symbol-name args))))
+                     ((numberp args)
+                      (ironclad:update-digest digester
+                                              (babel:string-to-octets
+                                               (format nil "~a" args))))
+                     ((consp args)
+                      (dolist (arg args)
+                        (update-with-arguments arg)))
+                     (t (error "Shovel internal WTF: ~
+don't know how to compute MD5 hash.")))))
+      (dotimes (i (length instructions))
+        (let ((instruction (aref instructions i)))
+          (ironclad:update-digest digester (babel:string-to-octets
+                                            (symbol-name
+                                             (instruction-opcode instruction))))
+          (update-with-arguments (instruction-arguments instruction)))))
+    (produce-digest-as-string digester)))
+
 (defun assemble-instructions (instructions)
   (labels ((assemble-pass-1 (instructions)
              (let ((length 0)

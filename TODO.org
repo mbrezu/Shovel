@@ -34,7 +34,8 @@
 * TODO serialization and deserialization
 ** DONE for the bytecode
 ** DONE for the VM state
-** TODO the state should be serialized with
+** DONE the state should be serialized with
+   - the MD5 of the serialization of the bytecode for the current VM
    - the MD5 of the serialization of the source for the current VM
    - the Shovel VM version
      
@@ -42,6 +43,9 @@
    made to restart a virtual machine with another VM's state (such an
    attempt would most likely result in an error down the road, but
    it's better not to corrupt data and throw an error ASAP).
+** TODO the state serialization and the bytecode serialization
+   should start with an MD5 hash of the content to make sure that
+   the data wasn't messed up;
 * DONE maybe the representation of instructions should take up less space
 ** DONE don't record lines and columns everywhere;
    record only character indices within files and calculate

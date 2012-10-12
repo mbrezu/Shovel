@@ -33,3 +33,11 @@
   (when (error-at-eof object)
     (format stream " at end of file"))
   (format stream ": ~a~%" (error-message object)))
+
+(define-condition shovel-vm-match-error (error)
+  ((message :initform nil :accessor error-message :initarg :message)))
+
+(defmethod print-object ((object shovel-vm-match-error) stream)
+  (declare (optimize (speed 1)))
+  (format stream "Shovel VM match error error")
+  (format stream ": ~a~%" (error-message object)))

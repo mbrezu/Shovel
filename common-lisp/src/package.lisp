@@ -30,7 +30,8 @@
    :error-file
    :error-line
    :error-column
-   :error-message))
+   :error-message
+   :shovel-vm-match-error))
 
 (defpackage #:shovel-utils
   (:use #:cl #:shovel-types)
@@ -90,7 +91,9 @@
   (:export 
    :assemble-instructions
    :show-instructions
-   :compile-sources-to-instructions))
+   :compile-sources-to-instructions
+   :compute-instructions-md5
+   :compute-sources-md5))
 
 (defpackage #:shovel-vm-prim0
   (:use #:cl #:shovel-types)

@@ -177,7 +177,10 @@ f = [...callable...]
                    (shovel:print-code (list "var a = 1
 var b = 2
 var c = fn (x, y) x + y"))))
-               "    NEW-FRAME a, b, c
+               "    VM-VERSION 1
+    VM-SOURCES-MD5 352CC9384F33B7778F01A32F66438B39
+    VM-BYTECODE-MD5 ?
+    NEW-FRAME a, b, c
     FILE-NAME <unspecified-1>
     ; file '<unspecified-1>' line 1: var a = 1
     ; file '<unspecified-1>' line 1:         ^
@@ -232,9 +235,7 @@ NIL
 (defun test-serializer (program user-primitives)
   (let* ((sources (list (shovel:stdlib)
                         program))
-         (bytecode (shovel-compiler:assemble-instructions
-                    (shovel-compiler:compile-sources-to-instructions
-                     sources))))
+         (bytecode (shovel:get-bytecode sources)))
     (multiple-value-bind (first-run vm)
         (shovel-vm:run-vm
          bytecode
@@ -527,6 +528,42 @@ a = \"test\"
 
 
 ")))
+
+(test broken-vm-state-match
+  (let (flag)
+    (labels ((halt (a)
+               (cond ((not flag)
+                      (setf flag t)
+                      (values nil :nap-and-retry-on-wake-up))
+                     (t a))))
+      (let* ((my-program-1 "var a = 10 @halt(a)")
+             (my-program-2 "var b = 10 @halt(b)")
+             (user-primitives (list (list "halt" #'halt 1))))
+        (let* ((sources-1 (list (shovel:stdlib) my-program-1))
+               (sources-2 (list (shovel:stdlib) my-program-2))
+               (bytecode-1 (shovel:get-bytecode sources-1))
+               (bytecode-2 (shovel:get-bytecode sources-2)))
+          (multiple-value-bind (first-run vm)
+              (shovel-vm:run-vm
+               bytecode-1
+               :sources sources-1
+               :user-primitives user-primitives)
+            (declare (ignore first-run))
+            (multiple-value-bind (value error)
+                (ignore-errors
+                  (let* ((bytes (shovel-vm:serialize-vm-state vm))
+                         (second-run (shovel-vm:run-vm
+                                      bytecode-2
+                                      :sources sources-2
+                                      :user-primitives user-primitives
+                                      :state bytes)))
+                    second-run))
+              (declare (ignore value))
+              (is (eql 'shovel-types:shovel-vm-match-error
+                       (type-of error)))
+              (is (string=
+                   "VM bytecode MD5 and serialized VM bytecode MD5 do not match."
+                   (shovel-types:error-message error))))))))))
 
 (defun run-tests ()
   (fiveam:run! :shovel-tests))

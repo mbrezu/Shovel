@@ -4,7 +4,9 @@
   :depends-on (#:alexandria
                #:split-sequence
                #:fiveam
-               #:cl-messagepack)
+               #:cl-messagepack
+               #:ironclad
+               #:babel)
   :components
   ((:module
     "common-lisp"
