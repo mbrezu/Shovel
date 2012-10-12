@@ -71,7 +71,7 @@
 * DONE comparison (== and !=) must work for booleans and when one of the
   operands is guest-null; also do reference comparison for arrays and hashes; 
 * DONE results of string slice or indexing should be strings
-* TODO it should be possible to assign strings of length 1 to string indices
+* DONE it should be possible to assign strings of length 1 to string indices
 * DONE add 'upper' and 'lower' primitives for strings
 * TODO maybe environment frames should have contain information about
   the location where they were introduced? (file and character

@@ -198,7 +198,11 @@
          (if (numberp index)
              (progn
                (validate-index-access array-or-hash index)
-               (setf (aref array-or-hash index) value))
+               (cond ((stringp array-or-hash)
+                      (when (/= 1 (length value))
+                        (vm-error "Must provide a one character string as right hand side for the assignment."))
+                      (setf (aref array-or-hash index) (elt value 0)))
+                     (t (setf (aref array-or-hash index) value))))
              (vm-error "Getting an array element requires an integer index.")))
         ((hash-table-p array-or-hash)
          (if (stringp index)
