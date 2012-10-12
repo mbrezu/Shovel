@@ -13,7 +13,8 @@
   (last-start-pos nil)
   (last-end-pos nil)
   (sources nil)
-  (should-take-a-nap nil))
+  (should-take-a-nap nil)
+  (user-primitive-error nil))
 
 (defstruct return-address
   program-counter
@@ -405,7 +406,11 @@
     (when (and primitive-arity (/= primitive-arity num-args))
       (arity-error vm primitive-arity num-args))
     (multiple-value-bind(result what-next)
-        (apply primitive (reverse arg-values))
+        (handler-case
+            (apply primitive (reverse arg-values))
+          (simple-condition (err)
+            (setf (vm-user-primitive-error vm) err)
+            (values :null :nap-and-retry-on-wake-up)))
       (unless is-required-primitive
         (unless (is-shovel-type result)
           (raise-shovel-error

@@ -24,7 +24,7 @@
 * DONE when saving the return addresses, also save the position in code
   for the call, so we can build nice stack traces when an exception is
   thrown.
-* DONE keep the names of the variables in the environments and 
+* DONE keep the names of the variables in the environments and
   display them if in case of an exception.
 * DONE check the number of arguments for primitives and required primitives
 * DONE add a 'panic' primitive that throws an exception.
@@ -38,7 +38,7 @@
    - the MD5 of the serialization of the bytecode for the current VM;
    - the MD5 of the serialization of the source for the current VM;
    - the Shovel VM version.
-     
+
    This way we can make sure that we throw an error if an attempt is
    made to restart a virtual machine with another VM's state (such an
    attempt would most likely result in an error down the road, but
@@ -65,16 +65,13 @@
   to make sure that they return an instance of a shovel type; tests
   should make sure that required primitives return an instance of a
   shovel type.
-** TODO user primitives should handle their exceptions;
-   if an exception is thrown out of a user-defined primitive, it is
-   swallowed and guest-null is pushed on the stack.
-*** TODO document the fact that user primitives should handle their exceptions;
+* DONE user primitives should handle their exceptions;
 * DONE exception raising and handling
   We don't have any, but we'll have non-local exits (document this)
 * DONE error checking for arrays (check that indices are in range)
 * DONE push and pop for vectors (make them adjustable)
 * DONE comparison (== and !=) must work for booleans and when one of the
-  operands is guest-null; also do reference comparison for arrays and hashes; 
+  operands is guest-null; also do reference comparison for arrays and hashes;
 * DONE results of string slice or indexing should be strings
 * DONE it should be possible to assign strings of length 1 to string indices
 * DONE add 'upper' and 'lower' primitives for strings
@@ -112,6 +109,10 @@
 ** TODO Shript (language, required primitives)
 ** TODO VM (instructions, state)
 ** TODO how to use things
+*** TODO calling conventions
+**** TODO document the fact that user primitives should handle their exceptions;
+     When they don't, the error is stored in the
+     'user-primitive-error' field of the virtual machine and the
+     virtual machine goes to sleep as if :nap-and-retry-on-wake-up had
+     been returned by the primitive as a second value.
 *** TODO from Common Lisp
-
-  

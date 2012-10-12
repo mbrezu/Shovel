@@ -164,7 +164,8 @@
    :serialize-vm-state
    :deserialize-vm-state
    :*error-raiser*
-   :*version*))
+   :*version*
+   :vm-user-primitive-error))
 
 (defpackage #:shovel
   (:use #:cl)
