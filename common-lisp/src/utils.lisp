@@ -39,8 +39,8 @@
        "The character position specified is not inside the provided content."))
     (loop
        for i from 0 to char-position
-       when (char= (aref content i) #\newline) 
-       do 
+       when (char= (aref content i) #\newline)
+       do
          (incf (pos-line result))
          (setf (pos-column result) 1)
        when (char/= (aref content i) #\newline)
@@ -180,3 +180,22 @@
                        ,(alexandria:symbolicate
                          'set- struct-name '- (elt bitnames i))))))
 
+(defun get-md5-checksum (bytes)
+  (ironclad:digest-sequence
+   :md5
+   (coerce bytes '(simple-array (unsigned-byte 8) (*)))))
+
+(defun messagepack-encode-with-md5-checksum (data)
+  (let* ((bytes (messagepack:encode data))
+         (checksum (get-md5-checksum bytes)))
+    (concatenate '(simple-array (unsigned-byte 8) (*))
+                 checksum
+                 bytes)))
+
+(defun check-md5-checksum-and-messagepack-decode (data)
+  (let* ((bytes (subseq data 16))
+         (stored-checksum (subseq data 0 16))
+         (calculated-checksum (get-md5-checksum bytes)))
+    (unless (equalp stored-checksum calculated-checksum)
+      (error (make-condition 'shovel-broken-checksum)))
+    (messagepack:decode bytes)))

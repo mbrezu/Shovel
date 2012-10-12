@@ -31,19 +31,19 @@
 * DONE tests !
 * DONE record file names in source positions
   (so we can show useful line/column information for multiple files).
-* TODO serialization and deserialization
+* DONE serialization and deserialization
 ** DONE for the bytecode
 ** DONE for the VM state
-** DONE the state should be serialized with
-   - the MD5 of the serialization of the bytecode for the current VM
-   - the MD5 of the serialization of the source for the current VM
-   - the Shovel VM version
+** DONE the state should be serialized with:
+   - the MD5 of the serialization of the bytecode for the current VM;
+   - the MD5 of the serialization of the source for the current VM;
+   - the Shovel VM version.
      
    This way we can make sure that we throw an error if an attempt is
    made to restart a virtual machine with another VM's state (such an
    attempt would most likely result in an error down the road, but
    it's better not to corrupt data and throw an error ASAP).
-** TODO the state serialization and the bytecode serialization
+** DONE the state serialization and the bytecode serialization
    should start with an MD5 hash of the content to make sure that
    the data wasn't messed up;
 * DONE maybe the representation of instructions should take up less space
@@ -69,7 +69,8 @@
    if an exception is thrown out of a user-defined primitive, it is
    swallowed and guest-null is pushed on the stack.
 *** TODO document the fact that user primitives should handle their exceptions;
-* TODO exception raising and handling
+* DONE exception raising and handling
+  We don't have any (document this)
 * DONE error checking for arrays (check that indices are in range)
 * DONE push and pop for vectors (make them adjustable)
 * DONE comparison (== and !=) must work for booleans and when one of the

@@ -31,7 +31,8 @@
    :error-line
    :error-column
    :error-message
-   :shovel-vm-match-error))
+   :shovel-vm-match-error
+   :shovel-broken-checksum))
 
 (defpackage #:shovel-utils
   (:use #:cl #:shovel-types)
@@ -43,7 +44,9 @@
    :defbits
    :prepare-sources
    :find-source
-   :find-position))
+   :find-position 
+   :messagepack-encode-with-md5-checksum
+   :check-md5-checksum-and-messagepack-decode))
 
 (defpackage #:shovel-compiler-types
   (:use #:cl #:shovel-types)

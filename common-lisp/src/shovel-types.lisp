@@ -41,3 +41,5 @@
   (declare (optimize (speed 1)))
   (format stream "Shovel VM match error error")
   (format stream ": ~a~%" (error-message object)))
+
+(define-condition shovel-broken-checksum (error) ())

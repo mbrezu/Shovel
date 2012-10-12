@@ -163,12 +163,13 @@ an array of bytes."
                          (shovel-types:instruction-end-pos instruction)
                          (shovel-types:instruction-comments instruction)))
                  (coerce bytecode 'list))))
-    (messagepack:encode transformed-bytecode)))
+    (shovel-utils:messagepack-encode-with-md5-checksum transformed-bytecode)))
 
 (defun deserialize-bytecode (bytes)
   "Deserializes an array of bytes into a vector of instructions."
   (let ((messagepack:*decoder-prefers-lists* t))
-    (let* ((bytecode-list (messagepack:decode bytes))
+    (let* ((bytecode-list
+            (shovel-utils:check-md5-checksum-and-messagepack-decode bytes))
            (result (make-array (length bytecode-list))))
       (loop
          for bytecode in bytecode-list

@@ -224,9 +224,7 @@ NIL
 ")))
 
 (test bytecode-serializer
-  (let* ((instructions (shovel-compiler:assemble-instructions
-                        (shovel-compiler:compile-sources-to-instructions
-                         (list (shovel:stdlib)))))
+  (let* ((instructions (shovel:get-bytecode (list (shovel:stdlib))))
          (serialized-instructions (shovel:serialize-bytecode instructions))
          (deserialized-instructions (shovel:deserialize-bytecode
                                      serialized-instructions)))
@@ -564,6 +562,40 @@ a = \"test\"
               (is (string=
                    "VM bytecode MD5 and serialized VM bytecode MD5 do not match."
                    (shovel-types:error-message error))))))))))
+
+(defun mess-with (bytes)
+  (if (= 0 (aref bytes 10))
+      (setf (aref bytes 10) 1)
+      (setf (aref bytes 10) 0)))
+
+(test bytecode-serializer-checksum-failure
+  (let* ((instructions (shovel:get-bytecode (list (shovel:stdlib))))
+         (serialized-instructions (shovel:serialize-bytecode instructions)))
+    (mess-with serialized-instructions)
+    (signals shovel-types:shovel-broken-checksum
+      (shovel:deserialize-bytecode serialized-instructions))))
+
+(test vm-state-serializare-checksum-failure
+  (let (flag)
+    (labels ((halt (a)
+               (cond ((not flag)
+                      (setf flag t)
+                      (values nil :nap-and-retry-on-wake-up))
+                     (t a))))
+      (let* ((my-program "var a = 10 @halt(a)")
+             (user-primitives (list (list "halt" #'halt 1))))
+        (let* ((sources (list (shovel:stdlib) my-program))
+               (bytecode (shovel:get-bytecode sources)))
+          (multiple-value-bind (first-run vm)
+              (shovel-vm:run-vm
+               bytecode
+               :sources sources
+               :user-primitives user-primitives)
+            (declare (ignore first-run))
+            (let ((bytes (shovel-vm:serialize-vm-state vm)))
+              (mess-with bytes)
+              (signals shovel-types:shovel-broken-checksum
+                (shovel-vm:deserialize-vm-state vm bytes)))))))))
 
 (defun run-tests ()
   (fiveam:run! :shovel-tests))

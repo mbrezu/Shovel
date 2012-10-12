@@ -625,10 +625,10 @@
                                   (get-vm-version vm)
                                   (get-vm-bytecode-md5 vm)
                                   (get-vm-sources-md5 vm))))
-      (messagepack:encode serialized-state))))
+      (messagepack-encode-with-md5-checksum serialized-state))))
 
 (defun deserialize-vm-state (vm state-bytes)
-  (let* ((vm-state (messagepack:decode state-bytes))
+  (let* ((vm-state (check-md5-checksum-and-messagepack-decode state-bytes))
          (stack-index (aref vm-state 0))
          (current-environment-index (aref vm-state 1))
          (program-counter-index (aref vm-state 2))
