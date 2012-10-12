@@ -80,7 +80,7 @@
 * DONE add 'upper' and 'lower' primitives for strings
 * TODO maybe environment frames should have contain information about
   the location where they were introduced? (file and character
-  position) This would help when debugging.
+  position). This would help when debugging.
 * DONE the VM version should be stored before the payload
   for both bytecode and VM state.
 
@@ -89,16 +89,25 @@
   on code that only knows how to handle version n state/bytecode.
 * TODO non local exits
 ** TODO reserve keyword 'block'
-   used as in 'block name { ... block ... }'
+   used as in 'block name { ... block ... }'; starts a named block and
+   uses instruction 'BLOCK';
 ** TODO reserve keyword 'block_return'
-   used as in 'block_return name, return-value'
+   used as in 'block_return name, return-value'; pushes *return-value*
+   on the stack and 'returns' to block *name* using instruction
+   'BLOCK_RETURN';
 ** TODO add VM instruction 'BLOCK name, address'
    which pushes a 'block' structure made of name and address on the
-   stack.
+   stack; note: a 'POP_BLOCK' must be executed right after *address*;
 ** TODO add VM instruction 'BLOCK_RETURN name'
-   which returns to the address associated with BLOCK *name* and
+   which 'returns' to the address associated with BLOCK *name* and
    leaves the top of the stack (before BLOCK_RETURN) as the top of the
-   stack after address.
+   stack, the 'next top' is the value pushed by the corresponding
+   BLOCK instruction; everything found in between these on the stack
+   is deleted;
+** TODO add VM instruction 'POP_BLOCK'
+   it pops the 'next top' of the stack, in case it is a block, error
+   otherwise; must be paired with a 'BLOCK' instruction, which it
+   cancels.
 * TODO documentation
 ** TODO Shript (language, required primitives)
 ** TODO VM (instructions, state)
