@@ -97,7 +97,7 @@
 ** DONE add VM instruction 'BLOCK_RETURN'
 ** DONE add VM instruction 'POP_BLOCK'
 ** DONE document new instructions in the README
-** TODO serialization with named blocks on the stack
+** DONE serialization with named blocks on the stack
 ** DONE eliminate explicit local exits
 ** TODO standard library functions for unique block names
 ** TODO standard library functions for try/catch

@@ -144,8 +144,9 @@
          for i from 0 to (1- (length (env-frame-vars frame)))
          do (let ((var (elt (env-frame-vars frame) i)))
               (format stream "~a = ~a~%"
-                      (car var)
-                      (shovel-vm-prim0:shovel-string-representation (cdr var)))))
+                      (first var)
+                      (shovel-vm-prim0:shovel-string-representation 
+                       (second var)))))
       (terpri stream))
     (write-environment (cdr env) vm stream)))
 
@@ -316,7 +317,7 @@
            (loop
               for i = 0 then (1+ i)
               for var in args
-              do (setf (aref (env-frame-vars new-frame) i) (cons var :null)))
+              do (setf (aref (env-frame-vars new-frame) i) (list var :null)))
            (push new-frame (vm-current-environment vm)))
          (incf (vm-program-counter vm)))
         (:drop-frame
@@ -351,7 +352,7 @@
          (let ((return-value (first (vm-stack vm)))
                (name (second (vm-stack vm))))
            (unless (stringp name)
-                (raise-shovel-error vm "The name of a block must be a string."))
+             (raise-shovel-error vm "The name of a block must be a string."))
            (multiple-value-bind (named-block stack-below)
                (find-named-block vm (vm-stack vm) name)
              (setf (vm-stack vm) (list* return-value
@@ -506,13 +507,13 @@ A 'valid value' (with Common Lisp as the host language) is:
           (push result (vm-stack vm)))))))
 
 (defun set-in-environment (environment frame-number var-index value)
-  (setf (cdr (aref (env-frame-vars (nth frame-number environment))
-                   var-index))
+  (setf (second (aref (env-frame-vars (nth frame-number environment))
+                      var-index))
         value))
 
 (defun get-from-environment (enviroment frame-number var-index)
-  (cdr (aref (env-frame-vars (nth frame-number enviroment))
-             var-index)))
+  (second (aref (env-frame-vars (nth frame-number enviroment))
+                var-index)))
 
 (defstruct serializer-state (hash (make-hash-table)) (array nil))
 
@@ -527,7 +528,8 @@ A 'valid value' (with Common Lisp as the host language) is:
     (:hash 7)
     (:callable 8)
     (:return-address 9)
-    (:env-frame 10)))
+    (:env-frame 10)
+    (:named-block 11)))
 
 (defun serialize (object ss)
   (labels ((store-one (obj &key (store-as obj))
@@ -614,12 +616,25 @@ A 'valid value' (with Common Lisp as the host language) is:
                                 ss))
                (setf (aref result-array 2) (serialize (env-frame-vars object) ss))
                result))
+            ((named-block-p object)
+             (let* ((result-array (make-array 4))
+                    (result (store-one result-array :store-as object)))
+               (setf (aref result-array 0) (get-serialization-code :named-block))
+               (setf (aref result-array 1)
+                     (serialize (named-block-name object) ss))
+               (setf (aref result-array 2)
+                     (serialize (named-block-end-address object) ss))
+               (setf (aref result-array 3)
+                     (serialize (named-block-environment object) ss))
+               result))
             (t (error "Internal error: Don't know how to serialize object!"))))))
 
 (defstruct deserializer-state (array nil) (objects nil))
 
 (defun deserialize (index ds)
-  (let ((serialized-object (aref (deserializer-state-array ds) index)))
+  (let ((serialized-object (aref (deserializer-state-array ds) index))
+        (deserialize-error
+         "Internal error: Don't know how to deserialize object!"))
     (if (or (stringp serialized-object)
             (numberp serialized-object))
         serialized-object
@@ -634,8 +649,7 @@ A 'valid value' (with Common Lisp as the host language) is:
                      result))
                   ((vectorp serialized-object)
                    (if (= 0 (length serialized-object))
-                       (error
-                        "Internal error: Don't know how to deserialize object!"))
+                       (error deserialize-error))
                    (let ((code (aref serialized-object 0)))
                      (cond
                        ((= code (get-serialization-code :host-null)) nil)
@@ -704,10 +718,23 @@ A 'valid value' (with Common Lisp as the host language) is:
                                 (deserialize (aref serialized-object 1) ds))
                           (setf (env-frame-vars result)
                                 (deserialize (aref serialized-object 2) ds))
-                          result)))))
+                          result))
+                       ((= code (get-serialization-code :named-block))
+                        (let ((result (make-named-block
+                                       :name nil
+                                       :end-address nil
+                                       :environment nil)))
+                          (setf object-ref result)
+                          (setf (named-block-name result)
+                                (deserialize (aref serialized-object 1) ds))
+                          (setf (named-block-end-address result)
+                                (deserialize (aref serialized-object 2) ds))
+                          (setf (named-block-environment result)
+                                (deserialize (aref serialized-object 3) ds))
+                          result))
+                       (t (error deserialize-error)))))
                   (t
-                   (error
-                    "Internal error: Don't know how to deserialize object!"))))))))
+                   (error deserialize-error))))))))
 
 (defun get-vm-arguments-for-opcode (vm opcode)
   (dotimes (i (length (vm-bytecode vm)))

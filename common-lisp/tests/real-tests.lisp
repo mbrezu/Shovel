@@ -770,7 +770,7 @@ Current environment:
   (is (string= (with-output-to-string (str)
                  (let ((*standard-output* str))
                    (shovel:run-code (list "block 'a' return 1 3"))))
-"Shovel error in file '<unspecified-1>' at line 1, column 11: The name of a block must be a string.
+               "Shovel error in file '<unspecified-1>' at line 1, column 11: The name of a block must be a string.
 
 Current stack trace:
 file '<unspecified-1>' line 1: block 'a' return 1 3
@@ -781,6 +781,17 @@ Current environment:
 
 
 ")))
+
+(test vm-serializer-and-non-local-exits
+  (let (flag)
+    (labels ((halt ()
+               (cond ((not flag)
+                      (setf flag t)
+                      (values :null :nap-and-retry-on-wake-up))
+                     (t "ole!"))))
+      (let* ((my-program "block 'f' @halt()")
+             (user-primitives (list (list "halt" #'halt 0))))
+        (is (string= "ole!" (test-serializer my-program user-primitives)))))))
 
 (defun run-tests ()
   (fiveam:run! :shovel-tests))
