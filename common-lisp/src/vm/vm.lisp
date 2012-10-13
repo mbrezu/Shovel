@@ -569,9 +569,9 @@ A 'valid value' (with Common Lisp as the host language) is:
                     (result (store-one result-array :store-as object)))
                (setf (aref result-array 0) (get-serialization-code :env-frame))
                (setf (aref result-array 1)
-                     (serialize (env-frame-introduced-at-program-counter object) ss))
-               (setf (aref result-array 2)
-                     (serialize (env-frame-vars object) ss))
+                     (serialize (env-frame-introduced-at-program-counter object)
+                                ss))
+               (setf (aref result-array 2) (serialize (env-frame-vars object) ss))
                result))
             (t (error "Internal error: Don't know how to serialize object!"))))))
 
@@ -579,10 +579,8 @@ A 'valid value' (with Common Lisp as the host language) is:
 
 (defun deserialize (index ds)
   (let ((serialized-object (aref (deserializer-state-array ds) index)))
-    (if (or (null serialized-object)
-            (stringp serialized-object)
-            (numberp serialized-object)
-            (symbolp serialized-object))
+    (if (or (stringp serialized-object)
+            (numberp serialized-object))
         serialized-object
         (symbol-macrolet ((object-ref (aref (deserializer-state-objects ds) index)))
           (alexandria:if-let (object object-ref)
