@@ -87,17 +87,20 @@
 * TODO tests for all the required primitives
 * DONE add some reserved keywords
   class, try, catch, throw, block, block_return
-* TODO the type for keyword tokens should be changed to 
+* DONE the type for keyword tokens should be changed to 
   :keyword in 'tokenize-identifier' (and I can probably drop 
   'token-is-keyword')
-* DONE non local exits
+* TODO non local exits
 ** DONE reserve and parse keyword 'block'
 ** DONE reserve and parse keyword 'block_return'
 ** DONE add VM instruction 'BLOCK address'
 ** DONE add VM instruction 'BLOCK_RETURN'
 ** DONE add VM instruction 'POP_BLOCK'
 ** DONE document new instructions in the README
-* DONE eliminate explicit local exits
+** TODO serialization with named blocks on the stack
+** DONE eliminate explicit local exits
+** TODO standard library functions for unique block names
+** TODO standard library functions for try/catch
 * TODO documentation
 ** TODO Shript (language, required primitives)
 ** TODO VM (instructions, state)

@@ -82,7 +82,7 @@ file 'test.shr' line 2:            ^
                                                          :contents "
 var fn = 1
 ")))))
-               "Shovel error in file 'test.shr' at line 2, column 5: 'fn' is a reserved keyword.
+               "Shovel error in file 'test.shr' at line 2, column 5: Expected a identifier, but got 'fn'.
 file 'test.shr' line 2: var fn = 1
 file 'test.shr' line 2:     ^^
 

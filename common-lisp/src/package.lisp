@@ -66,7 +66,6 @@
    :token-is-logical-and-op
    :token-is-logical-or-op
    :token-is-required-primitive
-   :token-is-keyword
    :token-bits
    
    :parse-tree

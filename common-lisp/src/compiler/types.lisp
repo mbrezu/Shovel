@@ -12,8 +12,7 @@
   is-multiplier-op
   is-logical-and-op
   is-logical-or-op
-  is-required-primitive
-  is-keyword)
+  is-required-primitive)
 
 (defstruct parse-tree label start-pos end-pos children)
 

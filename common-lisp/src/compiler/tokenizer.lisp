@@ -138,13 +138,8 @@
           "parseInt" "parseFloat" "floor"
           "panic")
          (setf (token-is-required-primitive result) t))
-        (("var"
-          "if" "fn" "return"
-          "true" "false" "null"
-          "class"
-          "try" "catch" "throw"
-          "block" "block_return")
-         (setf (token-is-keyword result) t))))))
+        (("var" "if" "else" "fn" "return" "true" "false" "null" "block")
+         (setf (token-type result) :keyword))))))
 
 (defun tokenize-number ()
   (let (after-decimal-dot)

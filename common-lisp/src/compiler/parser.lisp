@@ -32,8 +32,8 @@
     (reverse result)))
 
 (defun parse-statement ()
-  (cond ((tokenp :identifier "var") (parse-var-decl))
-        ((tokenp :identifier "return") (parse-block-return))
+  (cond ((tokenp :keyword "var") (parse-var-decl))
+        ((tokenp :keyword "return") (parse-block-return))
         (t (let ((expr (parse-expression)))
              (if (tokenp :punctuation "=")
                  (parse-assignment expr)
@@ -149,7 +149,7 @@ token positions."
 
 (defun parse-var-decl ()
   (with-new-parse-tree :var
-    (consume-token :identifier "var")
+    (consume-token :keyword "var")
     (let ((lhs (parse-name nil)))
       (consume-token :punctuation "=")
       (let ((rhs (parse-expression)))
@@ -157,7 +157,7 @@ token positions."
 
 (defun parse-block-return ()
   (with-new-parse-tree :block-return
-    (consume-token :identifier "return")
+    (consume-token :keyword "return")
     (list (parse-expression)
           (parse-expression))))
 
@@ -179,13 +179,13 @@ token positions."
 ;; fn, if
 (defun parse-expression ()
   (cond
-    ((tokenp :identifier "fn") ; Handle function literals.
+    ((tokenp :keyword "fn") ; Handle function literals.
      (parse-lambda))
-    ((tokenp :identifier "if") ; Handle branches.
+    ((tokenp :keyword "if") ; Handle branches.
      (parse-if))
-    ((tokenp :identifier "block") ; Handle named blocks.
+    ((tokenp :keyword "block") ; Handle named blocks.
      (with-new-parse-tree :named-block
-       (consume-token :identifier "block")
+       (consume-token :keyword "block")
        (list (parse-expression)
              (parse-statement))))
     (t (left-assoc #'parse-or-term #'token-is-logical-or-op))))
@@ -241,10 +241,10 @@ token positions."
 (defun parse-atomish ()
   (cond ((tokenp :number) (parse-number))
         ((tokenp :string) (parse-literal-string))
-        ((or (tokenp :identifier "true")
-             (tokenp :identifier "false"))
+        ((or (tokenp :keyword "true")
+             (tokenp :keyword "false"))
          (parse-bool))
-        ((tokenp :identifier "null")
+        ((tokenp :keyword "null")
          (parse-void))
         (t (parse-identifier-or-call-or-ref))))
 
@@ -355,7 +355,7 @@ token positions."
 
 (defun parse-lambda ()
   (with-new-parse-tree :fn
-    (consume-token :identifier "fn")
+    (consume-token :keyword "fn")
     (let ((args (parse-lambda-args))
           (body (parse-statement)))
       (list args body))))
@@ -388,8 +388,6 @@ token positions."
   (require-token-1 :identifier)
   (let* ((token (current-token))
          (content (token-content token)))
-    (when (token-is-keyword token)
-      (raise-error (format nil "'~a' is a reserved keyword." content)))
     (if (token-is-required-primitive token)
         (if can-be-required-primitive
             (token-as-parse-tree :prim0)
@@ -410,12 +408,12 @@ token positions."
 
 (defun parse-if ()
   (with-new-parse-tree :if
-    (consume-token :identifier "if")
+    (consume-token :keyword "if")
     (let ((pred (parse-expression))
           (then (parse-statement)))
-      (if (tokenp :identifier "else")
+      (if (tokenp :keyword "else")
           (progn
-            (consume-token :identifier "else")
+            (consume-token :keyword "else")
             (list pred then (parse-statement)))
           (list pred then (make-parse-tree
                            :label :void
