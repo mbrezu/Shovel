@@ -99,7 +99,7 @@
 ** DONE document new instructions in the README
 ** DONE serialization with named blocks on the stack
 ** DONE eliminate explicit local exits
-** TODO standard library functions for unique block names
+** DONE standard library functions for unique block names
 ** TODO standard library functions for try/catch
 * TODO documentation
 ** TODO Shript (language, required primitives)

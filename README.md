@@ -10,6 +10,7 @@ Shovel is a bytecode virtual machine (VM) that allows programs to be:
    into the VM),
  * passivizable (Shovel processes can be stopped, serialized, stored
    and reactivated later),
+ * embeddable! don't forget embeddable!
  * and therefore transportable between hosts.
 
 Why 'Shovel'? Because that's what you use to do heavy lifting in a

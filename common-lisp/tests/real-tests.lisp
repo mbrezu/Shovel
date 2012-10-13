@@ -143,15 +143,15 @@ file 'test.shr' line 2: ^
 ")))
 
 (test vm-error-message
-  (is (string= (with-output-to-string (str)
-                 (let ((*standard-output* str))
-                   (shovel:run-code
-                    (list (shovel:stdlib)
-                          (shovel-types:make-shript-file :name "test.shr"
-                                                         :contents "
+  (is (string= (process (with-output-to-string (str)
+                          (let ((*standard-output* str))
+                            (shovel:run-code
+                             (list (shovel:stdlib)
+                                   (shovel-types:make-shript-file :name "test.shr"
+                                                                  :contents "
 var g = fn x x + 2
 var f = fn x g(x) + 2
-f('1')")))))
+f('1')"))))))
                "Shovel error in file 'test.shr' at line 2, column 14: Arguments must have the same type (numbers or strings or arrays).
 
 Current stack trace:
@@ -174,7 +174,7 @@ Frame starts at:
 file 'stdlib.shr' line 2: var stdlib = { [...content snipped...]
 file 'stdlib.shr' line 2: ^^^^^^^^^^^^^^
 Frame variables are:
-stdlib = hash(\"filter\", [...callable...], \"forEach\", [...callable...], \"forEachWithIndex\", [...callable...], \"forIndex\", [...callable...], \"map\", [...callable...], \"mapWithIndex\", [...callable...], \"max\", [...callable...], \"min\", [...callable...], \"reduceFromLeft\", [...callable...], \"reverse\", [...callable...], \"sort\", [...callable...], \"while\", [...callable...])
+stdlib = hash
 g = [...callable...]
 f = [...callable...]
 
@@ -346,16 +346,26 @@ var family = makeFamily()
                       "Jane is 23 years old."
                       "Andrew is 2 years old.")))))))
 
+(defun process (str)
+  (let* ((lines (split-sequence:split-sequence #\newline str))
+         (processed-lines (mapcar
+                           (lambda (line)
+                             (if (alexandria:starts-with-subseq "stdlib = hash"
+                                                                line)
+                                 "stdlib = hash"
+                                 line)) lines)))
+    (format nil "~{~a~^~%~}" processed-lines)))
+
 (test array-boundaries
-  (is (string= (with-output-to-string (str)
-                 (let ((*standard-output* str))
-                   (shovel:run-code
-                    (list (shovel:stdlib)
-                          (shovel-types:make-shript-file :name "test.shr"
-                                                         :contents "
+  (is (string= (process (with-output-to-string (str)
+                          (let ((*standard-output* str))
+                            (shovel:run-code
+                             (list (shovel:stdlib)
+                                   (shovel-types:make-shript-file :name "test.shr"
+                                                                  :contents "
 var a = arrayN(10)
 a[10] = 1
-")))))
+"))))))
                "Shovel error in file 'test.shr' at line 3, column 1: Invalid 0-based index (10 for an array with 10 elements).
 
 Current stack trace:
@@ -368,21 +378,21 @@ Frame starts at:
 file 'stdlib.shr' line 2: var stdlib = { [...content snipped...]
 file 'stdlib.shr' line 2: ^^^^^^^^^^^^^^
 Frame variables are:
-stdlib = hash(\"filter\", [...callable...], \"forEach\", [...callable...], \"forEachWithIndex\", [...callable...], \"forIndex\", [...callable...], \"map\", [...callable...], \"mapWithIndex\", [...callable...], \"max\", [...callable...], \"min\", [...callable...], \"reduceFromLeft\", [...callable...], \"reverse\", [...callable...], \"sort\", [...callable...], \"while\", [...callable...])
+stdlib = hash
 a = array(null, null, null, null, null, null, null, null, null, null)
 
 
 
 "))
-  (is (string= (with-output-to-string (str)
-                 (let ((*standard-output* str))
-                   (shovel:run-code
-                    (list (shovel:stdlib)
-                          (shovel-types:make-shript-file :name "test.shr"
-                                                         :contents "
+  (is (string= (process (with-output-to-string (str)
+                          (let ((*standard-output* str))
+                            (shovel:run-code
+                             (list (shovel:stdlib)
+                                   (shovel-types:make-shript-file :name "test.shr"
+                                                                  :contents "
 var a = arrayN(10)
 a[-1] = 1
-")))))
+"))))))
                "Shovel error in file 'test.shr' at line 3, column 1: Index less than 0.
 
 Current stack trace:
@@ -395,7 +405,7 @@ Frame starts at:
 file 'stdlib.shr' line 2: var stdlib = { [...content snipped...]
 file 'stdlib.shr' line 2: ^^^^^^^^^^^^^^
 Frame variables are:
-stdlib = hash(\"filter\", [...callable...], \"forEach\", [...callable...], \"forEachWithIndex\", [...callable...], \"forIndex\", [...callable...], \"map\", [...callable...], \"mapWithIndex\", [...callable...], \"max\", [...callable...], \"min\", [...callable...], \"reduceFromLeft\", [...callable...], \"reverse\", [...callable...], \"sort\", [...callable...], \"while\", [...callable...])
+stdlib = hash
 a = array(null, null, null, null, null, null, null, null, null, null)
 
 
@@ -417,15 +427,15 @@ a
 ")))))
                "#(1 2 3)
 "))
-  (is (string= (with-output-to-string (str)
-                 (let ((*standard-output* str))
-                   (shovel:run-code
-                    (list (shovel:stdlib)
-                          (shovel-types:make-shript-file :name "test.shr"
-                                                         :contents "
+  (is (string= (process (with-output-to-string (str)
+                          (let ((*standard-output* str))
+                            (shovel:run-code
+                             (list (shovel:stdlib)
+                                   (shovel-types:make-shript-file :name "test.shr"
+                                                                  :contents "
 var a = 1
 push(a, 1)
-")))))
+"))))))
                "Shovel error in file 'test.shr' at line 3, column 1: First argument must be a vector.
 
 Current stack trace:
@@ -438,7 +448,7 @@ Frame starts at:
 file 'stdlib.shr' line 2: var stdlib = {
 file 'stdlib.shr' line 2: ^^^^^^^^^
 Frame variables are:
-stdlib = hash(\"filter\", [...callable...], \"forEach\", [...callable...], \"forEachWithIndex\", [...callable...], \"forIndex\", [...callable...], \"map\", [...callable...], \"mapWithIndex\", [...callable...], \"max\", [...callable...], \"min\", [...callable...], \"reduceFromLeft\", [...callable...], \"reverse\", [...callable...], \"sort\", [...callable...], \"while\", [...callable...])
+stdlib = hash
 a = 1
 
 
@@ -470,15 +480,15 @@ pop(a)
                "2
 "))
 
-  (is (string= (with-output-to-string (str)
-                 (let ((*standard-output* str))
-                   (shovel:run-code
-                    (list (shovel:stdlib)
-                          (shovel-types:make-shript-file :name "test.shr"
-                                                         :contents "
+  (is (string= (process (with-output-to-string (str)
+                          (let ((*standard-output* str))
+                            (shovel:run-code
+                             (list (shovel:stdlib)
+                                   (shovel-types:make-shript-file :name "test.shr"
+                                                                  :contents "
 var a = array()
 pop(a)
-")))))
+"))))))
                "Shovel error in file 'test.shr' at line 3, column 1: Can't pop from an empty array.
 
 Current stack trace:
@@ -491,7 +501,7 @@ Frame starts at:
 file 'stdlib.shr' line 2: var stdlib = { [...content snipped...]
 file 'stdlib.shr' line 2: ^^^^^^^^^^^^^^
 Frame variables are:
-stdlib = hash(\"filter\", [...callable...], \"forEach\", [...callable...], \"forEachWithIndex\", [...callable...], \"forIndex\", [...callable...], \"map\", [...callable...], \"mapWithIndex\", [...callable...], \"max\", [...callable...], \"min\", [...callable...], \"reduceFromLeft\", [...callable...], \"reverse\", [...callable...], \"sort\", [...callable...], \"while\", [...callable...])
+stdlib = hash
 a = array()
 
 
@@ -792,6 +802,12 @@ Current environment:
       (let* ((my-program "block 'f' @halt()")
              (user-primitives (list (list "halt" #'halt 0))))
         (is (string= "ole!" (test-serializer my-program user-primitives)))))))
+
+(test stdlib-block-name-generation
+  (is (equalp (shovel:naked-run-code (list (shovel:stdlib)
+                                           "
+array(stdlib.getBlockName(), stdlib.getPrefixedBlockName('myBlock'))"))
+       #("block_1" "myBlock_2"))))
 
 (defun run-tests ()
   (fiveam:run! :shovel-tests))

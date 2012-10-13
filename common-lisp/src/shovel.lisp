@@ -81,6 +81,12 @@ var stdlib = {
      forIndex(arr, fn i result[length(arr) - 1 - i] = arr[i])
      result
    }
+   var namedBlockCounter = 0
+   var getPrefixedBlockName = fn (prefix) {
+     namedBlockCounter = namedBlockCounter + 1
+     prefix + '_' +string(namedBlockCounter)
+   }
+   var getBlockName = fn () getPrefixedBlockName('block')
    hash('min', min,
         'max', max,
         'while', while,
@@ -92,7 +98,9 @@ var stdlib = {
         'filter', filter,
         'reduceFromLeft', reduceFromLeft,
         'sort', qsort,
-        'reverse', reverse
+        'reverse', reverse,
+        'getPrefixedBlockName', getPrefixedBlockName,
+        'getBlockName', getBlockName
        )
 }
 ")))
@@ -111,10 +119,10 @@ var stdlib = {
     result))
 
 (defun naked-run-code (sources &key user-primitives)
-  (shovel-vm:run-vm
-   (get-bytecode sources)
-   :sources sources
-   :user-primitives user-primitives))
+  (nth-value 0 (shovel-vm:run-vm
+                (get-bytecode sources)
+                :sources sources
+                :user-primitives user-primitives)))
 
 (defun run-code (sources &key user-primitives debug)
   (let ((*print-circle* t))
