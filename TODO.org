@@ -84,7 +84,6 @@
   VM versions are backward compatible. This way it is possible to
   check that we're not trying to decode a version n+m state/bytecode
   on code that only knows how to handle version n state/bytecode.
-* TODO tests for all the required primitives
 * DONE add some reserved keywords
   class, try, catch, throw, block, block_return
 * DONE the type for keyword tokens should be changed to 
@@ -104,7 +103,8 @@
 * DONE a keyword - 'context' that pushes on the stack
   a hash containing:
   - under key 'stack': the string representation of the current stack trace and 
-  - under key 'environment': the string representation of the current environment.
+  - under key 'environment': the string representation of the current environment. 
+* TODO tests for all the required primitives
 * TODO documentation
 ** TODO Shript (language, required primitives)
 ** TODO VM (instructions, state)
