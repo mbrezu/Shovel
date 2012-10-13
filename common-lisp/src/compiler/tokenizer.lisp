@@ -138,7 +138,7 @@
           "parseInt" "parseFloat" "floor"
           "panic")
          (setf (token-is-required-primitive result) t))
-        (("var" "if" "else" "fn" "return" "true" "false" "null" "block")
+        (("var" "if" "else" "fn" "return" "true" "false" "null" "block" "context")
          (setf (token-type result) :keyword))))))
 
 (defun tokenize-number ()

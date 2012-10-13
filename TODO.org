@@ -90,7 +90,7 @@
 * DONE the type for keyword tokens should be changed to 
   :keyword in 'tokenize-identifier' (and I can probably drop 
   'token-is-keyword')
-* TODO non local exits
+* DONE non local exits
 ** DONE reserve and parse keyword 'block'
 ** DONE reserve and parse keyword 'block_return'
 ** DONE add VM instruction 'BLOCK address'
@@ -101,6 +101,10 @@
 ** DONE eliminate explicit local exits
 ** DONE standard library functions for unique block names
 ** DONE standard library functions for try/catch
+* DONE a keyword - 'context' that pushes on the stack
+  a hash containing:
+  - under key 'stack': the string representation of the current stack trace and 
+  - under key 'environment': the string representation of the current environment.
 * TODO documentation
 ** TODO Shript (language, required primitives)
 ** TODO VM (instructions, state)

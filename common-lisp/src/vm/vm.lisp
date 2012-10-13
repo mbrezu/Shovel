@@ -145,7 +145,7 @@
          do (let ((var (elt (env-frame-vars frame) i)))
               (format stream "~a = ~a~%"
                       (first var)
-                      (shovel-vm-prim0:shovel-string-representation 
+                      (shovel-vm-prim0:shovel-string-representation
                        (second var)))))
       (terpri stream))
     (write-environment (cdr env) vm stream)))
@@ -362,6 +362,17 @@
                    (named-block-environment named-block))
              (setf (vm-program-counter vm)
                    (named-block-end-address named-block)))))
+        (:context
+         (let ((stack-trace (with-output-to-string (str)
+                              (write-stack-trace vm str)))
+               (current-environment (with-output-to-string (str)
+                                      (write-environment (vm-current-environment vm)
+                                                         vm str)))
+               (context (make-hash-table :test #'equal)))
+           (setf (gethash "stack" context) stack-trace)
+           (setf (gethash "environment" context) current-environment)
+           (push context (vm-stack vm))
+           (incf (vm-program-counter vm))))
         (:tjump
          (check-bool vm)
          (jump-if (pop (vm-stack vm)) vm args))

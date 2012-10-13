@@ -326,6 +326,7 @@ token positions."
 
 (defun parse-parenthesized-or-name ()
   (cond ((tokenp :identifier) (parse-name))
+        ((tokenp :keyword "context") (parse-context))
         ((tokenp :punctuation "(")  ; Handle parenthesized expression.
          (consume-token :punctuation "(")
          (prog1
@@ -394,6 +395,10 @@ token positions."
             (raise-error (format nil "Name '~a' is reserved for a primitive."
                                  content)))
         (token-as-parse-tree :name))))
+
+(defun parse-context ()
+  (require-token-1 :keyword "context")
+  (token-as-parse-tree :context))
 
 (defun parse-prim ()
   (require-token-1 :prim)

@@ -835,5 +835,83 @@ stdlib.try(fn () {
 "))
          11)))
 
+(test context
+  (is (string= (shovel:naked-run-code (list "
+var a = 20
+var h = fn () context.stack
+var g = fn x h() + string(x)
+var f = fn x g(x) + string(x)
+f(a)
+"))
+               "file '<unspecified-1>' line 3: var h = fn () context.stack
+file '<unspecified-1>' line 3:               ^^^^^^^
+file '<unspecified-1>' line 4: var g = fn x h() + string(x)
+file '<unspecified-1>' line 4:              ^^^
+file '<unspecified-1>' line 5: var f = fn x g(x) + string(x)
+file '<unspecified-1>' line 5:              ^^^^
+file '<unspecified-1>' line 6: f(a)
+file '<unspecified-1>' line 6: ^^^^
+2020"))
+  (is (string= (shovel:naked-run-code (list "
+var a = 20
+var h = fn () context.environment
+var g = fn x h() + string(x)
+var f = fn x g(x) + string(x)
+f(a)
+"))
+               "Frame starts at:
+file '<unspecified-1>' line 2: var a = 20 [...content snipped...]
+file '<unspecified-1>' line 2: ^^^^^^^^^^
+Frame variables are:
+a = 20
+h = [...callable...]
+g = [...callable...]
+f = [...callable...]
+
+2020"))
+  (is (string= (shovel:naked-run-code (list "
+var a = 20
+var f = fn x {
+  var g = fn x {
+    var h = fn () context.environment
+    h() + string(x)
+  }
+  g(x) + string(x)
+}
+f(a)
+"))
+               "Frame starts at:
+file '<unspecified-1>' line 5:     var h = fn () context.environment
+file '<unspecified-1>' line 5:     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Frame variables are:
+h = [...callable...]
+
+Frame starts at:
+file '<unspecified-1>' line 4:   var g = fn x {
+file '<unspecified-1>' line 4:              ^
+Frame variables are:
+x = 20
+
+Frame starts at:
+file '<unspecified-1>' line 4:   var g = fn x { [...content snipped...]
+file '<unspecified-1>' line 4:   ^^^^^^^^^^^^^^
+Frame variables are:
+g = [...callable...]
+
+Frame starts at:
+file '<unspecified-1>' line 3: var f = fn x {
+file '<unspecified-1>' line 3:            ^
+Frame variables are:
+x = 20
+
+Frame starts at:
+file '<unspecified-1>' line 2: var a = 20 [...content snipped...]
+file '<unspecified-1>' line 2: ^^^^^^^^^^
+Frame variables are:
+a = 20
+f = [...callable...]
+
+2020")))
+
 (defun run-tests ()
   (fiveam:run! :shovel-tests))
