@@ -97,6 +97,7 @@
 ** DONE add VM instruction 'BLOCK_RETURN'
 ** DONE add VM instruction 'POP_BLOCK'
 ** DONE document new instructions in the README
+* DONE eliminate explicit local exits
 * TODO documentation
 ** TODO Shript (language, required primitives)
 ** TODO VM (instructions, state)

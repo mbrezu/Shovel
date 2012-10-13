@@ -328,7 +328,7 @@ c = 4
 var person = fn (name, age) {
   var this = hash('name', name, 'age', age)
   this.print = fn () { @halt(this.name, this.age) }
-  return this
+  this
 }
 var makeFamily = fn () {
   var names = array('John', 'Jane', 'Andrew')
@@ -709,7 +709,7 @@ f(1)
 "))
          7))
   (is (= 10 (shovel:naked-run-code (list "
-var h = fn x block_return 'f' 10
+var h = fn x return 'f' 10
 var g = fn x h(x) + 2
 var f = fn x block 'f' g(x) + 2
 f(1)
@@ -717,7 +717,7 @@ f(1)
   (is (string= (with-output-to-string (str)
                  (let ((*standard-output* str))
                    (shovel:run-code (list "
-var h = fn x block_return 'g' 10
+var h = fn x return 'g' 10
 var g = fn x h(x) + 2
 var f = fn x block 'f' g(x) + 2
 f(1)
@@ -725,8 +725,8 @@ f(1)
                "Shovel error in file '<unspecified-1>' at line 2, column 14: Cannot find block 'g'.
 
 Current stack trace:
-file '<unspecified-1>' line 2: var h = fn x block_return 'g' 10
-file '<unspecified-1>' line 2:              ^^^^^^^^^^^^^^^^^^^
+file '<unspecified-1>' line 2: var h = fn x return 'g' 10
+file '<unspecified-1>' line 2:              ^^^^^^^^^^^^^
 file '<unspecified-1>' line 3: var g = fn x h(x) + 2
 file '<unspecified-1>' line 3:              ^^^^
 file '<unspecified-1>' line 4: var f = fn x block 'f' g(x) + 2
@@ -737,14 +737,14 @@ file '<unspecified-1>' line 5: ^^^^
 Current environment:
 
 Frame starts at:
-file '<unspecified-1>' line 2: var h = fn x block_return 'g' 10
+file '<unspecified-1>' line 2: var h = fn x return 'g' 10
 file '<unspecified-1>' line 2:            ^
 Frame variables are:
 x = 1
 
 Frame starts at:
-file '<unspecified-1>' line 2: var h = fn x block_return 'g' 10 [...content snipped...]
-file '<unspecified-1>' line 2: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+file '<unspecified-1>' line 2: var h = fn x return 'g' 10 [...content snipped...]
+file '<unspecified-1>' line 2: ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Frame variables are:
 h = [...callable...]
 g = [...callable...]
@@ -769,12 +769,12 @@ Current environment:
 "))
   (is (string= (with-output-to-string (str)
                  (let ((*standard-output* str))
-                   (shovel:run-code (list "block 'a' block_return 1 3"))))
+                   (shovel:run-code (list "block 'a' return 1 3"))))
 "Shovel error in file '<unspecified-1>' at line 1, column 11: The name of a block must be a string.
 
 Current stack trace:
-file '<unspecified-1>' line 1: block 'a' block_return 1 3
-file '<unspecified-1>' line 1:           ^^^^^^^^^^^^^^^^
+file '<unspecified-1>' line 1: block 'a' return 1 3
+file '<unspecified-1>' line 1:           ^^^^^^^^^^
 
 Current environment:
 

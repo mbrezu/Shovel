@@ -32,12 +32,8 @@
     (reverse result)))
 
 (defun parse-statement ()
-  (cond ((tokenp :identifier "var")
-         (parse-var-decl))
-        ((tokenp :identifier "return")
-         (parse-return))
-        ((tokenp :identifier "block_return")
-         (parse-block-return))
+  (cond ((tokenp :identifier "var") (parse-var-decl))
+        ((tokenp :identifier "return") (parse-block-return))
         (t (let ((expr (parse-expression)))
              (if (tokenp :punctuation "=")
                  (parse-assignment expr)
@@ -159,14 +155,9 @@ token positions."
       (let ((rhs (parse-expression)))
         (list lhs rhs)))))
 
-(defun parse-return ()
-  (with-new-parse-tree :return
-    (consume-token :identifier "return")
-    (parse-expression)))
-
 (defun parse-block-return ()
   (with-new-parse-tree :block-return
-    (consume-token :identifier "block_return")
+    (consume-token :identifier "return")
     (list (parse-expression)
           (parse-expression))))
 

@@ -44,12 +44,12 @@ var stdlib = {
    var map = fn (arr, fun) {
      var result = arrayN(length(arr))
      forIndex(arr, fn i result[i] = fun(arr[i]))
-     return result
+     result
    }
    var mapWithIndex = fn (arr, fun) {
      var result = arrayN(length(arr))
      forIndex(arr, fn i result[i] = fun(arr[i], i))
-     return result
+     result
    }
    var filter = fn (arr, fun) {
      var result = arrayN(length(arr))
@@ -58,25 +58,28 @@ var stdlib = {
        result[ptr] = arr[i]
        ptr = ptr + 1
      })
-     return slice(result, 0, ptr)
+     slice(result, 0, ptr)
    }
    var reduceFromLeft = fn (arr, initialElement, fun) {
      var result = initialElement
      forEach(arr, fn item result = fun(result, item))
-     return result
+     result
    }
    var qsort = fn (arr, lessThan) {
-     if length(arr) == 0 || length(arr) == 1 return arr
-     var pivot = arr[0]
-     var butFirst = slice(arr, 1, -1)
-     var lesser = filter(butFirst, fn el lessThan(el, pivot))
-     var greater = filter(butFirst, fn el !lessThan(el, pivot))
-     return qsort(lesser, lessThan) + array(pivot) + qsort(greater, lessThan)
+     if length(arr) == 0 || length(arr) == 1
+     arr
+     else {
+       var pivot = arr[0]
+       var butFirst = slice(arr, 1, -1)
+       var lesser = filter(butFirst, fn el lessThan(el, pivot))
+       var greater = filter(butFirst, fn el !lessThan(el, pivot))
+       qsort(lesser, lessThan) + array(pivot) + qsort(greater, lessThan)
+     }
    }
    var reverse = fn (arr) {
      var result = arrayN(length(arr))
      forIndex(arr, fn i result[length(arr) - 1 - i] = arr[i])
-     return result
+     result
    }
    hash('min', min,
         'max', max,
