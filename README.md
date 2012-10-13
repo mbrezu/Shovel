@@ -150,6 +150,21 @@ The possible opcodes are:
  * NEW-FRAME *var-1*, *var-2*, ... *var-count* - extends the current
    environment with a frame containing *count* slots;
  * DROP-FRAME - removes a frame from the current environment;
+ * BLOCK *address* - starts a named block (the name is the top of the
+   stack) that ends at *address*; pops the stack; pushes a 'named
+   block' record (a name, a return address - *address*, the current
+   environment) on the stack; non-local exits are implemented using
+   `BLOCK`, `BLOCK_RETURN` and `POP_BLOCK`;
+ * BLOCK_RETURN - returns from a named block; the top of the stack is
+   the value to return, the second top of the stack is the name of the
+   named block; if there is no such named block on the stack,
+   execution fails; pops two values from the stack, pushes the named
+   block record then the value to return back on the stack;
+ * POP_BLOCK - ends a named block; this should be the first address
+   after the end address of a named block; the top of the stack should
+   be the value returned from the block; the second top is a 'named
+   block' record; an error is thrown if the second top is not a 'named
+   block' record; the second top is removed from the stack.
 
 ### Required Primitives
 

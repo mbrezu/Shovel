@@ -74,7 +74,7 @@ don't know how to compute MD5 hash.")))))
                        (args (instruction-arguments instruction)))
                    (unless (eq :label opcode)
                      (case opcode
-                       ((:tjump :fjump :jump)
+                       ((:tjump :fjump :jump :block)
                         (setf (instruction-arguments instruction)
                               (gethash args labels-hash)))
                        (:fn

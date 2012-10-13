@@ -87,28 +87,16 @@
 * TODO tests for all the required primitives
 * DONE add some reserved keywords
   class, try, catch, throw, block, block_return
-* TODO non local exits
-** TODO reserve keyword 'block'
-   used as in 'block name { ... block ... }'; starts a named block and
-   uses instruction 'BLOCK';
-** TODO reserve keyword 'block_return'
-   used as in 'block_return name, return-value'; pushes *return-value*
-   on the stack and 'returns' to block *name* using instruction
-   'BLOCK_RETURN';
-** TODO add VM instruction 'BLOCK name, address'
-   which pushes a 'block' structure made of *name*, *address* and the
-   current environment on the stack; note: a 'POP_BLOCK' must be
-   executed right after *address*;
-** TODO add VM instruction 'BLOCK_RETURN name'
-   which 'returns' to the address associated with BLOCK *name* and
-   leaves the top of the stack (before BLOCK_RETURN) as the top of the
-   stack, the 'next top' is the value pushed by the corresponding
-   BLOCK instruction; everything found in between these on the stack
-   is deleted;
-** TODO add VM instruction 'POP_BLOCK'
-   it pops the 'next top' of the stack, in case it is a block, error
-   otherwise; must be paired with a 'BLOCK' instruction, which it
-   cancels.
+* TODO the type for keyword tokens should be changed to 
+  :keyword in 'tokenize-identifier' (and I can probably drop 
+  'token-is-keyword')
+* DONE non local exits
+** DONE reserve and parse keyword 'block'
+** DONE reserve and parse keyword 'block_return'
+** DONE add VM instruction 'BLOCK address'
+** DONE add VM instruction 'BLOCK_RETURN'
+** DONE add VM instruction 'POP_BLOCK'
+** DONE document new instructions in the README
 * TODO documentation
 ** TODO Shript (language, required primitives)
 ** TODO VM (instructions, state)

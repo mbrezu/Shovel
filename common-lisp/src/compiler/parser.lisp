@@ -36,6 +36,8 @@
          (parse-var-decl))
         ((tokenp :identifier "return")
          (parse-return))
+        ((tokenp :identifier "block_return")
+         (parse-block-return))
         (t (let ((expr (parse-expression)))
              (if (tokenp :punctuation "=")
                  (parse-assignment expr)
@@ -162,6 +164,12 @@ token positions."
     (consume-token :identifier "return")
     (parse-expression)))
 
+(defun parse-block-return ()
+  (with-new-parse-tree :block-return
+    (consume-token :identifier "block_return")
+    (list (parse-expression)
+          (parse-expression))))
+
 (defun parse-assignment (lhs)
   (with-new-anchored-parse-tree (parse-tree-start-pos lhs) :set!
     (list lhs (token-as-parse-tree :prim0) (parse-expression))))
@@ -184,6 +192,11 @@ token positions."
      (parse-lambda))
     ((tokenp :identifier "if") ; Handle branches.
      (parse-if))
+    ((tokenp :identifier "block") ; Handle named blocks.
+     (with-new-parse-tree :named-block
+       (consume-token :identifier "block")
+       (list (parse-expression)
+             (parse-statement))))
     (t (left-assoc #'parse-or-term #'token-is-logical-or-op))))
 
 (defun make-prim0-parse-tree (primitive-name)

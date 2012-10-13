@@ -20,6 +20,8 @@
   program-counter
   environment)
 
+(defstruct named-block name end-address environment)
+
 (defstruct callable
   (prim0 nil)
   (prim nil)
@@ -328,6 +330,37 @@
             (apply-return-address vm retaddr)
             (setf (vm-stack vm)
                   (cons result other-stack))))
+        (:block
+            (let ((name (pop (vm-stack vm))))
+              (unless (stringp name)
+                (raise-shovel-error vm "The name of a block must be a string."))
+              (push (make-named-block :name name
+                                      :end-address args
+                                      :environment (vm-current-environment vm))
+                    (vm-stack vm)))
+          (incf (vm-program-counter vm)))
+        (:pop-block
+         (let ((return-value (first (vm-stack vm)))
+               (named-block (second (vm-stack vm)))
+               (rest-of-the-stack (cddr (vm-stack vm))))
+           (unless (named-block-p named-block)
+             (raise-shovel-error vm "Invalid context for POP_BLOCK."))
+           (setf (vm-stack vm) (cons return-value rest-of-the-stack)))
+         (incf (vm-program-counter vm)))
+        (:block-return
+         (let ((return-value (first (vm-stack vm)))
+               (name (second (vm-stack vm))))
+           (unless (stringp name)
+                (raise-shovel-error vm "The name of a block must be a string."))
+           (multiple-value-bind (named-block stack-below)
+               (find-named-block vm (vm-stack vm) name)
+             (setf (vm-stack vm) (list* return-value
+                                        named-block
+                                        stack-below))
+             (setf (vm-current-environment vm)
+                   (named-block-environment named-block))
+             (setf (vm-program-counter vm)
+                   (named-block-end-address named-block)))))
         (:tjump
          (check-bool vm)
          (jump-if (pop (vm-stack vm)) vm args))
@@ -337,6 +370,14 @@
          (incf (vm-program-counter vm)))
         (t (error "Shovel internal WTF: unknown instruction '~a'." opcode)))))
   (vm-not-finished vm))
+
+(defun find-named-block (vm stack block-name)
+  (cond ((null stack)
+         (raise-shovel-error vm (format nil "Cannot find block '~a'." block-name)))
+        ((and (named-block-p (first stack))
+              (string= block-name (named-block-name (first stack))))
+         (values (first stack) (rest stack)))
+        (t (find-named-block vm (rest stack) block-name))))
 
 (defun find-user-primitive (vm primitive-name)
   (or (gethash primitive-name (vm-user-primitives vm))
@@ -355,7 +396,7 @@
 
 (defun handle-args (vm args)
   (let ((arg-values (subseq (vm-stack vm) 0 args)))
-    (setf (vm-stack vm) (subseq (vm-stack vm) args))
+    (setf (vm-stack vm) (nthcdr args (vm-stack vm)))
     (setf arg-values (nreverse arg-values))
     (dotimes (i (length arg-values))
       (set-in-environment (vm-current-environment vm)
@@ -385,7 +426,7 @@
            (subseq (vm-stack vm) 0 num-args)
            (cons (make-return-address :program-counter (1+ (vm-program-counter vm))
                                       :environment (vm-current-environment vm))
-                 (subseq (vm-stack vm) num-args)))))
+                 (nthcdr num-args (vm-stack vm))))))
   (when (and (callable-num-args callable )
              (/= (callable-num-args callable) num-args))
     (arity-error vm (callable-num-args callable) num-args))
@@ -458,7 +499,7 @@ A 'valid value' (with Common Lisp as the host language) is:
                   vm
                   "A user-defined primitive returned an unknown second value.")))
         (when should-finish-this-call
-          (setf (vm-stack vm) (subseq (vm-stack vm) num-args))
+          (setf (vm-stack vm) (nthcdr num-args (vm-stack vm)))
           (if save-return-address
               (incf (vm-program-counter vm))
               (apply-return-address vm (pop (vm-stack vm))))
