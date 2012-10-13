@@ -81,12 +81,34 @@ var stdlib = {
      forIndex(arr, fn i result[length(arr) - 1 - i] = arr[i])
      result
    }
-   var namedBlockCounter = 0
-   var getPrefixedBlockName = fn (prefix) {
-     namedBlockCounter = namedBlockCounter + 1
-     prefix + '_' +string(namedBlockCounter)
+
+   var getPrefixedBlockName = {
+     var namedBlockCounter = 0
+     fn (prefix) {
+       namedBlockCounter = namedBlockCounter + 1
+       prefix + '_' +string(namedBlockCounter)
+     }
    }
    var getBlockName = fn () getPrefixedBlockName('block')
+
+   var tryAndThrow = {
+     var tryStack = array()
+     var throw = fn (error) {
+       var blockName = pop(tryStack)
+       push(tryStack, array(error))
+       return blockName null
+     }
+     var try = fn (tryCode, catchCode) {
+       var newBlockName = getPrefixedBlockName('tryCatchBlock')
+       push(tryStack, newBlockName)
+       var exitValue = block newBlockName tryCode()
+       var stackTop = pop(tryStack)
+       if isArray(stackTop) catchCode(stackTop[0])
+       else exitValue
+     }
+     array(try, throw)
+   }
+
    hash('min', min,
         'max', max,
         'while', while,
@@ -100,7 +122,9 @@ var stdlib = {
         'sort', qsort,
         'reverse', reverse,
         'getPrefixedBlockName', getPrefixedBlockName,
-        'getBlockName', getBlockName
+        'getBlockName', getBlockName,
+        'try', tryAndThrow[0],
+        'throw' , tryAndThrow[1]
        )
 }
 ")))
@@ -119,10 +143,10 @@ var stdlib = {
     result))
 
 (defun naked-run-code (sources &key user-primitives)
-  (nth-value 0 (shovel-vm:run-vm
-                (get-bytecode sources)
-                :sources sources
-                :user-primitives user-primitives)))
+  (nth-value 0
+             (shovel-vm:run-vm (get-bytecode sources)
+                               :sources sources
+                               :user-primitives user-primitives)))
 
 (defun run-code (sources &key user-primitives debug)
   (let ((*print-circle* t))

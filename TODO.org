@@ -100,7 +100,7 @@
 ** DONE serialization with named blocks on the stack
 ** DONE eliminate explicit local exits
 ** DONE standard library functions for unique block names
-** TODO standard library functions for try/catch
+** DONE standard library functions for try/catch
 * TODO documentation
 ** TODO Shript (language, required primitives)
 ** TODO VM (instructions, state)

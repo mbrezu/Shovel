@@ -807,7 +807,33 @@ Current environment:
   (is (equalp (shovel:naked-run-code (list (shovel:stdlib)
                                            "
 array(stdlib.getBlockName(), stdlib.getPrefixedBlockName('myBlock'))"))
-       #("block_1" "myBlock_2"))))
+              #("block_1" "myBlock_2"))))
+
+(test stdlib-exceptions
+  (is (= (shovel:naked-run-code (list (shovel:stdlib)
+                                      "
+stdlib.try(fn () 10, fn (error) null)
+"))
+         10))
+  (is (= (shovel:naked-run-code (list (shovel:stdlib)
+                                      "
+stdlib.try(fn () stdlib.throw(3), fn (error) error + 1)
+"))
+         4))
+  (is (string= (shovel:naked-run-code (list (shovel:stdlib)
+                                            "
+stdlib.try(fn () {
+  stdlib.try(fn () stdlib.throw(3), fn (error) 'ole')
+}, fn (error) error + 1)
+"))
+               "ole"))
+  (is (= (shovel:naked-run-code (list (shovel:stdlib)
+                                      "
+stdlib.try(fn () {
+  stdlib.try(fn () stdlib.throw(3), fn (error) stdlib.throw(10))
+}, fn (error) error + 1)
+"))
+         11)))
 
 (defun run-tests ()
   (fiveam:run! :shovel-tests))
