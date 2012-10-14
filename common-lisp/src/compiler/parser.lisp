@@ -188,7 +188,8 @@ token positions."
        (consume-token :keyword "block")
        (list (parse-expression)
              (parse-statement))))
-    (t (left-assoc #'parse-or-term #'token-is-logical-or-op))))
+    (t (left-assoc #'parse-or-term #'token-is-logical-or-op
+                   :post-processor #'post-process-logical-or))))
 
 (defun make-prim0-parse-tree (primitive-name)
   (with-new-parse-tree :prim0
@@ -196,23 +197,70 @@ token positions."
         primitive-name
       (next-token))))
 
-(defun left-assoc (sub-parser operator-pred)
+(defun left-assoc (sub-parser operator-pred &key post-processor)
   (declare (optimize speed)
            (type (function (token) boolean) operator-pred)
-           (type (function () parse-tree) sub-parser))
+           (type (function () parse-tree) sub-parser)
+           (type (or null (function (parse-tree) parse-tree)) post-processor))
   (labels ((iter (start)
              (let ((token (current-token)))
                (if (and token (funcall operator-pred token))
-                   (iter (with-new-anchored-parse-tree
-                             (parse-tree-start-pos start)
-                             :call
-                           (list (make-prim0-parse-tree (token-content token))
-                                 start
-                                 (funcall sub-parser))))
+                   (iter
+                    (let ((result
+                           (with-new-anchored-parse-tree
+                               (parse-tree-start-pos start)
+                               :call
+                             (list (make-prim0-parse-tree (token-content token))
+                                   start
+                                   (funcall sub-parser)))))
+                      (if post-processor
+                          (funcall post-processor result)
+                          result)))
                    start))))
     (iter (funcall sub-parser))))
 
-(defun parse-or-term () (left-assoc #'parse-and-term #'token-is-logical-and-op))
+(defun is-required-primitive-call (parse-tree required-primitive)
+  (and (eq :call (parse-tree-label parse-tree))
+       (let ((operator (first (parse-tree-children parse-tree))))
+         (and (eq :prim0 (parse-tree-label operator))
+              (string= required-primitive (parse-tree-children operator))))))
+
+(let ((false-pt (make-parse-tree :label :bool :children "false"))
+      (true-pt (make-parse-tree :label :bool :children "true")))
+  (defun get-false-parse-tree () false-pt)
+  (defun get-true-parse-tree () true-pt))
+
+(defun maybe-rewrite-as-if-expression (parse-tree operator if-children-fn)
+  (if (is-required-primitive-call parse-tree operator)
+      (let* ((operands (parse-tree-children parse-tree))
+             (operator (first operands))
+             (t1 (second operands))
+             (t2 (third operands)))
+        (make-parse-tree :label :if
+                         :start-pos (parse-tree-start-pos operator)
+                         :end-pos (parse-tree-end-pos operator)
+                         :children (funcall if-children-fn t1 t2)))
+      parse-tree))
+
+(defun post-process-logical-and (parse-tree)
+  "'t1 && t2' is rewritten as 'if t1 t2 else false' in the
+parser. Macroish implementation of short-circuiting logical 'and'."
+  (maybe-rewrite-as-if-expression parse-tree
+                                  "&&"
+                                  (lambda (t1 t2)
+                                    (list t1 t2 (get-false-parse-tree)))))
+
+(defun post-process-logical-or (parse-tree)
+  "'t1 || t2' is rewritten as 'if t1 true else t2' in the
+parser. Macroish implementation of short-circuiting logical 'or'."
+  (maybe-rewrite-as-if-expression parse-tree
+                                  "||"
+                                  (lambda (t1 t2)
+                                    (list t1 (get-true-parse-tree) t2))))
+
+(defun parse-or-term ()
+  (left-assoc #'parse-and-term #'token-is-logical-and-op
+              :post-processor #'post-process-logical-and))
 
 (defun parse-and-term ()
   (left-assoc #'parse-relational-term #'token-is-relational-op))

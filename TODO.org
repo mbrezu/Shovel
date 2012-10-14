@@ -104,6 +104,10 @@
   a hash containing:
   - under key 'stack': the string representation of the current stack trace and 
   - under key 'environment': the string representation of the current environment. 
+* DONE short-circuit behavior for && and ||
+  - implement by replacing with ifs;
+  - t1 || t2 - if t1 true else t2;
+  - t1 && t2 - if t1 t2 else false.
 * TODO tests for all the required primitives
 * TODO documentation
 ** TODO Shript (language, required primitives)

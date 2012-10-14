@@ -913,5 +913,19 @@ f = [...callable...]
 
 2020")))
 
+(test short-circuiting-logical-operators
+  (is (eq :true (shovel:naked-run-code (list "true || '1' == 2"))))
+  (is (eq :false (shovel:naked-run-code (list "false && '1' == 2"))))
+  
+  (is (eq :true (shovel:naked-run-code (list "true || false"))))
+  (is (eq :true (shovel:naked-run-code (list "true || true"))))
+  (is (eq :true (shovel:naked-run-code (list "false || true"))))
+  (is (eq :false (shovel:naked-run-code (list "false || false"))))
+  
+  (is (eq :false (shovel:naked-run-code (list "true && false"))))
+  (is (eq :true (shovel:naked-run-code (list "true && true"))))
+  (is (eq :false (shovel:naked-run-code (list "false && true"))))
+  (is (eq :false (shovel:naked-run-code (list "false && false")))))
+
 (defun run-tests ()
   (fiveam:run! :shovel-tests))
