@@ -2,238 +2,68 @@
 
 # Shovel
 
-## Introduction
+## WHAT?
 
-Shovel is a bytecode virtual machine (VM) that allows programs to be:
+Shovel is a bytecode virtual machine (VM) that allows programs written
+for it to be:
 
- * sandboxed (Shovel programs are limited by the primitives loaded
-   into the VM),
- * passivizable (Shovel processes can be stopped, serialized, stored
-   and reactivated later),
- * embeddable! don't forget embeddable!
- * and therefore transportable between hosts.
+ * embeddable - Shovel is implemented as a library, it can be loaded
+   and used by your program,
+ * secure/sandboxed - Shovel processes can only perform the operations
+   you explicitly allow
+ * and interruptible - a Shovel process can be stopped, saved to a
+   database and resumed later, possibly on another machine.
 
-Why 'Shovel'? Because that's what you use to do heavy lifting in a
-sandbox.
+## WHY?
 
-The Shovel VM doesn't try to be fast. If some operation needs to be
-fast, you can implement it as a primitive in the host language.
+Have you ever needed to make RPC calls, but didn't know in advance the
+sequence of RPC calls? Maybe you wanted those RPC calls to be executed
+transactionally (all or none), but you didn't want to (or couldn't)
+use distributed transactions? Maybe you wanted to replace a long
+sequence of 'tiny' RPC calls with just one 'large' call? Shovel is
+great in this case.
 
-A host language is a programming language for which there is a Shovel
-VM implementation. The first host language will be Common Lisp. The
-second JavaScript. The third... probably C#.
+Maybe you like continuation-based web frameworks, but would like to be
+able to stop the server and restart it without losing the
+continuations? Or maybe use load-balancing and run the continuation on
+a different machine? Shovel can help you design such a web framework.
 
-The point of having multiple implementations is to be able to write
-Shovel programs that execute on a machine up to a certain point, then
-are 'passivated' and moved to another machine, then reactivated and
-restarted, possibly inside a program written in another host language.
+More generally, have you ever needed to associate a 'program' with a
+'business object', but needed the 'process' generated from that
+'program' to be actually running for only a small fraction of its
+lifetime and to spend the rest of the time tucked away in a database
+somewhere (thus freeing memory and threads for more urgent needs)?
+Document management, bug tracking, task tracking etc. software may use
+such an approach - and the 'programs' mentioned may become real
+programs by using Shovel.
 
-For instance, when the Shovel VM implementation for JavaScript and
-Common Lisp are ready, it will be possible to create a Shovel process
-inside a browser (using JavaScript as a host language), send the
-process to a server (using Common Lisp), let the program gather and
-calculate some data, then return the program to the browser and
-display the results. This should eliminate most scenarios when it's
-necessary to make multiple calls to the server (and the actual
-sequence of calls is not known in advance).
+## HOW?
 
-Shovel programs will be written in Shript (which is a JavaScript-like
-language). Shovel implementation will include a Shript compiler.
+Shovel is actually more then just the VM: a VM specification, a
+language specification (it's more fun to write code in a high level
+language than to write assembly for a VM by hand), a compiler for that
+language and a VM implementation (both written in Common Lisp now,
+with implementations in C#, JavaScript and Java planned). The Shovel
+language is named Shript.
 
-The Shript compiler and the Shovel VM are inspired by chapter 23 of
-'Paradigms of Artificial Intelligence Programming' by Peter Norvig.
+A Shovel quick start guide for Common Lisp:
+[ClGettingStarted.md](ClGettingStarted.md).
 
-## VM description
+A simple number guessing demo: [WebGuessNumber.md](WebGuessNumber.md).
 
-### Value types
+If you want more information: The language specification:
+[ShriptSpec.md](ShriptSpec.md).
 
-The VM is stack based. It has the following primitive scalar types:
+If you want even more information: The VM specification:
+[ShovelVmSpec.md](ShovelVmSpec.md).
 
- * string,
- * integer (bignum or signed 32 bit - depending on what I can get
-   working in JavaScript - https://github.com/jtobey/javascript-bignum
-   seems to provide bignums),
- * double precision floating point and
- * boolean.
+Beyond these, the source code is the real source of information :-)
 
-The other types allowed are:
+## THANKS!
 
- * primitive function (defined as a name and a corresponding function
-   in the host environment),
- * function (defined as an environment and a Shovel VM address),
- * arrays (elements can be any primitive type, including arrays) and
- * hashes (associative arrays, keys can be strings, values can have
-   any Shovel VM type).
+The code generator and Shovel VM are modeled after the Scheme compiler
+from Peter Norvig's *Paradigms in Artificial Intelligence Programming*
+book (chapter 23). Thank you, Peter Norvig! (I hope I haven't broke
+your code beyond recognition, any bugs in the Shovel code generator
+and VM are obviously my bugs and my fault)
 
-### The stack
-
-The stack can have two types of elements:
-
- * a return address, made of an environment and a Shovel VM address
-   (the 'program counter' to return to) or
- * a value of one of the Shovel VM primitive types.
-
-### Environments
-
-Variables are stored in environments (in the SICP sense); this gives
-easy closures.
-
-An environment is a stack of 'frames'. Frames are arrays of values. A
-variable is identified as a pair of (frame address, variable index in
-frame). The 'frame address' is the distance of the frame from the top
-of environment stack (i.e., frame address 0 means the frame on the top
-of the environment stack, frame address 1 means the one below it and
-so on). Once the frame is identified, the 'variable index' is the
-index of the variable in the frame.
-
-### State
-
-The VM state is defined by:
-
- * the stack (and objects reachable from it),
- * the current environment (and objects reachable from it) and
- * the 'program counter' (the next instruction to be executed).
-
-The Shovel implementation must provide means to serialize and
-deserialize the state of the VM, and to stop and start the VM. More on
-this when describing the implementation of the VM runtime.
-
-### Opcodes
-
-The VM uses the same bytecode in each host language - so a Shript
-program compiled on a Common Lisp platform will run without problems
-in the JavaScript implementation of the Shovel VM.
-
-The VM program is a list of opcodes.
-
-The possible opcodes are:
-
- * CONST *value* - push a value on the stack; the value must belong to
-   one of the scalar types described above (scalar type, array or
-   hash);
- * LGET *frame*, *var* - get the value from frame *frame* and variable
-   index *var* (see section 'Environments' above) and push the value
-   on the stack;
- * LSET *frame*, *var* - store the value on the top of the stack to
-   the variable identified by *frame* and *var* (see LGET above);
- * POP - throw away the top of the stack;
- * TJUMP *address* - jump to the address *address* if the top of the
-   stack IS NOT the boolean value 'false'; pop the stack;
- * FJUMP *address* - jump to the address *address* if the top of the
-   stack IS the boolean value 'false'; pop the stack;
- * JUMP *address* - unconditionally jump to address *address*;
- * RETURN - the top of the stack is the value to be returned by the
-   current function; the 'next top' is a return address; pop the 'next
-   top' and set the current environment and program counter to the
-   ones from the return address;
- * CALLJ *argument-count* - call the function object found on the top
-   of the stack, with the next *argument-count* elements from the
-   stack as arguments;
- * CALL *argument-count* - save a return address on the stack; the
-   return address is the pair (current environment, program counter
-   pointing to the instruction after the call); then do whatever
-   CALLJ does;
- * ARGS *argument-count* - the instruction pops *argument-count* from
-   the stack, and stores them in the topmost frame of the environment
-   in the first slots (e.g. for two arguments the top of the stack
-   will be stored at position 1 and the next-top-of-stack at position
-   0);
- * FN *address*, *number-of-arguments* - builds a closure (as a pair
-   of the current environment and *address*) and stores it on the
-   stack; the closure can only be called with *number-of-arguments*
-   arguments.
- * PRIM *primitive-name* - pushes a primitive on the stack; the
-   primitive can be called with CALLJ or stored in a data structure;
- * PRIM0 *primitive-name* - like PRIM, but for primitives that are
-   required to exist on every ShovelVM; see the section 'Required
-   primitives' for the list of primitives that need to be specified
-   with PRIM0;
- * NEW-FRAME *var-1*, *var-2*, ... *var-count* - extends the current
-   environment with a frame containing *count* slots;
- * DROP-FRAME - removes a frame from the current environment;
- * BLOCK *address* - starts a named block (the name is the top of the
-   stack) that ends at *address*; pops the stack; pushes a 'named
-   block' record (a name, a return address - *address*, the current
-   environment) on the stack; non-local exits are implemented using
-   `BLOCK`, `BLOCK_RETURN` and `POP_BLOCK`;
- * BLOCK_RETURN - returns from a named block; the top of the stack is
-   the value to return, the second top of the stack is the name of the
-   named block; if there is no such named block on the stack,
-   execution fails; pops two values from the stack, pushes the named
-   block record then the value to return back on the stack;
- * POP_BLOCK - ends a named block; this should be the first address
-   after the end address of a named block; the top of the stack should
-   be the value returned from the block; the second top is a 'named
-   block' record; an error is thrown if the second top is not a 'named
-   block' record; the second top is removed from the stack.
-
-### Required Primitives
-
-Relational operators, arithmetic operators, array and hash access,
-string access, string deconstruction and construction.
-
-Required primitive names start with `svm_`. User defined primitives
-cannot use names already used for required primitives.
-
-## Shript
-
-### Shript AST
-
-All Shript statements have a value. The value of a sequence is the
-value of the last statement in the sequence. The value of an
-alternative is the value of the executed branch.
-
-A return statement causes the current function to exit immediately,
-and its call to have the value of the return statement. A return
-statement must therefore specify a value.
-
-    (var (name myFunction) (fn (z)
-                             (begin
-                               (var (name x) 1)
-                               (var (name y) 2)
-                               (set! (name x) 2)
-                               (if (<= (name z) 5)
-                                 (+ (name x) (name y) (name z))
-                                 (- (name z) (name x) (name y))))))
-
-    (call (name myFunction) 4)
-
-Special forms: `var`, `fn`, `begin`, `set!`, `if`.
-
-    var myFunction = fn (z) {
-      var x = 1
-      var y = 2
-      x = 2
-      if (z <= 5) {
-        x + y + z
-      } else {
-        z - x - y
-      }
-    }
-
-    myFunction(4)
-
-Another example:
-
-    var myOtherFunction = fn (arr) {
-      var otherArray = [1, 2, 3]
-      arr[0] = 2
-      otherArray[1] + arr[2] 
-    }
-    
-    (var (name myOtherFunction) (fn ((name arr))
-                                 (begin
-                                   (var (name otherArray) (array 1 2 3))
-                                   (set! (access (name arr) 0) 2)
-                                   (+ (access (name otherArray) 1)
-                                      (access (name arr) 2)))))
-
-Bidimensional arrays:
-
-    var arr = [[1, 2], [3, 4]]
-    arr[1][1] = 10
-    
-    (var (name arr) (array (array 1 2)
-                           (array 3 4)))
-    (set! (access (access (name arr) 1) 1) 10)
-    

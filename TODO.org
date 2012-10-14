@@ -120,3 +120,22 @@
      virtual machine goes to sleep as if :nap-and-retry-on-wake-up had
      been returned by the primitive as a second value.
 *** TODO from Common Lisp
+* TODO Should not be able to serialize VMs 
+  that threw an exception caused by a programming error;
+* TODO VM execution quotas for 'run-vm'
+** TODO offer a way to specify how expensive user-primitives are
+   in terms of the execution quota
+** TODO Gaaaah must write a garbage collector anyway - 
+   or find another way to limit Shovel process memory usage.
+   Solution: limit the number of used cells, count allocated cells
+   (via *array*, *hash*, *push*, *call*, *block*, *const* etc.); if
+   the number exceeds the limit, count the actual number of cells used
+   (by running a modified version of the serializer) and crash the VM
+   if the number of really used cells still exceeds the limit.
+* TODO clean up the exported symbols
+  (the user should only need to use functions exported from the
+  'shovel' package)
+* TODO fix the 'string' and 'stringRepresentation' primitives
+  to avoid infinite loops when stringifying circular data structures;
+* TODO publish the functions to extract the context from a VM
+  (the stack and environment); should work even for a crashed VM.
