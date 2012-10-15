@@ -16,29 +16,34 @@
          (t
           (vm-error
            "Arguments must have the same type (numbers or strings or arrays)."))))
+(defun limit-integer-result (result)
+  (if (integerp result)
+      (rem result (expt 2 60))
+      result))
 (defun add (t1 t2)
   (labels ((strcat (t1 t2) (concatenate 'string t1 t2))
            (array-cat (t1 t2) (concatenate 'vector t1 t2)))
-    (both-numbers-or-strings-or-arrays + strcat array-cat)))
+    (limit-integer-result
+     (both-numbers-or-strings-or-arrays + strcat array-cat))))
 (defmacro both-numbers (op)
   `(cond ((and (numberp t1) (numberp t2))
           (,op t1 t2))
          (t (vm-error "Both arguments must be numbers."))))
-(defun subtract (t1 t2) (both-numbers -))
+(defun subtract (t1 t2) (limit-integer-result (both-numbers -)))
 (defun unary-minus (t1)
   (if (numberp t1)
-      (- t1)
+      (limit-integer-result (- t1))
       (vm-error "Argument must be number.")))
-(defun multiply (t1 t2) (both-numbers *))
+(defun multiply (t1 t2) (limit-integer-result (both-numbers *)))
 (defun shift-left (t1 t2)
   (labels ((shl (t1 t2) (ash t1 t2)))
-    (both-numbers shl)))
+    (limit-integer-result (both-numbers shl))))
 (defun shift-right (t1 t2)
   (labels ((shr (t1 t2) (ash t1 (- t2))))
-    (both-numbers shr)))
+    (limit-integer-result (both-numbers shr))))
 (defun divide (t1 t2)
   (cond ((and (integerp t1) (integerp t2))
-         (floor (/ t1 t2)))
+         (limit-integer-result (floor (/ t1 t2))))
         ((and (numberp t1) (numberp t2))
          (float (/ t1 t2)))
         (t (vm-error "Both arguments must be numbers."))))
@@ -47,9 +52,9 @@
           (,op t1 t2))
          (t (vm-error "Both arguments must be integers."))))
 (defun modulo (t1 t2)
-  (both-integers mod))
+  (limit-integer-result (both-integers mod)))
 (defun pow (t1 t2)
-  (both-numbers expt))
+  (limit-integer-result (both-numbers expt)))
 
 ;; Logic operators:
 (defun is-bool (var)
@@ -106,11 +111,11 @@
 
 ;; Bitwise operators:
 (defun bitwise-and (t1 t2)
-  (both-integers logand))
+  (limit-integer-result (both-integers logand)))
 (defun bitwise-or (t1 t2)
-  (both-integers logior))
+  (limit-integer-result (both-integers logior)))
 (defun bitwise-xor (t1 t2)
-  (both-integers logxor))
+  (limit-integer-result (both-integers logxor)))
 
 ;; Hash constructor:
 (defun hash-constructor (&rest args)
@@ -208,7 +213,8 @@
                (validate-index-access array-or-hash index)
                (cond ((stringp array-or-hash)
                       (when (/= 1 (length value))
-                        (vm-error "Must provide a one character string as right hand side for the assignment."))
+                        (vm-error
+                         "Must provide a one character string as right hand side for the assignment."))
                       (setf (aref array-or-hash index) (elt value 0)))
                      (t (setf (aref array-or-hash index) value))))
              (vm-error "Getting an array element requires an integer index.")))
@@ -419,7 +425,7 @@
 
 (defun parse-int (var)
   (check-string var)
-  (parse-integer var))
+  (limit-integer-result (parse-integer var)))
 
 (defun parse-float (var)
   (check-string var)

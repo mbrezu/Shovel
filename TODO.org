@@ -128,6 +128,8 @@
 *** DONE VM instructions
 *** DONE VM state
 *** TODO VM Serialization
+*** TODO explain the CPU and RAM bounds for the VM
+**** TODO explain why integers are modulo 2^60.
 ** TODO how to use things
 *** TODO calling conventions
 **** TODO document the fact that user primitives should handle their exceptions;
@@ -152,7 +154,7 @@
 ** DONE the number of ticks executed so far must be made part of the
    serialized VM state;
 ** DONE execution quotas basic
-** TODO limit integers to a known amount (60 bits?)
+** DONE limit integers to a known amount (60 bits?)
    unbounded bignums make it very hard to limit memory and CPU usage
 ** TODO implement primitive quotas by function calls
    - incrementTicks

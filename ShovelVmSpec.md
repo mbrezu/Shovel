@@ -7,7 +7,7 @@
 The VM is stack based. It has the following primitive scalar types:
 
  * string,
- * integer (bignum),
+ * integer (modulo 2^60),
  * double precision floating point,
  * boolean and 
  * void (with only one value, `null`).
