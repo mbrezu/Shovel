@@ -16,8 +16,8 @@
      (values)))
 
 (let ((stdlib-file
-       (shovel:make-shript-file
-        :name "stdlib.shr"
+       (shovel:make-source-file
+        :name "stdlib.sho"
         :contents "
 var stdlib = {
    var min = fn (a, b) if a < b a else b

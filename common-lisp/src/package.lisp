@@ -182,10 +182,10 @@
    :vm-used-cells
    :vm-used-ticks
 
-   :shript-file
-   :make-shript-file
-   :shript-file-name
-   :shript-file-contents
+   :source-file
+   :make-source-file
+   :source-file-name
+   :source-file-contents
 
    :shovel-error
    :error-file

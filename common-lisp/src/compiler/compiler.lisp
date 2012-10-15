@@ -3,9 +3,9 @@
 
 (defun compile-sources-to-instructions (sources)
   (setf sources (shovel-utils:prepare-sources sources))
-  (let* ((all-tokens (mapcar (lambda (shript-file)
+  (let* ((all-tokens (mapcar (lambda (source-file)
                                (shovel-compiler-tokenizer:tokenize-source-file
-                                shript-file))
+                                source-file))
                              sources))
          (parse-tree (mapcan (lambda (file-tokens)
                                (shovel-compiler-parser:parse-tokens
@@ -25,7 +25,7 @@
     (dolist (source (prepare-sources sources))
       (ironclad:update-digest digester
                               (babel:string-to-octets
-                               (shovel:shript-file-contents source))))
+                               (shovel:source-file-contents source))))
     (produce-digest-as-string digester)))
 
 (defun compute-instructions-md5 (instructions)
@@ -113,7 +113,7 @@ don't know how to compute MD5 hash.")))))
         (let ((file-name (instruction-arguments instruction)))
           (when (or (not last-file-name) (string/= last-file-name file-name))
             (setf last-file-name file-name
-                  source (shovel:shript-file-contents
+                  source (shovel:source-file-contents
                           (shovel-utils:find-source sources last-file-name))
                   source-lines (split-sequence:split-sequence
                                 #\newline

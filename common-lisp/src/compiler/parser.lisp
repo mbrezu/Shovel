@@ -341,10 +341,10 @@ parser. Macroish implementation of short-circuiting logical 'or'."
   (when (and (parse-state-source *parse-state*)
              (parse-state-file-name *parse-state*))
     (alexandria:when-let*
-        ((shript-file (shovel-utils:find-source
+        ((source-file (shovel-utils:find-source
                        (parse-state-source *parse-state*)
                        (parse-state-file-name *parse-state*)))
-         (content (shovel:shript-file-contents shript-file)))
+         (content (shovel:source-file-contents source-file)))
       (shovel-utils:find-position (parse-state-file-name *parse-state*)
                                   content
                                   char-position))))

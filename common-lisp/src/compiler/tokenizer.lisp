@@ -226,8 +226,8 @@
                               (tokenizer-state-current-char *tokenizer-state*)))
 
 (defun tokenize-source-file (source-file)
-  (let* ((file-name (shovel:shript-file-name source-file))
-         (contents (shovel:shript-file-contents source-file))
+  (let* ((file-name (shovel:source-file-name source-file))
+         (contents (shovel:source-file-contents source-file))
          (*tokenizer-state* (make-tokenizer-state :source contents
                                                   :file-name file-name)))
     (cons (make-token :type :file-name

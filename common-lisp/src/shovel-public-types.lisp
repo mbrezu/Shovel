@@ -1,7 +1,7 @@
 
 (in-package #:shovel)
 
-(defstruct shript-file name contents)
+(defstruct source-file name contents)
 
 (define-condition shovel-error (error)
   ((file :initform nil :accessor error-file :initarg :file)

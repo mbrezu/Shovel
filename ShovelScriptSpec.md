@@ -1,0 +1,4 @@
+-*- markdown -*-
+
+# ShovelScript specification
+

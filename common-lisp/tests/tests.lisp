@@ -24,26 +24,26 @@
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel:make-shript-file :name "test.shr"
+                          (shovel:make-source-file :name "test.sho"
                                                    :contents "
 var g = fn x x + 2
 var f = fn x g(x) + 2
 f('1")))))
-               "Shovel error in file 'test.shr' at end of file: Expected an end quote, but reached the end of file.
+               "Shovel error in file 'test.sho' at end of file: Expected an end quote, but reached the end of file.
 
 "))
   (is (string= (with-output-to-string (str)
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel:make-shript-file :name "test.shr"
+                          (shovel:make-source-file :name "test.sho"
                                                    :contents "
 var g = fn #x x + 2
 var f = fn x g(x) + 2
 f('1')")))))
-               "Shovel error in file 'test.shr' at line 2, column 12: Unexpected character '#'.
-file 'test.shr' line 2: var g = fn #x x + 2
-file 'test.shr' line 2:            ^
+               "Shovel error in file 'test.sho' at line 2, column 12: Unexpected character '#'.
+file 'test.sho' line 2: var g = fn #x x + 2
+file 'test.sho' line 2:            ^
 
 ")))
 
@@ -52,52 +52,52 @@ file 'test.shr' line 2:            ^
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel:make-shript-file :name "test.shr"
+                          (shovel:make-source-file :name "test.sho"
                                                    :contents "
 b(]
 ")))))
-               "Shovel error in file 'test.shr' at line 2, column 3: Unexpected token ']'.
-file 'test.shr' line 2: b(]
-file 'test.shr' line 2:   ^
+               "Shovel error in file 'test.sho' at line 2, column 3: Unexpected token ']'.
+file 'test.sho' line 2: b(]
+file 'test.sho' line 2:   ^
 
 "))
   (is (string= (with-output-to-string (str)
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel:make-shript-file :name "test.shr"
+                          (shovel:make-source-file :name "test.sho"
                                                    :contents "
 var a = fn [x] 1
 ")))))
-               "Shovel error in file 'test.shr' at line 2, column 12: Expected a identifier, but got '['.
-file 'test.shr' line 2: var a = fn [x] 1
-file 'test.shr' line 2:            ^
+               "Shovel error in file 'test.sho' at line 2, column 12: Expected a identifier, but got '['.
+file 'test.sho' line 2: var a = fn [x] 1
+file 'test.sho' line 2:            ^
 
 "))
   (is (string= (with-output-to-string (str)
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel:make-shript-file :name "test.shr"
+                          (shovel:make-source-file :name "test.sho"
                                                    :contents "
 var fn = 1
 ")))))
-               "Shovel error in file 'test.shr' at line 2, column 5: Expected a identifier, but got 'fn'.
-file 'test.shr' line 2: var fn = 1
-file 'test.shr' line 2:     ^^
+               "Shovel error in file 'test.sho' at line 2, column 5: Expected a identifier, but got 'fn'.
+file 'test.sho' line 2: var fn = 1
+file 'test.sho' line 2:     ^^
 
 "))
   (is (string= (with-output-to-string (str)
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel:make-shript-file :name "test.shr"
+                          (shovel:make-source-file :name "test.sho"
                                                    :contents "
 var slice = 1
 ")))))
-               "Shovel error in file 'test.shr' at line 2, column 5: Name 'slice' is reserved for a primitive.
-file 'test.shr' line 2: var slice = 1
-file 'test.shr' line 2:     ^^^^^
+               "Shovel error in file 'test.sho' at line 2, column 5: Name 'slice' is reserved for a primitive.
+file 'test.sho' line 2: var slice = 1
+file 'test.sho' line 2:     ^^^^^
 
 ")))
 
@@ -106,39 +106,39 @@ file 'test.shr' line 2:     ^^^^^
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel:make-shript-file :name "test.shr"
+                          (shovel:make-source-file :name "test.sho"
                                                    :contents "
 var a = 1
 var a = 2")))))
-               "Shovel error in file 'test.shr' at line 3, column 5: Variable 'a' is already defined in this frame in file '\"test.shr\"', at line 2, column 5.
-file 'test.shr' line 3: var a = 2
-file 'test.shr' line 3:     ^
+               "Shovel error in file 'test.sho' at line 3, column 5: Variable 'a' is already defined in this frame in file '\"test.sho\"', at line 2, column 5.
+file 'test.sho' line 3: var a = 2
+file 'test.sho' line 3:     ^
 
 "))
   (is (string= (with-output-to-string (str)
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel:make-shript-file :name "test.shr"
+                          (shovel:make-source-file :name "test.sho"
                                                    :contents "
 b = 3
 ")))))
-               "Shovel error in file 'test.shr' at line 2, column 1: Undefined variable 'b'.
-file 'test.shr' line 2: b = 3
-file 'test.shr' line 2: ^^^^^
+               "Shovel error in file 'test.sho' at line 2, column 1: Undefined variable 'b'.
+file 'test.sho' line 2: b = 3
+file 'test.sho' line 2: ^^^^^
 
 "))
   (is (string= (with-output-to-string (str)
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel:make-shript-file :name "test.shr"
+                          (shovel:make-source-file :name "test.sho"
                                                    :contents "
 b + 1
 ")))))
-               "Shovel error in file 'test.shr' at line 2, column 1: Undefined variable 'b'.
-file 'test.shr' line 2: b + 1
-file 'test.shr' line 2: ^
+               "Shovel error in file 'test.sho' at line 2, column 1: Undefined variable 'b'.
+file 'test.sho' line 2: b + 1
+file 'test.sho' line 2: ^
 
 ")))
 
@@ -147,32 +147,32 @@ file 'test.shr' line 2: ^
                           (let ((*standard-output* str))
                             (shovel:run-code
                              (list (shovel:stdlib)
-                                   (shovel:make-shript-file :name "test.shr"
+                                   (shovel:make-source-file :name "test.sho"
                                                             :contents "
 var g = fn x x + 2
 var f = fn x g(x) + 2
 f('1')"))))))
-               "Shovel error in file 'test.shr' at line 2, column 14: Arguments must have the same type (numbers or strings or arrays).
+               "Shovel error in file 'test.sho' at line 2, column 14: Arguments must have the same type (numbers or strings or arrays).
 
 Current stack trace:
-file 'test.shr' line 2: var g = fn x x + 2
-file 'test.shr' line 2:              ^^^^^
-file 'test.shr' line 3: var f = fn x g(x) + 2
-file 'test.shr' line 3:              ^^^^
-file 'test.shr' line 4: f('1')
-file 'test.shr' line 4: ^^^^^^
+file 'test.sho' line 2: var g = fn x x + 2
+file 'test.sho' line 2:              ^^^^^
+file 'test.sho' line 3: var f = fn x g(x) + 2
+file 'test.sho' line 3:              ^^^^
+file 'test.sho' line 4: f('1')
+file 'test.sho' line 4: ^^^^^^
 
 Current environment:
 
 Frame starts at:
-file 'test.shr' line 2: var g = fn x x + 2
-file 'test.shr' line 2:            ^
+file 'test.sho' line 2: var g = fn x x + 2
+file 'test.sho' line 2:            ^
 Frame variables are:
 x = \"1\"
 
 Frame starts at:
-file 'stdlib.shr' line 2: var stdlib = { [...content snipped...]
-file 'stdlib.shr' line 2: ^^^^^^^^^^^^^^
+file 'stdlib.sho' line 2: var stdlib = { [...content snipped...]
+file 'stdlib.sho' line 2: ^^^^^^^^^^^^^^
 Frame variables are:
 stdlib = hash
 g = [...callable...]
@@ -361,22 +361,22 @@ var family = makeFamily()
                           (let ((*standard-output* str))
                             (shovel:run-code
                              (list (shovel:stdlib)
-                                   (shovel:make-shript-file :name "test.shr"
+                                   (shovel:make-source-file :name "test.sho"
                                                             :contents "
 var a = arrayN(10)
 a[10] = 1
 "))))))
-               "Shovel error in file 'test.shr' at line 3, column 1: Invalid 0-based index (10 for an array with 10 elements).
+               "Shovel error in file 'test.sho' at line 3, column 1: Invalid 0-based index (10 for an array with 10 elements).
 
 Current stack trace:
-file 'test.shr' line 3: a[10] = 1
-file 'test.shr' line 3: ^^^^^^^^^
+file 'test.sho' line 3: a[10] = 1
+file 'test.sho' line 3: ^^^^^^^^^
 
 Current environment:
 
 Frame starts at:
-file 'stdlib.shr' line 2: var stdlib = { [...content snipped...]
-file 'stdlib.shr' line 2: ^^^^^^^^^^^^^^
+file 'stdlib.sho' line 2: var stdlib = { [...content snipped...]
+file 'stdlib.sho' line 2: ^^^^^^^^^^^^^^
 Frame variables are:
 stdlib = hash
 a = array(null, null, null, null, null, null, null, null, null, null)
@@ -388,22 +388,22 @@ a = array(null, null, null, null, null, null, null, null, null, null)
                           (let ((*standard-output* str))
                             (shovel:run-code
                              (list (shovel:stdlib)
-                                   (shovel:make-shript-file :name "test.shr"
+                                   (shovel:make-source-file :name "test.sho"
                                                             :contents "
 var a = arrayN(10)
 a[-1] = 1
 "))))))
-               "Shovel error in file 'test.shr' at line 3, column 1: Index less than 0.
+               "Shovel error in file 'test.sho' at line 3, column 1: Index less than 0.
 
 Current stack trace:
-file 'test.shr' line 3: a[-1] = 1
-file 'test.shr' line 3: ^^^^^^^^^
+file 'test.sho' line 3: a[-1] = 1
+file 'test.sho' line 3: ^^^^^^^^^
 
 Current environment:
 
 Frame starts at:
-file 'stdlib.shr' line 2: var stdlib = { [...content snipped...]
-file 'stdlib.shr' line 2: ^^^^^^^^^^^^^^
+file 'stdlib.sho' line 2: var stdlib = { [...content snipped...]
+file 'stdlib.sho' line 2: ^^^^^^^^^^^^^^
 Frame variables are:
 stdlib = hash
 a = array(null, null, null, null, null, null, null, null, null, null)
@@ -417,7 +417,7 @@ a = array(null, null, null, null, null, null, null, null, null, null)
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel:make-shript-file :name "test.shr"
+                          (shovel:make-source-file :name "test.sho"
                                                    :contents "
 var a = array()
 push(a, 1)
@@ -431,22 +431,22 @@ a
                           (let ((*standard-output* str))
                             (shovel:run-code
                              (list (shovel:stdlib)
-                                   (shovel:make-shript-file :name "test.shr"
+                                   (shovel:make-source-file :name "test.sho"
                                                             :contents "
 var a = 1
 push(a, 1)
 "))))))
-               "Shovel error in file 'test.shr' at line 3, column 1: First argument must be a vector.
+               "Shovel error in file 'test.sho' at line 3, column 1: First argument must be a vector.
 
 Current stack trace:
-file 'test.shr' line 3: push(a, 1)
-file 'test.shr' line 3: ^^^^^^^^^^
+file 'test.sho' line 3: push(a, 1)
+file 'test.sho' line 3: ^^^^^^^^^^
 
 Current environment:
 
 Frame starts at:
-file 'stdlib.shr' line 2: var stdlib = {
-file 'stdlib.shr' line 2: ^^^^^^^^^
+file 'stdlib.sho' line 2: var stdlib = {
+file 'stdlib.sho' line 2: ^^^^^^^^^
 Frame variables are:
 stdlib = hash
 a = 1
@@ -460,7 +460,7 @@ a = 1
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel:make-shript-file :name "test.shr"
+                          (shovel:make-source-file :name "test.sho"
                                                    :contents "
 var a = array(1, 2, 3)
 pop(a)
@@ -471,7 +471,7 @@ pop(a)
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel:make-shript-file :name "test.shr"
+                          (shovel:make-source-file :name "test.sho"
                                                    :contents "
 var a = array(1, 2, 3)
 pop(a)
@@ -484,22 +484,22 @@ pop(a)
                           (let ((*standard-output* str))
                             (shovel:run-code
                              (list (shovel:stdlib)
-                                   (shovel:make-shript-file :name "test.shr"
+                                   (shovel:make-source-file :name "test.sho"
                                                             :contents "
 var a = array()
 pop(a)
 "))))))
-               "Shovel error in file 'test.shr' at line 3, column 1: Can't pop from an empty array.
+               "Shovel error in file 'test.sho' at line 3, column 1: Can't pop from an empty array.
 
 Current stack trace:
-file 'test.shr' line 3: pop(a)
-file 'test.shr' line 3: ^^^^^^
+file 'test.sho' line 3: pop(a)
+file 'test.sho' line 3: ^^^^^^
 
 Current environment:
 
 Frame starts at:
-file 'stdlib.shr' line 2: var stdlib = { [...content snipped...]
-file 'stdlib.shr' line 2: ^^^^^^^^^^^^^^
+file 'stdlib.sho' line 2: var stdlib = { [...content snipped...]
+file 'stdlib.sho' line 2: ^^^^^^^^^^^^^^
 Frame variables are:
 stdlib = hash
 a = array()

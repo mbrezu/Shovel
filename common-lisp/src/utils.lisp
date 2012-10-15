@@ -15,7 +15,7 @@
   (let ((counter 0))
     (mapcar (lambda (source)
               (cond ((stringp source)
-                     (shovel:make-shript-file
+                     (shovel:make-source-file
                       :contents source
                       :name (format nil "<unspecified-~d>" (incf counter))))
                     (t source)))
@@ -24,7 +24,7 @@
 (defun find-source (sources file-name)
   (setf sources (shovel-utils:prepare-sources sources))
   (dolist (source sources)
-    (when (string= file-name (shovel:shript-file-name source))
+    (when (string= file-name (shovel:source-file-name source))
       (return-from find-source source)))
   (error (make-condition 'shovel-error
                          :message (format nil "File '~a' not found." file-name))))
@@ -59,7 +59,7 @@
       (setf source-lines
             (split-sequence:split-sequence
              #\newline
-             (shovel:shript-file-contents source)))))
+             (shovel:source-file-contents source)))))
   (let* ((file-name (pos-file-name start-pos))
          (start-line (pos-line start-pos))
          (end-line (pos-line end-pos))

@@ -90,7 +90,7 @@ Shovel) - see the `vm.lisp` file, functions `serialize-vm-state` and
 
 ## Opcodes
 
-The VM uses the same bytecode in each host language - so a Shript
+The VM uses the same bytecode in each host language - so a ShovelScript
 program compiled on a Common Lisp platform will run without problems
 in the JavaScript implementation of the Shovel VM.
 
@@ -293,7 +293,7 @@ Arguments: none;
 Stack effect: ( `named-block-record` `return-value` -- `return-value` )
 
 Description: ends a named block. An error is thrown if
-`named-block-record` is not a named block record. The Shript compiler
+`named-block-record` is not a named block record. The ShovelScript compiler
 guarantees that `RETURN` isn't issued in places where it would cause
 the VM to miss a `POP_BLOCK` instruction.
 
@@ -315,7 +315,7 @@ entries:
 
 There is no exception handling mechanism in Shovel. The VM allows
 non-local returns via `BLOCK`, `BLOCK_RETURN` and `POP_BLOCK`, which
-can be used to implement exception handling as functions in Shript.
+can be used to implement exception handling as functions in ShovelScript.
 
 The VM throws an exception in the host language in case of a
 programming error (e.g. out of bounds array access). A VM that threw
@@ -333,7 +333,7 @@ There are 'required primitives' and 'user defined primitives'.
 ### Required Primitives
 
 'Required primitives' are present in all Shovel VM implementations and
-provide basic functionality for Shript programs (e.g. arithmetic
+provide basic functionality for ShovelScript programs (e.g. arithmetic
 operators, string functions etc.). They are considered 'safe' (they
 cannot access state other than what is passed to them as arguments)
 and they can only harm the environment by 'denial of service'

@@ -7,6 +7,10 @@ Silly Common Lisp SLOC count :-)
 
     find . -iname '*.lisp' | xargs egrep "^[\ ]*[^\t ;]" | wc -l
     
+Force recompilation:
+
+    find . -iname "package.lisp" | xargs touch
+    
 Some functions to test serialization:
 
     (defun pos-to-list (pos)

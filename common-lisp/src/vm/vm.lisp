@@ -188,8 +188,8 @@
       (alexandria:when-let (sources (vm-sources vm))
         (alexandria:when-let*
             ((file-name (find-file-name vm program-counter))
-             (shript-file (find-source sources file-name))
-             (content (shovel:shript-file-contents shript-file))
+             (source-file (find-source sources file-name))
+             (content (shovel:source-file-contents source-file))
              (start-pos (find-position file-name
                                        content
                                        character-start-pos))
@@ -242,8 +242,8 @@
   (let (pos file-name line column)
     (setf file-name (find-file-name vm (vm-program-counter vm)))
     (when (and file-name (vm-sources vm))
-      (alexandria:when-let* ((shript-file (find-source (vm-sources vm) file-name))
-                             (content (shovel:shript-file-contents shript-file)))
+      (alexandria:when-let* ((source-file (find-source (vm-sources vm) file-name))
+                             (content (shovel:source-file-contents source-file)))
         (setf pos (find-position file-name content (vm-last-start-pos vm)))
         (when pos
           (setf line (pos-line pos))

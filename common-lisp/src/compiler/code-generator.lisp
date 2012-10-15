@@ -304,8 +304,8 @@ SVM_SET_INDEXED required primitive."
   (let (start-pos end-pos error-file-name line column)
     (alexandria:when-let* ((source (generator-state-source *generator-state*))
                            (file-name (generator-state-file-name *generator-state*))
-                           (shript-file (find-source source file-name))
-                           (content (shovel:shript-file-contents shript-file)))
+                           (source-file (find-source source file-name))
+                           (content (shovel:source-file-contents source-file)))
       (setf error-file-name file-name)
       (setf start-pos (find-position file-name
                                      content
@@ -332,9 +332,9 @@ SVM_SET_INDEXED required primitive."
         (var-record (assoc name (env-frame-vars top-frame) :test #'equal))
       (let* ((file-name (third var-record))
              (character-pos (fourth var-record))
-             (shript-file (find-source (generator-state-source *generator-state*)
+             (source-file (find-source (generator-state-source *generator-state*)
                                        file-name))
-             (pos (find-position file-name (shovel:shript-file-contents shript-file)
+             (pos (find-position file-name (shovel:source-file-contents source-file)
                                  character-pos)))
         (raise-error current-start-pos
                      (parse-tree-end-pos name-ast)

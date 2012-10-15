@@ -44,7 +44,7 @@ language specification (it's more fun to write code in a high level
 language than to write assembly for a VM by hand), a compiler for that
 language and a VM implementation (both written in Common Lisp now,
 with implementations in C#, JavaScript and Java planned). The Shovel
-language is named Shript.
+language is named ShovelScript.
 
 A Shovel quick start guide for Common Lisp:
 [ClGettingStarted.md](ClGettingStarted.md).
@@ -52,7 +52,7 @@ A Shovel quick start guide for Common Lisp:
 A simple number guessing demo: [WebGuessNumber.md](WebGuessNumber.md).
 
 If you want more information: The language specification:
-[ShriptSpec.md](ShriptSpec.md).
+[ShovelScriptSpec.md](ShovelScriptSpec.md).
 
 If you want even more information: The VM specification:
 [ShovelVmSpec.md](ShovelVmSpec.md).
