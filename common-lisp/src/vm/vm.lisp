@@ -426,20 +426,25 @@
          (push args (vm-stack vm))
          (incf (vm-program-counter vm))
          (if (stringp args)
-             (increment-cells-quota vm (1+ (length args))) ;; 1 for
-             ;; the strings, the rest for the contents
-             (increment-cells-quota vm 1))) ;; for the pushed value
+             ;; 1 for the strings, the rest for the contents
+             (increment-cells-quota vm (1+ (length args)))
+
+             ;; for the pushed value
+             (increment-cells-quota vm 1)))
         (:prim0
          (push (make-callable :prim0 args) (vm-stack vm))
          (incf (vm-program-counter vm))
-         (increment-cells-quota vm 5)) ;; for the pushed callable (5 fields)
+         ;; for the pushed callable (5 fields):
+         (increment-cells-quota vm 5))
         (:prim
          (push (make-callable :prim args) (vm-stack vm))
          (incf (vm-program-counter vm))
-         (increment-cells-quota vm 5)) ;; for the pushed callable (5 fields)
+         ;; for the pushed callable (5 fields):
+         (increment-cells-quota vm 5))
         (:call
          (handle-call vm args t)
-         (increment-cells-quota vm 1)) ;; for the pushed return address
+         ;; for the pushed return address:
+         (increment-cells-quota vm 1))
         (:callj
          (handle-call vm args nil))
         (:fjump
@@ -476,13 +481,9 @@
               for var in args
               do (setf (aref (env-frame-vars new-frame) i) (list var :null)))
            (push new-frame (vm-current-environment vm))
-           (increment-cells-quota vm (+ 2 length-args))) ;; for the
-         ;; frame, the
-         ;; saved
-         ;; program
-         ;; counter
-         ;; and the
-         ;; contents
+           ;; for the frame, the saved program counter and the
+           ;; contents:
+           (increment-cells-quota vm (+ 2 length-args)))
          (incf (vm-program-counter vm)))
         (:drop-frame
          (pop (vm-current-environment vm))
