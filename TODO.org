@@ -137,7 +137,7 @@
      been returned by the primitive as a second value.
 *** TODO from Common Lisp
 * TODO VM execution quotas for 'run-vm'
-** TODO offer a way to specify how expensive user-primitives are
+** DONE offer a way to specify how expensive user-primitives are
    in terms of the execution quota
 ** TODO Gaaaah must write a garbage collector anyway - 
    or find another way to limit Shovel process memory usage.

@@ -300,3 +300,16 @@ primitive, or NIL if none."
   "Returns the programming error thrown while running VM, or NIL if
 none."
   (shovel-vm:get-vm-programming-error vm))
+
+(defun increment-ticks (ticks)
+  "To be called from user-defined primitives. Increments the number of
+executed ticks for the executing VM by TICKS.
+
+This function can be used by user-defined primitives that want to
+model their CPU cost (i.e. any primitive call uses 1 tick, but an
+expensive primitive can model the fact that it is expensive by calling
+INCREMENT-TICKS with a wisely chosen number of ticks)."
+  (when shovel-vm:*ticks-incrementer*
+    (funcall shovel-vm:*ticks-incrementer* ticks)))
+
+

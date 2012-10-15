@@ -3,25 +3,28 @@
 
 (defvar *error-raiser*)
 
+(defvar *ticks-incrementer* nil)
+
 (defvar *version* 1)
 
-(defstruct vm
-  bytecode
-  program-counter
-  current-environment
-  stack
-  user-primitives
-  (executed-ticks 0)
-  (executed-ticks-since-last-nap 0)
-  (last-start-pos nil)
-  (last-end-pos nil)
-  (sources nil)
-  (should-take-a-nap nil)
-  (user-defined-primitive-error nil)
-  (programming-error nil)
-  (cells-quota nil)
-  (total-ticks-quota nil)
-  (until-next-nap-ticks-quota nil))
+(locally (declare (optimize speed))
+  (defstruct vm
+    bytecode
+    program-counter
+    current-environment
+    stack
+    user-primitives
+    (executed-ticks 0)
+    (executed-ticks-since-last-nap 0)
+    (last-start-pos nil)
+    (last-end-pos nil)
+    (sources nil)
+    (should-take-a-nap nil)
+    (user-defined-primitive-error nil)
+    (programming-error nil)
+    (cells-quota nil)
+    (total-ticks-quota nil)
+    (until-next-nap-ticks-quota nil)))
 
 (defun get-vm-user-defined-primitive-error (vm)
   (vm-user-defined-primitive-error vm))
@@ -301,12 +304,15 @@
     (raise-shovel-error vm "Argument must be a boolean.")))
 
 (defun check-vm-without-error (vm)
+  (declare (optimize speed))
   (alexandria:when-let (err (vm-user-defined-primitive-error vm))
     (error err))
   (alexandria:when-let (err (vm-programming-error vm))
     (error err)))
 
 (defun step-vm (vm)
+  (declare (optimize (speed 1))
+           (type vm vm))
   (check-vm-without-error vm)
   (when (and (vm-total-ticks-quota vm)
              (>= (vm-executed-ticks vm)
@@ -319,6 +325,9 @@
   (when (vm-not-finished vm)
     (let* ((shovel-vm:*error-raiser* (lambda (message)
                                        (raise-shovel-error vm message)))
+           (shovel-vm:*ticks-incrementer* (lambda (ticks)
+                                            (incf (vm-executed-ticks vm) ticks)
+                                            (incf (vm-executed-ticks-since-last-nap vm) ticks)))
            (instruction (elt (vm-bytecode vm) (vm-program-counter vm)))
            (opcode (instruction-opcode instruction))
            (args (instruction-arguments instruction)))

@@ -987,5 +987,20 @@ result
         (declare (ignore result2 vm))
         (is (= 2000 ticks2))))))
 
+(test vm-user-defined-primitive-ticks-quota
+  (labels ((udp (ticks)
+             (shovel:increment-ticks ticks))
+           (run-with-total-ticks-quota (quota)
+             (let* ((sources (list "@udp(100) 1"))
+                    (bytecode (shovel:get-bytecode sources)))
+               (multiple-value-bind (result vm)
+                   (shovel:run-vm bytecode
+                                  :sources sources
+                                  :total-ticks-quota quota
+                                  :user-primitives (list (list "udp" #'udp 1)))
+                 (values result (shovel-vm::vm-executed-ticks vm))))))
+    (signals shovel-types:shovel-total-ticks-quota-exceeded
+      (run-with-total-ticks-quota 100))))
+
 (defun run-tests ()
   (fiveam:run! :shovel-tests))

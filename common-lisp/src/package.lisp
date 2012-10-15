@@ -169,7 +169,8 @@
    :get-vm-stack
    :get-vm-environment
    :get-vm-programming-error
-   :get-vm-user-defined-primitive-error))
+   :get-vm-user-defined-primitive-error
+   :*ticks-incrementer*))
 
 (defpackage #:shovel
   (:use #:cl)
@@ -186,4 +187,5 @@
    :get-vm-environment
    :wake-up-vm
    :get-vm-programming-error
-   :get-vm-user-defined-primitive-error))
+   :get-vm-user-defined-primitive-error
+   :increment-ticks))
