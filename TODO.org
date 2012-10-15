@@ -108,6 +108,8 @@
   - implement by replacing with ifs;
   - t1 || t2 - if t1 true else t2;
   - t1 && t2 - if t1 t2 else false.
+* DONE fix the 'string' and 'stringRepresentation' primitives
+  to avoid infinite loops when stringifying circular data structures;
 * TODO tests for all the required primitives
 * TODO documentation
 ** TODO Shript (language, required primitives)
@@ -132,10 +134,14 @@
    the number exceeds the limit, count the actual number of cells used
    (by running a modified version of the serializer) and crash the VM
    if the number of really used cells still exceeds the limit.
+** TODO implement primitive quotas by function calls
+   - incrementTicks
+   - incrementCells
+   - askPermissionForCells
 * TODO clean up the exported symbols
   (the user should only need to use functions exported from the
   'shovel' package)
-* TODO fix the 'string' and 'stringRepresentation' primitives
-  to avoid infinite loops when stringifying circular data structures;
+** TODO the run-vm should allow a parameter 'vm'
+** TODO there should be a way to wake up a vm (clear 'should-take-a-nap')
 * TODO publish the functions to extract the context from a VM
   (the stack and environment); should work even for a crashed VM.

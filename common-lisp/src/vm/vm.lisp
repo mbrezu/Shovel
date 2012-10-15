@@ -6,7 +6,8 @@
 (defvar *version* 1)
 
 (defstruct vm
-  bytecode program-counter
+  bytecode
+  program-counter
   current-environment
   stack
   user-primitives

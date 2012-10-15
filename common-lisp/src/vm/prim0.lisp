@@ -345,42 +345,48 @@
         ((eq :null var) "null")
         (t (unknown-type-error))))
 
-(defun shovel-string-representation (var)
-  (labels ((write-all-comma-separated (pieces str)
-             ;; Apparently Clozure CL takes some liberties with format
-             ;; strings like "~{~a~^ ~}" (it inserts #n= and #n#
-             ;; strings if the same string is inserted repeatedly a
-             ;; certain number of times), hence the need for this
-             ;; helper function.
-             (let ((is-first t))
-               (dolist (piece pieces)
-                 (unless is-first
-                   (write-string ", " str))
-                 (write-string piece str)
-                 (when is-first
-                   (setf is-first nil))))))
-    (cond ((stringp var) (with-output-to-string (str) (prin1 var str)))
-          ((vectorp var) (with-output-to-string (str)
-                           (write-string "array(" str)
-                           (let ((pieces (mapcar #'shovel-string-representation
-                                                 (coerce var 'list))))
-                             (write-all-comma-separated pieces str)
-                             (write-string ")" str))))
-          ((hash-table-p var)
-           (with-output-to-string (str)
-             (write-string "hash(" str)
-             (let (pieces)
-               (dolist (key (sort (alexandria:hash-table-keys var) #'string<=))
-                 (push (shovel-string-representation key) pieces)
-                 (push (shovel-string-representation (gethash key var)) pieces))
-               (write-all-comma-separated (nreverse pieces) str)
-               (write-string ")" str))))
-          ((or (eq :null var)
-               (numberp var)
-               (is-bool var)
-               (is-callable var))
-           (shovel-string var))
-          (t (unknown-type-error)))))
+(defun shovel-string-representation (var &optional (visited (make-hash-table :test #'eq)))
+  (if (gethash var visited)
+      "[...loop...]"
+      (labels ((write-all-comma-separated (pieces str)
+                 ;; Apparently Clozure CL takes some liberties with format
+                 ;; strings like "~{~a~^ ~}" (it inserts #n= and #n#
+                 ;; strings if the same string is inserted repeatedly a
+                 ;; certain number of times), hence the need for this
+                 ;; helper function.
+                 (let ((is-first t))
+                   (dolist (piece pieces)
+                     (unless is-first
+                       (write-string ", " str))
+                     (write-string piece str)
+                     (when is-first
+                       (setf is-first nil))))))
+        (cond ((stringp var) (with-output-to-string (str) (prin1 var str)))
+              ((vectorp var)
+               (setf (gethash var visited) t)
+               (with-output-to-string (str)
+                 (write-string "array(" str)
+                 (let ((pieces (mapcar (lambda (item)
+                                         (shovel-string-representation item visited))
+                                       (coerce var 'list))))
+                   (write-all-comma-separated pieces str)
+                   (write-string ")" str))))
+              ((hash-table-p var)
+               (setf (gethash var visited) t)
+               (with-output-to-string (str)
+                 (write-string "hash(" str)
+                 (let (pieces)
+                   (dolist (key (sort (alexandria:hash-table-keys var) #'string<=))
+                     (push (shovel-string-representation key visited) pieces)
+                     (push (shovel-string-representation (gethash key var) visited) pieces))
+                   (write-all-comma-separated (nreverse pieces) str)
+                   (write-string ")" str))))
+              ((or (eq :null var)
+                   (numberp var)
+                   (is-bool var)
+                   (is-callable var))
+               (shovel-string var))
+              (t (unknown-type-error))))))
 
 ;; Parsing numbers:
 

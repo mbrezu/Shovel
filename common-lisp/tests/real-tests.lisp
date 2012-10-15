@@ -916,16 +916,23 @@ f = [...callable...]
 (test short-circuiting-logical-operators
   (is (eq :true (shovel:naked-run-code (list "true || '1' == 2"))))
   (is (eq :false (shovel:naked-run-code (list "false && '1' == 2"))))
-  
+
   (is (eq :true (shovel:naked-run-code (list "true || false"))))
   (is (eq :true (shovel:naked-run-code (list "true || true"))))
   (is (eq :true (shovel:naked-run-code (list "false || true"))))
   (is (eq :false (shovel:naked-run-code (list "false || false"))))
-  
+
   (is (eq :false (shovel:naked-run-code (list "true && false"))))
   (is (eq :true (shovel:naked-run-code (list "true && true"))))
   (is (eq :false (shovel:naked-run-code (list "false && true"))))
   (is (eq :false (shovel:naked-run-code (list "false && false")))))
+
+(test stringifying-circular-data-structures
+  (is (string= (shovel:naked-run-code (list "
+var a = array(1, 2)
+a[1] = a
+stringRepresentation(a)"))
+               "array(1, [...loop...])")))
 
 (defun run-tests ()
   (fiveam:run! :shovel-tests))
