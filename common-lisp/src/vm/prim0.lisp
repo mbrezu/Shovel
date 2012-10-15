@@ -116,6 +116,7 @@
 (defun hash-constructor (&rest args)
   (when (/= 0 (mod (length args) 2))
     (vm-error "Must provide an even number of arguments."))
+  (funcall shovel-vm:*cells-increment-herald* (+ 1 (* 2 (length args))))
   (let ((result (make-hash-table :test #'equal)))
     (loop
        while args
@@ -125,10 +126,12 @@
               (vm-error "Keys must be strings"))
             (setf (gethash key result) value)
             (setf args (cddr args))))
+    (funcall shovel-vm:*cells-incrementer* (+ 1 (* 2 (length args))))
     result))
 
 ;; Array constructor:
 (defun array-constructor (&rest args)
+  (funcall shovel-vm:*cells-increment-herald* (+ 1 (length args)))
   (let* ((vectorized-args (coerce args 'vector))
          (n (length vectorized-args))
          (result (make-array n
@@ -136,6 +139,7 @@
                              :adjustable t
                              :fill-pointer n)))
     (replace result vectorized-args)
+    (funcall shovel-vm:*cells-incrementer* (+ 1 (length args)))
     result))
 
 (defun check-vector (array)
@@ -144,6 +148,7 @@
 
 (defun array-push (array new-element)
   (check-vector array)
+  (funcall shovel-vm:*cells-incrementer* 1)
   (vector-push-extend new-element array))
 
 (defun array-pop (array)
@@ -151,10 +156,13 @@
   (unless (> (fill-pointer array) 0)
     (vm-error "Can't pop from an empty array."))
   (let ((result (aref array (1- (fill-pointer array)))))
+    (setf (aref array (1- (fill-pointer array))) nil)
     (decf (fill-pointer array))
     result))
 
 (defun array-constructor-n (n)
+  (funcall shovel-vm:*cells-increment-herald* (+ 1 n))
+  (funcall shovel-vm:*cells-incrementer* (+ 1 n))
   (make-array n :initial-element :null :adjustable t :fill-pointer n))
 
 (defun validate-index-access (array index)
@@ -206,7 +214,11 @@
              (vm-error "Getting an array element requires an integer index.")))
         ((hash-table-p array-or-hash)
          (if (stringp index)
-             (setf (gethash index array-or-hash) value)
+             (let ((hash-grows (not (gethash index array-or-hash))))
+               (when hash-grows
+                 ;; 1 for the key, 1 for the value
+                 (funcall shovel-vm:*cells-incrementer* 2))
+               (setf (gethash index array-or-hash) value))
              (vm-error
               "Getting a hash table value requires a key that is a string.")))))
 
@@ -221,10 +233,12 @@
 
 (defun string-upper (string)
   (check-string string)
+  (funcall shovel-vm:*cells-incrementer* (length string))
   (string-upcase string))
 
 (defun string-lower (string)
   (check-string string)
+  (funcall shovel-vm:*cells-incrementer* (length string))
   (string-downcase string))
 
 ;; Keys of a hash as an array:
@@ -233,6 +247,7 @@
   (if (hash-table-p hash-table)
       (let (result)
         (maphash (lambda (k v) (declare (ignore v)) (push k result)) hash-table)
+        (funcall shovel-vm:*cells-incrementer* (1+ (length result)))
         (coerce (reverse result) 'vector))
       (vm-error "Argument must be a hash table.")))
 
@@ -276,7 +291,10 @@
        (format nil
                "Ending index (~d) is larger than the length of the sequence (~d)."
                real-end length)))
-    (copy-seq (subseq array-or-string real-start real-end))))
+    ;; add 1 for the new sequence, add 1 because the length of the new
+    ;; sequence is REAL-END - REAL-START + 1
+    (funcall shovel-vm:*cells-incrementer* (+ 2 (- real-end real-start)))
+    (subseq array-or-string real-start real-end)))
 
 ;; Current date/time:
 
@@ -296,14 +314,13 @@
 (defun decode-time (unix-time)
   (multiple-value-bind (second minute hour date month year day-of-week)
       (decode-universal-time (unix-to-lisp-time unix-time) 0)
-    (alexandria:alist-hash-table (list (cons "second" second)
-                                       (cons "minute" minute)
-                                       (cons "hour" hour)
-                                       (cons "day" date)
-                                       (cons "month" month)
-                                       (cons "year" year)
-                                       (cons "dayOfWeek" (1+ day-of-week)))
-                                 :test #'equal)))
+    (hash-constructor "second" second
+                      "minute" minute
+                      "hour" hour
+                      "day" date
+                      "month" month
+                      "year" year
+                      "dayOfWeek" (1+ day-of-week))))
 
 (defun encode-time (hash)
   (lisp-to-unix-time
@@ -336,57 +353,63 @@
   (vm-error "Object of unknown type."))
 
 (defun shovel-string (var)
-  (cond ((stringp var) var)
-        ((vectorp var) "[...array...]")
-        ((numberp var) (format nil "~a" var))
-        ((hash-table-p var) "[...hash...]")
-        ((is-callable var) "[...callable...]")
-        ((is-bool var) (string-downcase (symbol-name var)))
-        ((eq :null var) "null")
-        (t (unknown-type-error))))
+  (let ((result (cond ((stringp var) var)
+                      ((vectorp var) "[...array...]")
+                      ((numberp var) (format nil "~a" var))
+                      ((hash-table-p var) "[...hash...]")
+                      ((is-callable var) "[...callable...]")
+                      ((is-bool var) (string-downcase (symbol-name var)))
+                      ((eq :null var) "null")
+                      (t (unknown-type-error)))))
+    (funcall shovel-vm:*cells-incrementer* (+ 1 (length result)))
+    result))
 
-(defun shovel-string-representation (var &optional (visited (make-hash-table :test #'eq)))
-  (if (gethash var visited)
-      "[...loop...]"
-      (labels ((write-all-comma-separated (pieces str)
-                 ;; Apparently Clozure CL takes some liberties with format
-                 ;; strings like "~{~a~^ ~}" (it inserts #n= and #n#
-                 ;; strings if the same string is inserted repeatedly a
-                 ;; certain number of times), hence the need for this
-                 ;; helper function.
-                 (let ((is-first t))
-                   (dolist (piece pieces)
-                     (unless is-first
-                       (write-string ", " str))
-                     (write-string piece str)
-                     (when is-first
-                       (setf is-first nil))))))
-        (cond ((stringp var) (with-output-to-string (str) (prin1 var str)))
-              ((vectorp var)
-               (setf (gethash var visited) t)
-               (with-output-to-string (str)
-                 (write-string "array(" str)
-                 (let ((pieces (mapcar (lambda (item)
-                                         (shovel-string-representation item visited))
-                                       (coerce var 'list))))
-                   (write-all-comma-separated pieces str)
-                   (write-string ")" str))))
-              ((hash-table-p var)
-               (setf (gethash var visited) t)
-               (with-output-to-string (str)
-                 (write-string "hash(" str)
-                 (let (pieces)
-                   (dolist (key (sort (alexandria:hash-table-keys var) #'string<=))
-                     (push (shovel-string-representation key visited) pieces)
-                     (push (shovel-string-representation (gethash key var) visited) pieces))
-                   (write-all-comma-separated (nreverse pieces) str)
-                   (write-string ")" str))))
-              ((or (eq :null var)
-                   (numberp var)
-                   (is-bool var)
-                   (is-callable var))
-               (shovel-string var))
-              (t (unknown-type-error))))))
+(defun shovel-string-representation (var &optional (visited (make-hash-table :test #'eq) visited-p))
+  (let ((result
+         (if (gethash var visited)
+             "[...loop...]"
+             (labels ((write-all-comma-separated (pieces str)
+                        ;; Apparently Clozure CL takes some liberties with format
+                        ;; strings like "~{~a~^ ~}" (it inserts #n= and #n#
+                        ;; strings if the same string is inserted repeatedly a
+                        ;; certain number of times), hence the need for this
+                        ;; helper function.
+                        (let ((is-first t))
+                          (dolist (piece pieces)
+                            (unless is-first
+                              (write-string ", " str))
+                            (write-string piece str)
+                            (when is-first
+                              (setf is-first nil))))))
+               (cond ((stringp var) (with-output-to-string (str) (prin1 var str)))
+                     ((vectorp var)
+                      (setf (gethash var visited) t)
+                      (with-output-to-string (str)
+                        (write-string "array(" str)
+                        (let ((pieces (mapcar (lambda (item)
+                                                (shovel-string-representation item visited))
+                                              (coerce var 'list))))
+                          (write-all-comma-separated pieces str)
+                          (write-string ")" str))))
+                     ((hash-table-p var)
+                      (setf (gethash var visited) t)
+                      (with-output-to-string (str)
+                        (write-string "hash(" str)
+                        (let (pieces)
+                          (dolist (key (sort (alexandria:hash-table-keys var) #'string<=))
+                            (push (shovel-string-representation key visited) pieces)
+                            (push (shovel-string-representation (gethash key var) visited) pieces))
+                          (write-all-comma-separated (nreverse pieces) str)
+                          (write-string ")" str))))
+                     ((or (eq :null var)
+                          (numberp var)
+                          (is-bool var)
+                          (is-callable var))
+                      (shovel-string var))
+                     (t (unknown-type-error)))))))
+    (unless visited-p
+      (funcall shovel-vm:*cells-incrementer* (+ 1 (length result))))
+    result))
 
 ;; Parsing numbers:
 

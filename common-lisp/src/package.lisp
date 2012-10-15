@@ -34,7 +34,8 @@
    :shovel-vm-match-error
    :shovel-broken-checksum
    :shovel-version-too-large
-   :shovel-total-ticks-quota-exceeded))
+   :shovel-total-ticks-quota-exceeded
+   :shovel-cell-quota-exceeded))
 
 (defpackage #:shovel-utils
   (:use #:cl #:shovel-types)
@@ -170,7 +171,9 @@
    :get-vm-environment
    :get-vm-programming-error
    :get-vm-user-defined-primitive-error
-   :*ticks-incrementer*))
+   :*ticks-incrementer*
+   :*cells-incrementer*
+   :*cells-increment-herald*))
 
 (defpackage #:shovel
   (:use #:cl)

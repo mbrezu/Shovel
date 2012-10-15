@@ -1002,5 +1002,30 @@ result
     (signals shovel-types:shovel-total-ticks-quota-exceeded
       (run-with-total-ticks-quota 100))))
 
+(test vm-cells-quota
+  (let* ((sources (list "var a = arrayN(100)"))
+         (bytecode (shovel:get-bytecode sources)))
+    (multiple-value-bind (result vm)
+        (shovel:run-vm bytecode :sources sources)
+      (declare (ignore result))
+      (is (= 111 (shovel-vm::vm-used-cells vm)))))
+  (let* ((sources (list (shovel:stdlib)
+                        "
+stdlib.repeat(1000, fn() {
+  var a = arrayN(100)
+})
+"))
+         (bytecode (shovel:get-bytecode sources)))
+    (multiple-value-bind (result vm)
+        (shovel:run-vm bytecode
+                       :sources sources
+                       :cells-quota 800)
+      (declare (ignore result))
+      (is (= 738 (shovel-vm::vm-used-cells vm))))
+    (signals shovel-types:shovel-cell-quota-exceeded
+      (shovel:run-vm bytecode
+                     :sources sources
+                     :cells-quota 700))))
+
 (defun run-tests ()
   (fiveam:run! :shovel-tests))

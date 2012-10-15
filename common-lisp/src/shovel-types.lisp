@@ -47,3 +47,5 @@
 (define-condition shovel-version-too-large (error) ())
 
 (define-condition shovel-total-ticks-quota-exceeded (error) ())
+
+(define-condition shovel-cell-quota-exceeded (error) ())

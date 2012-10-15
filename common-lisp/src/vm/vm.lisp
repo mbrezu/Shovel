@@ -5,26 +5,30 @@
 
 (defvar *ticks-incrementer* nil)
 
+(defvar *cells-incrementer* nil)
+
+(defvar *cells-increment-herald* nil)
+
 (defvar *version* 1)
 
-(locally (declare (optimize speed))
-  (defstruct vm
-    bytecode
-    program-counter
-    current-environment
-    stack
-    user-primitives
-    (executed-ticks 0)
-    (executed-ticks-since-last-nap 0)
-    (last-start-pos nil)
-    (last-end-pos nil)
-    (sources nil)
-    (should-take-a-nap nil)
-    (user-defined-primitive-error nil)
-    (programming-error nil)
-    (cells-quota nil)
-    (total-ticks-quota nil)
-    (until-next-nap-ticks-quota nil)))
+(defstruct vm
+  bytecode
+  program-counter
+  current-environment
+  stack
+  user-primitives
+  (used-cells 0)
+  (executed-ticks 0)
+  (executed-ticks-since-last-nap 0)
+  (last-start-pos nil)
+  (last-end-pos nil)
+  (sources nil)
+  (should-take-a-nap nil)
+  (user-defined-primitive-error nil)
+  (programming-error nil)
+  (cells-quota nil)
+  (total-ticks-quota nil)
+  (until-next-nap-ticks-quota nil))
 
 (defun get-vm-user-defined-primitive-error (vm)
   (vm-user-defined-primitive-error vm))
@@ -283,8 +287,20 @@
   (setf (vm-executed-ticks-since-last-nap vm) 0)
   (handler-bind ((error (lambda (condition)
                           (setf (vm-programming-error vm) condition))))
-    (loop while (step-vm vm))
-    (values (first (vm-stack vm)) vm)))
+    (let ((shovel-vm:*error-raiser* (lambda (message)
+                                      (raise-shovel-error vm message)))
+          (shovel-vm:*ticks-incrementer* (lambda (ticks)
+                                           (incf (vm-executed-ticks vm) ticks)
+                                           (incf (vm-executed-ticks-since-last-nap vm) ticks)))
+          (shovel-vm:*cells-incrementer* (lambda (cells)
+                                           (increment-cells-quota vm cells)))
+          (shovel-vm:*cells-increment-herald*
+           (lambda (cells)
+             (when (and (vm-cells-quota vm)
+                        (> cells (vm-cells-quota vm)))
+               (error (make-condition 'shovel-cell-quota-exceeded))))))
+      (loop while (step-vm vm))
+      (values (first (vm-stack vm)) vm))))
 
 (defun get-vm-stack (vm)
   (with-output-to-string (str)
@@ -310,6 +326,74 @@
   (alexandria:when-let (err (vm-programming-error vm))
     (error err)))
 
+(defun increment-cells-quota (vm cells)
+  (labels ((quota-exceeded ()
+             (and (vm-cells-quota vm)
+                  (> (vm-used-cells vm) (vm-cells-quota vm)))))
+    (incf (vm-used-cells vm) cells)
+    (when (quota-exceeded)
+      (setf (vm-used-cells vm) (count-active-objects-cells vm))
+      (when (quota-exceeded)
+        (error (make-condition 'shovel-cell-quota-exceeded))))))
+
+(defun count-active-objects-cells (vm)
+  (let ((visited  (make-hash-table :test #'eq)))
+    (labels ((count-structure (structure)
+               (if (gethash structure visited)
+                   0
+                   (cond
+                     ((or (null structure)
+                          (eq :null structure)
+                          (eq :false structure)
+                          (eq :true structure)
+                          (numberp structure))
+                      0)
+                     ((consp structure)
+                      (setf (gethash structure visited) t)
+                      (+ 2
+                         (count-structure (car structure))
+                         (count-structure (cdr structure))))
+                     ((stringp structure)
+                      (setf (gethash structure visited) t)
+                      (1+ (length structure)))
+                     ((callable-p structure)
+                      (setf (gethash structure visited) t)
+                      (+ 5
+                         (count-structure (callable-environment structure))
+                         (count-structure (callable-prim0 structure))
+                         (count-structure (callable-prim structure))))
+                     ((env-frame-p structure)
+                      (setf (gethash structure visited) t)
+                      (+ 2
+                         (count-structure (env-frame-vars structure))))
+                     ((return-address-p structure)
+                      (setf (gethash structure visited) t)
+                      (+ 2
+                         (count-structure (return-address-environment structure))))
+                     ((named-block-p structure)
+                      (setf (gethash structure visited) t)
+                      (+ 3
+                         (count-structure (named-block-name structure))
+                         (count-structure (named-block-environment structure))))
+                     ((vectorp structure)
+                      (setf (gethash structure visited) t)
+                      (let ((result (length structure)))
+                        (dotimes (i (length structure))
+                          (incf result (count-structure (aref structure i))))
+                        (1+ result)))
+                     ((hash-table-p structure)
+                      (setf (gethash structure visited) t)
+                      (let ((result 0))
+                        (maphash (lambda (key value)
+                                   (incf result 2)
+                                   (incf result (count-structure key))
+                                   (incf result (count-structure value)))
+                                 structure)
+                        (1+ result)))
+                     (t (error "Shovel Internal WTF: can't count cells in structure."))))))
+      (+ (count-structure (vm-current-environment vm))
+         (count-structure (vm-stack vm))))))
+
 (defun step-vm (vm)
   (declare (optimize (speed 1))
            (type vm vm))
@@ -323,12 +407,7 @@
                  (vm-until-next-nap-ticks-quota vm)))
     (setf (vm-should-take-a-nap vm) t))
   (when (vm-not-finished vm)
-    (let* ((shovel-vm:*error-raiser* (lambda (message)
-                                       (raise-shovel-error vm message)))
-           (shovel-vm:*ticks-incrementer* (lambda (ticks)
-                                            (incf (vm-executed-ticks vm) ticks)
-                                            (incf (vm-executed-ticks-since-last-nap vm) ticks)))
-           (instruction (elt (vm-bytecode vm) (vm-program-counter vm)))
+    (let* ((instruction (elt (vm-bytecode vm) (vm-program-counter vm)))
            (opcode (instruction-opcode instruction))
            (args (instruction-arguments instruction)))
       (alexandria:when-let ((start-pos (instruction-start-pos instruction))
@@ -339,15 +418,28 @@
         (:jump (setf (vm-program-counter vm) args))
         (:const
          (push args (vm-stack vm))
-         (incf (vm-program-counter vm)))
+         (incf (vm-program-counter vm))
+         (if (stringp args)
+             (increment-cells-quota vm (1+ (length args))) ;; 1 for
+             ;; the
+             ;; strings,
+             ;; the rest
+             ;; for the
+             ;; contents
+             (increment-cells-quota vm 1))) ;; for the pushed value
         (:prim0
          (push (make-callable :prim0 args) (vm-stack vm))
-         (incf (vm-program-counter vm)))
+         (incf (vm-program-counter vm))
+         (increment-cells-quota vm 5)) ;; for the pushed callable (5 fields)
         (:prim
          (push (make-callable :prim args) (vm-stack vm))
-         (incf (vm-program-counter vm)))
-        (:call (handle-call vm args t))
-        (:callj (handle-call vm args nil))
+         (incf (vm-program-counter vm))
+         (increment-cells-quota vm 5)) ;; for the pushed callable (5 fields)
+        (:call
+         (handle-call vm args t)
+         (increment-cells-quota vm 1)) ;; for the pushed return address
+        (:callj
+         (handle-call vm args nil))
         (:fjump
          (check-bool vm)
          (jump-if (shovel-vm-prim0:logical-not (pop (vm-stack vm))) vm args))
@@ -363,22 +455,32 @@
          (push (get-from-environment (vm-current-environment vm)
                                      (first args) (second args))
                (vm-stack vm))
-         (incf (vm-program-counter vm)))
+         (incf (vm-program-counter vm))
+         (increment-cells-quota vm 1)) ;; for the pushed value
         (:fn
          (push (make-callable :program-counter (first args)
                               :environment (vm-current-environment vm)
                               :num-args (second args))
                (vm-stack vm))
+         (increment-cells-quota vm 5) ;; for the pushed callable (5 fields)
          (incf (vm-program-counter vm)))
         (:new-frame
-         (let ((new-frame (make-env-frame
-                           :introduced-at-program-counter (vm-program-counter vm)
-                           :vars (make-array (length args)))))
+         (let* ((length-args (length args))
+                (new-frame (make-env-frame
+                            :introduced-at-program-counter (vm-program-counter vm)
+                            :vars (make-array length-args))))
            (loop
               for i = 0 then (1+ i)
               for var in args
               do (setf (aref (env-frame-vars new-frame) i) (list var :null)))
-           (push new-frame (vm-current-environment vm)))
+           (push new-frame (vm-current-environment vm))
+           (increment-cells-quota vm (+ 2 length-args))) ;; for the
+         ;; frame, the
+         ;; saved
+         ;; program
+         ;; counter
+         ;; and the
+         ;; contents
          (incf (vm-program-counter vm)))
         (:drop-frame
          (pop (vm-current-environment vm))
@@ -399,6 +501,7 @@
                                       :end-address args
                                       :environment (vm-current-environment vm))
                     (vm-stack vm)))
+          (increment-cells-quota vm 3) ;; for the named block record (3 fields)
           (incf (vm-program-counter vm)))
         (:pop-block
          (let ((return-value (first (vm-stack vm)))
@@ -432,6 +535,9 @@
            (setf (gethash "stack" context) stack-trace)
            (setf (gethash "environment" context) current-environment)
            (push context (vm-stack vm))
+           (increment-cells-quota vm 6) ;; for the pushed hash: 1 (the
+           ;; pushed hash), 1 (the hash),
+           ;; 2 keys and 2 values.
            (incf (vm-program-counter vm))))
         (:tjump
          (check-bool vm)

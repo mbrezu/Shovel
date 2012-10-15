@@ -139,16 +139,20 @@
 * TODO VM execution quotas for 'run-vm'
 ** DONE offer a way to specify how expensive user-primitives are
    in terms of the execution quota
-** TODO Gaaaah must write a garbage collector anyway - 
+** DONE Gaaaah must write a garbage collector anyway - 
    or find another way to limit Shovel process memory usage.
    Solution: limit the number of used cells, count allocated cells
    (via *array*, *hash*, *push*, *call*, *block*, *const* etc.); if
    the number exceeds the limit, count the actual number of cells used
    (by running a modified version of the serializer) and crash the VM
    if the number of really used cells still exceeds the limit.
+** TODO test that user-defined primitives can 
+   model their memory usage;
 ** DONE the number of ticks executed so far must be made part of the
    serialized VM state;
 ** DONE execution quotas basic
+** TODO limit integers to a known amount (60 bits?)
+   unbounded bignums make it very hard to limit memory and CPU usage
 ** TODO implement primitive quotas by function calls
    - incrementTicks
    - incrementCells
@@ -158,6 +162,6 @@
 * TODO the 'pop' required primitive should set the array item to null before
   decrementing the fill pointer (so the CL GC can reclaim the object
   pointed to by that array element)
-* TODO better use of #-/#+ to eliminate real-tests.lisp
+* TODO use #-/#+ in the asd file to eliminate real-tests.lisp
 * TODO provide a public getter for total-executed-ticks
-
+* TODO try to optimize step-vm by building a jump table with functions
