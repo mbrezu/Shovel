@@ -1054,5 +1054,16 @@ stdlib.repeat(1000, fn() {
           (declare (ignore result))
           (shovel-vm::vm-used-cells vm))))))
 
+(test vm-cells-quota-herald-cell-increment
+  (signals shovel-types:shovel-cell-quota-exceeded
+      (let* ((sources (list "arrayN(100)"))
+             (bytecode (shovel:get-bytecode sources)))
+        (multiple-value-bind (result vm)
+            (shovel:run-vm bytecode
+                           :sources sources
+                           :cells-quota 100)
+          (declare (ignore result))
+          (shovel-vm::vm-used-cells vm)))))
+
 (defun run-tests ()
   (fiveam:run! :shovel-tests))

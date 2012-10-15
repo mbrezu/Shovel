@@ -148,7 +148,7 @@
    if the number of really used cells still exceeds the limit.
 ** DONE test that user-defined primitives can 
    model their memory usage;
-** TODO test shovel-vm:*cells-increment-herald* calls
+** DONE test shovel-vm:*cells-increment-herald* calls
 ** DONE the number of ticks executed so far must be made part of the
    serialized VM state;
 ** DONE execution quotas basic
