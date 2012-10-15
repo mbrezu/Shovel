@@ -168,6 +168,6 @@
 * TODO tests for all the required primitives
 * TODO move SHRIPT-FILE and SHOVEL-ERROR and errors to a
   SHOVEL-PUBLIC-TYPES package and file;
-* TODO use #-/#+ in the asd file to eliminate real-tests.lisp
+* DONE use #-/#+ in the asd file to eliminate real-tests.lisp
 * TODO try to optimize step-vm by building a jump table with functions
 * TODO remove references to Shript and rename it ShovelScript

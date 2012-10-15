@@ -32,8 +32,9 @@
                                     "shovel-types"
                                     "compiler"
                                     "vm"))))
+     #-shovel-production
      (:module
       "tests"
       :depends-on ("src")
       :components ((:file "package")
-                   (:file "tests")))))))
+                   (:file "tests" :depends-on ("package"))))))))
