@@ -1056,14 +1056,33 @@ stdlib.repeat(1000, fn() {
 
 (test vm-cells-quota-herald-cell-increment
   (signals shovel-types:shovel-cell-quota-exceeded
-      (let* ((sources (list "arrayN(100)"))
-             (bytecode (shovel:get-bytecode sources)))
-        (multiple-value-bind (result vm)
-            (shovel:run-vm bytecode
-                           :sources sources
-                           :cells-quota 100)
-          (declare (ignore result))
-          (shovel-vm::vm-used-cells vm)))))
+    (let* ((sources (list "arrayN(100)"))
+           (bytecode (shovel:get-bytecode sources)))
+      (multiple-value-bind (result vm)
+          (shovel:run-vm bytecode
+                         :sources sources
+                         :cells-quota 100)
+        (declare (ignore result))
+        (shovel-vm::vm-used-cells vm)))))
+
+(test vm-statistics
+  (let* ((sources (list (shovel:stdlib)
+                        "
+stdlib.repeat(1000, fn() {
+  var a = arrayN(100)
+})
+@halt()
+"))
+         (bytecode (shovel:get-bytecode sources)))
+    (multiple-value-bind (result vm)
+        (shovel:run-vm bytecode :sources sources
+                       :user-primitives (list (list "halt"
+                                                    (lambda ()
+                                                      (values :null :nap-and-retry-on-wake-up))
+                                                    0)))
+      (declare (ignore result))
+      (is (= 31171 (shovel:vm-used-ticks vm)))
+      (is (= 610 (shovel:vm-used-cells vm))))))
 
 (defun run-tests ()
   (fiveam:run! :shovel-tests))

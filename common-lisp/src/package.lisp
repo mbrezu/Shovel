@@ -173,7 +173,9 @@
    :get-vm-user-defined-primitive-error
    :*ticks-incrementer*
    :*cells-incrementer*
-   :*cells-increment-herald*))
+   :*cells-increment-herald*
+   :vm-used-ticks
+   :vm-really-used-cells))
 
 (defpackage #:shovel
   (:use #:cl)
@@ -192,4 +194,6 @@
    :get-vm-programming-error
    :get-vm-user-defined-primitive-error
    :increment-ticks
-   :increment-cells))
+   :increment-cells
+   :vm-used-cells
+   :vm-used-ticks))

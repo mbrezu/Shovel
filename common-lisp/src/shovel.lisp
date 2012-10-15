@@ -321,3 +321,11 @@ model their memory usage (i.e. tell the VM that they allocated memory
 which they made available to the VM via their return value)."
   (when shovel-vm:*cells-incrementer*
     (funcall shovel-vm:*cells-incrementer* cells)))
+
+(defun vm-used-ticks (vm)
+  "The number of ticks used by VM so far."
+  (shovel-vm:vm-used-ticks vm))
+
+(defun vm-used-cells (vm)
+  "The number of cells currently used by the VM."
+  (shovel-vm:vm-really-used-cells vm))

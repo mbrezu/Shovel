@@ -331,12 +331,12 @@
              (and (vm-cells-quota vm)
                   (> (vm-used-cells vm) (vm-cells-quota vm)))))
     (when (quota-exceeded)
-      ;; (print "counting")
-      ;; (print (vm-used-cells vm))
-      (setf (vm-used-cells vm) (count-active-objects-cells vm))
-      ;; (print (vm-used-cells vm))
+      (vm-count-used-cells vm)
       (when (quota-exceeded)
         (error (make-condition 'shovel-cell-quota-exceeded))))))
+
+(defun vm-count-used-cells (vm)
+  (setf (vm-used-cells vm) (count-active-objects-cells vm)))
 
 (defun increment-cells-quota (vm cells)
   (incf (vm-used-cells vm) cells))
@@ -420,7 +420,6 @@
                             (end-pos (instruction-end-pos instruction)))
         (setf (vm-last-start-pos vm) start-pos
               (vm-last-end-pos vm) end-pos))
-      ;; (print opcode)
       (case opcode
         (:jump (setf (vm-program-counter vm) args))
         (:const
@@ -428,11 +427,7 @@
          (incf (vm-program-counter vm))
          (if (stringp args)
              (increment-cells-quota vm (1+ (length args))) ;; 1 for
-             ;; the
-             ;; strings,
-             ;; the rest
-             ;; for the
-             ;; contents
+             ;; the strings, the rest for the contents
              (increment-cells-quota vm 1))) ;; for the pushed value
         (:prim0
          (push (make-callable :prim0 args) (vm-stack vm))
@@ -984,3 +979,10 @@ A 'valid value' (with Common Lisp as the host language) is:
     (setf (vm-stack vm) (deserialize stack-index ds))
     (setf (vm-current-environment vm) (deserialize current-environment-index ds))
     (setf (vm-program-counter vm) (deserialize program-counter-index ds))))
+
+(defun vm-used-ticks (vm)
+  (vm-executed-ticks vm))
+
+(defun vm-really-used-cells (vm)
+  (vm-count-used-cells vm)
+  (vm-used-cells vm))

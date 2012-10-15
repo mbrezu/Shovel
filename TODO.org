@@ -121,24 +121,7 @@
 ** DONE publish the functions to extract the context from a VM
   (the stack and environment); should work even for a crashed VM.
 ** DONE extract errors from a VM
-* TODO tests for all the required primitives
-* TODO documentation
-** TODO Shript (language, required primitives)
-** TODO VM 
-*** DONE VM instructions
-*** DONE VM state
-*** TODO VM Serialization
-*** TODO explain the CPU and RAM bounds for the VM
-**** TODO explain why integers are modulo 2^60.
-** TODO how to use things
-*** TODO calling conventions
-**** TODO document the fact that user primitives should handle their exceptions;
-     When they don't, the error is stored in the
-     'user-primitive-error' field of the virtual machine and the
-     virtual machine goes to sleep as if :nap-and-retry-on-wake-up had
-     been returned by the primitive as a second value.
-*** TODO from Common Lisp
-* TODO VM execution quotas for 'run-vm'
+* DONE VM execution quotas for 'run-vm'
 ** DONE offer a way to specify how expensive user-primitives are
    in terms of the execution quota
 ** DONE Gaaaah must write a garbage collector anyway - 
@@ -156,16 +139,35 @@
 ** DONE execution quotas basic
 ** DONE limit integers to a known amount (60 bits?)
    unbounded bignums make it very hard to limit memory and CPU usage
-** TODO implement primitive quotas by function calls
+** DONE implement primitive quotas by function calls
    - incrementTicks
    - incrementCells
    - askPermissionForCells
-* TODO move SHRIPT-FILE and SHOVEL-ERROR and errors to a
-  SHOVEL-PUBLIC-TYPES package and file;
-* TODO the 'pop' required primitive should set the array item to null before
+* DONE the 'pop' required primitive should set the array item to null before
   decrementing the fill pointer (so the CL GC can reclaim the object
   pointed to by that array element)
+* DONE public getters for VM execution statistics
+** DONE provide a public getter for vm-used-ticks
+** DONE provide a public getter for vm-used-cells
+* TODO documentation
+** TODO Shript (language, required primitives)
+** TODO VM 
+*** DONE VM instructions
+*** DONE VM state
+*** TODO VM Serialization
+*** TODO explain the CPU and RAM bounds for the VM
+**** TODO explain why integers are modulo 2^60.
+** TODO how to use things
+*** TODO calling conventions
+**** TODO document the fact that user primitives should handle their exceptions;
+     When they don't, the error is stored in the
+     'user-primitive-error' field of the virtual machine and the
+     virtual machine goes to sleep as if :nap-and-retry-on-wake-up had
+     been returned by the primitive as a second value.
+*** TODO from Common Lisp
+* TODO tests for all the required primitives
+* TODO move SHRIPT-FILE and SHOVEL-ERROR and errors to a
+  SHOVEL-PUBLIC-TYPES package and file;
 * TODO use #-/#+ in the asd file to eliminate real-tests.lisp
-* TODO provide a public getter for total-executed-ticks
 * TODO try to optimize step-vm by building a jump table with functions
 * TODO remove references to Shript and rename it ShovelScript
