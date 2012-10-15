@@ -15,8 +15,14 @@
   (last-end-pos nil)
   (sources nil)
   (should-take-a-nap nil)
-  (user-primitive-error nil)
+  (user-defined-primitive-error nil)
   (programming-error nil))
+
+(defun get-vm-user-defined-primitive-error (vm)
+  (vm-user-defined-primitive-error vm))
+
+(defun get-vm-programming-error (vm)
+  (vm-program-counter vm))
 
 (defstruct return-address
   program-counter
@@ -281,7 +287,7 @@
     (raise-shovel-error vm "Argument must be a boolean.")))
 
 (defun check-vm-without-error (vm)
-  (alexandria:when-let (err (vm-user-primitive-error vm))
+  (alexandria:when-let (err (vm-user-defined-primitive-error vm))
     (error err))
   (alexandria:when-let (err (vm-programming-error vm))
     (error err)))
@@ -503,7 +509,7 @@
             (handler-case
                 (apply primitive (reverse arg-values))
               (error (err)
-                (setf (vm-user-primitive-error vm) err)
+                (setf (vm-user-defined-primitive-error vm) err)
                 (values :null :nap-and-retry-on-wake-up))))
       (unless is-required-primitive
         (unless (is-shovel-type result)
@@ -814,7 +820,6 @@ A 'valid value' (with Common Lisp as the host language) is:
          (array (aref vm-state 3))
          (vm-version (aref vm-state 4))
          (vm-bytecode-md5 (aref vm-state 5))
-         (vm-sources-md5 (aref vm-state 6))
          (ds (make-deserializer-state :array array
                                       :objects (make-array (length array)
                                                            :initial-element nil))))
@@ -827,11 +832,6 @@ A 'valid value' (with Common Lisp as the host language) is:
               'shovel-vm-match-error
               :message
               "VM bytecode MD5 and serialized VM bytecode MD5 do not match.")))
-    (unless (string= vm-sources-md5 (get-vm-sources-md5 vm))
-      (error (make-condition
-              'shovel-vm-match-error
-              :message
-              "VM sources MD5 and serialized VM sources MD5 do not match.")))
     (setf (vm-stack vm) (deserialize stack-index ds))
     (setf (vm-current-environment vm) (deserialize current-environment-index ds))
     (setf (vm-program-counter vm) (deserialize program-counter-index ds))))

@@ -166,7 +166,9 @@
    :vm-user-primitive-error
    :wake-up-vm
    :get-vm-stack
-   :get-vm-environment))
+   :get-vm-environment
+   :get-vm-programming-error
+   :get-vm-user-defined-primitive-error))
 
 (defpackage #:shovel
   (:use #:cl)
@@ -177,4 +179,10 @@
    :naked-run-code
    :serialize-bytecode
    :deserialize-bytecode
-   :get-bytecode))
+   :get-bytecode
+   :run-vm
+   :get-vm-stack
+   :get-vm-environment
+   :wake-up-vm
+   :get-vm-programming-error
+   :get-vm-user-defined-primitive-error))

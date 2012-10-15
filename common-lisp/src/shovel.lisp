@@ -129,9 +129,11 @@ var stdlib = {
 }
 ")))
   (defun stdlib ()
+    "Source code for the Shovel standard library."
     stdlib-file))
 
 (defun get-bytecode (sources)
+  "Compiles and assembles SOURCES into bytecode that can be passed to RUN-VM."
   (let* ((result (shovel-compiler:assemble-instructions
                   (shovel-compiler:compile-sources-to-instructions sources))))
     (dotimes (i (length result))
@@ -143,16 +145,22 @@ var stdlib = {
     result))
 
 (defun naked-run-code (sources &key user-primitives)
+  "Compiles and runs SOURCES with the user-defined primitives defined
+by USER-PRIMITIVES (see the documentation for RUN-VM for a description
+of the format for USER-PRIMITIVES). Returns the first value returned
+by RUN-VM."
   (nth-value 0
              (shovel-vm:run-vm (get-bytecode sources)
                                :sources sources
                                :user-primitives user-primitives)))
 
 (defun run-code (sources &key user-primitives debug)
+  "Runs NAKED-RUN-CODE and prints the result (or the exception thrown)."
   (let ((*print-circle* t))
     (handle-errors (naked-run-code sources :user-primitives user-primitives))))
 
 (defun print-code (sources &key debug)
+  "Compiles SOURCES and prints the resulting bytecode to *STANDARD-OUTPUT*."
   (let ((*print-circle* t))
     (handle-errors
       (shovel-compiler:show-instructions
@@ -217,3 +225,50 @@ an array of bytes."
                    :end-pos (fourth bytecode)
                    :comments (fifth bytecode))))
       result)))
+
+(defun run-vm (bytecode &key sources user-primitives state vm)
+  "Runs a Shovel VM made from BYTECODE or supplied as VM. Optionally,
+the sources for the VM are supplied as SOURCES. User-defined
+primitives are provided via USER-PRIMITIVES (a list containing a list
+of name, CL callable, number of arguments for each primitive). If you
+are resuming a serialized VM, provide the serialized state as STATE.
+
+Example of passing PRINT and PRIN1 as user-defined primitives:
+
+    (run-vm bytecode
+            :sources sources
+            :user-primitives '((\"print\" #'print 1)
+                               (\"prin1\" #'prin1 1)))
+
+Finishes when the VM finishes or goes to sleep.
+
+Returns two values: the top of the VM stack and the VM itself."
+  (shovel-vm:run-vm bytecode
+                    :sources sources
+                    :user-primitives user-primitives
+                    :state state
+                    :vm vm))
+
+(defun get-vm-stack (vm)
+  "Returns a string representation of the current stack for VM."
+  (shovel-vm:get-vm-stack vm))
+
+(defun get-vm-environment (vm)
+  "Returns a string representation of the current environment for VM."
+  (shovel-vm:get-vm-environment vm))
+
+(defun wake-up-vm (vm)
+  "If VM went to sleep and you want to resume it without rebuilding
+it, you have to call this function before calling RUN-VM."
+  (shovel-vm:wake-up-vm vm))
+
+(defun get-vm-user-defined-primitive-error (vm)
+  "Returns the unhandled condition thrown from a user-defined
+primitive, or NIL if none."
+  (shovel-vm:get-vm-user-defined-primitive-error vm))
+
+(defun get-vm-programming-error (vm)
+  "Returns the programming error thrown while running VM, or NIL if
+none."
+  (shovel-vm:get-vm-programming-error vm))
+
