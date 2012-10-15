@@ -263,6 +263,14 @@
     (loop while (step-vm vm))
     (values (first (vm-stack vm)) vm)))
 
+(defun get-vm-stack (vm)
+  (with-output-to-string (str)
+    (write-stack-trace vm str)))
+
+(defun get-vm-environment (vm)
+  (with-output-to-string (str)
+    (write-environment (vm-current-environment vm) vm str)))
+
 (defun vm-not-finished (vm)
   (and
    (< (vm-program-counter vm) (length (vm-bytecode vm)))

@@ -164,7 +164,9 @@
    :*error-raiser*
    :*version*
    :vm-user-primitive-error
-   :wake-up-vm))
+   :wake-up-vm
+   :get-vm-stack
+   :get-vm-environment))
 
 (defpackage #:shovel
   (:use #:cl)

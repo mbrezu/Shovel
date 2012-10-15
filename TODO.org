@@ -144,5 +144,5 @@
   'shovel' package)
 ** DONE the run-vm should allow a parameter 'vm' (reuse a vm directly)
 ** DONE there should be a way to wake up a vm (clear 'should-take-a-nap')
-* TODO publish the functions to extract the context from a VM
+** DONE publish the functions to extract the context from a VM
   (the stack and environment); should work even for a crashed VM.
