@@ -160,11 +160,11 @@
   (:export
    :run-vm 
    :step-vm
-   :serialize-vm-state
-   :deserialize-vm-state
+   :serialize-vm-state 
    :*error-raiser*
    :*version*
-   :vm-user-primitive-error))
+   :vm-user-primitive-error
+   :wake-up-vm))
 
 (defpackage #:shovel
   (:use #:cl)

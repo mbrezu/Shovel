@@ -188,6 +188,9 @@
               program-counter)
       (terpri stream))))
 
+(defun wake-up-vm (vm)
+  (setf (vm-should-take-a-nap vm) nil))
+
 (defun write-stack-trace (vm stream &optional stack-dump)
   (labels ((iter (stack)
              (when stack

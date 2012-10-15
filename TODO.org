@@ -143,6 +143,6 @@
   (the user should only need to use functions exported from the
   'shovel' package)
 ** TODO the run-vm should allow a parameter 'vm'
-** TODO there should be a way to wake up a vm (clear 'should-take-a-nap')
+** DONE there should be a way to wake up a vm (clear 'should-take-a-nap')
 * TODO publish the functions to extract the context from a VM
   (the stack and environment); should work even for a crashed VM.

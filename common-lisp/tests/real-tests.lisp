@@ -686,7 +686,7 @@ a = \"test\"
             (let ((bytes (shovel-vm:serialize-vm-state vm)))
               (mess-with bytes)
               (signals shovel-types:shovel-broken-checksum
-                (shovel-vm:deserialize-vm-state vm bytes)))))))))
+                (shovel-vm::deserialize-vm-state vm bytes)))))))))
 
 (test vm-state-serializer-version-failure
   (let (flag)
@@ -708,7 +708,7 @@ a = \"test\"
             (let ((bytes (let ((shovel-vm:*version* (1+ shovel-vm:*version*)))
                            (shovel-vm:serialize-vm-state vm))))
               (signals shovel-types:shovel-version-too-large
-                (shovel-vm:deserialize-vm-state vm bytes)))))))))
+                (shovel-vm::deserialize-vm-state vm bytes)))))))))
 
 (test non-local-exit-1
   (is (= (shovel:naked-run-code (list "
