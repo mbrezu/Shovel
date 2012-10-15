@@ -312,4 +312,12 @@ INCREMENT-TICKS with a wisely chosen number of ticks)."
   (when shovel-vm:*ticks-incrementer*
     (funcall shovel-vm:*ticks-incrementer* ticks)))
 
+(defun increment-cells (cells)
+  "To be called from user-defined primitives. Increments the number of
+allocated cells for the executing VM by CELLS.
 
+This function can be used by user-defined primitives that want to
+model their memory usage (i.e. tell the VM that they allocated memory
+which they made available to the VM via their return value)."
+  (when shovel-vm:*cells-incrementer*
+    (funcall shovel-vm:*cells-incrementer* cells)))

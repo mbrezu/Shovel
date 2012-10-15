@@ -191,4 +191,5 @@
    :wake-up-vm
    :get-vm-programming-error
    :get-vm-user-defined-primitive-error
-   :increment-ticks))
+   :increment-ticks
+   :increment-cells))

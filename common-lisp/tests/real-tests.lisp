@@ -1019,13 +1019,40 @@ stdlib.repeat(1000, fn() {
     (multiple-value-bind (result vm)
         (shovel:run-vm bytecode
                        :sources sources
-                       :cells-quota 800)
+                       :cells-quota 900)
       (declare (ignore result))
-      (is (= 738 (shovel-vm::vm-used-cells vm))))
+      (is (= 838 (shovel-vm::vm-used-cells vm))))
     (signals shovel-types:shovel-cell-quota-exceeded
       (shovel:run-vm bytecode
                      :sources sources
                      :cells-quota 700))))
+
+(test vm-user-defined-primitive-cells-quota
+  (labels ((udp (cells)
+             (shovel:increment-cells cells)
+             :null)
+           (udp1 (n)
+             (shovel:increment-cells (1+ n))
+             (make-array n :initial-element :null)))
+    (is (= 3 (let* ((sources (list "@udp(100) 1"))
+                    (bytecode (shovel:get-bytecode sources)))
+               (multiple-value-bind (result vm)
+                   (shovel:run-vm bytecode
+                                  :sources sources
+                                  :cells-quota 100
+                                  :user-primitives (list (list "udp" #'udp 1)))
+                 (declare (ignore result))
+                 (shovel-vm::vm-used-cells vm)))))
+    (signals shovel-types:shovel-cell-quota-exceeded
+      (let* ((sources (list "var a = @udp1(100)"))
+             (bytecode (shovel:get-bytecode sources)))
+        (multiple-value-bind (result vm)
+            (shovel:run-vm bytecode
+                           :sources sources
+                           :cells-quota 100
+                           :user-primitives (list (list "udp1" #'udp1 1)))
+          (declare (ignore result))
+          (shovel-vm::vm-used-cells vm))))))
 
 (defun run-tests ()
   (fiveam:run! :shovel-tests))

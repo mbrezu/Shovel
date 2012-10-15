@@ -326,15 +326,20 @@
   (alexandria:when-let (err (vm-programming-error vm))
     (error err)))
 
-(defun increment-cells-quota (vm cells)
+(defun check-cells-quota (vm)
   (labels ((quota-exceeded ()
              (and (vm-cells-quota vm)
                   (> (vm-used-cells vm) (vm-cells-quota vm)))))
-    (incf (vm-used-cells vm) cells)
     (when (quota-exceeded)
+      ;; (print "counting")
+      ;; (print (vm-used-cells vm))
       (setf (vm-used-cells vm) (count-active-objects-cells vm))
+      ;; (print (vm-used-cells vm))
       (when (quota-exceeded)
         (error (make-condition 'shovel-cell-quota-exceeded))))))
+
+(defun increment-cells-quota (vm cells)
+  (incf (vm-used-cells vm) cells))
 
 (defun count-active-objects-cells (vm)
   (let ((visited  (make-hash-table :test #'eq)))
@@ -406,6 +411,7 @@
              (>= (vm-executed-ticks-since-last-nap vm)
                  (vm-until-next-nap-ticks-quota vm)))
     (setf (vm-should-take-a-nap vm) t))
+  (check-cells-quota vm)
   (when (vm-not-finished vm)
     (let* ((instruction (elt (vm-bytecode vm) (vm-program-counter vm)))
            (opcode (instruction-opcode instruction))
@@ -414,6 +420,7 @@
                             (end-pos (instruction-end-pos instruction)))
         (setf (vm-last-start-pos vm) start-pos
               (vm-last-end-pos vm) end-pos))
+      ;; (print opcode)
       (case opcode
         (:jump (setf (vm-program-counter vm) args))
         (:const

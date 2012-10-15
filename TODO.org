@@ -146,8 +146,9 @@
    the number exceeds the limit, count the actual number of cells used
    (by running a modified version of the serializer) and crash the VM
    if the number of really used cells still exceeds the limit.
-** TODO test that user-defined primitives can 
+** DONE test that user-defined primitives can 
    model their memory usage;
+** TODO test shovel-vm:*cells-increment-herald* calls
 ** DONE the number of ticks executed so far must be made part of the
    serialized VM state;
 ** DONE execution quotas basic
@@ -165,3 +166,4 @@
 * TODO use #-/#+ in the asd file to eliminate real-tests.lisp
 * TODO provide a public getter for total-executed-ticks
 * TODO try to optimize step-vm by building a jump table with functions
+* TODO remove references to Shript and rename it ShovelScript
