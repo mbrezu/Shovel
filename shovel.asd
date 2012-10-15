@@ -16,6 +16,7 @@
       :components
       ((:file "package")
        (:file "shovel-types" :depends-on ("package"))
+       (:file "shovel-public-types" :depends-on ("package"))
        (:file "utils" :depends-on ("package"))
        (:module "compiler"
                 :depends-on ("package" "shovel-types" "utils")
@@ -30,6 +31,7 @@
                              (:file "vm" :depends-on ("prim0"))))
        (:file "shovel" :depends-on ("package"
                                     "shovel-types"
+                                    "shovel-public-types"
                                     "compiler"
                                     "vm"))))
      #-shovel-production

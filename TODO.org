@@ -149,6 +149,9 @@
 * DONE public getters for VM execution statistics
 ** DONE provide a public getter for vm-used-ticks
 ** DONE provide a public getter for vm-used-cells
+* DONE use #-/#+ in the asd file to eliminate real-tests.lisp
+* DONE move SHRIPT-FILE and SHOVEL-ERROR and errors to a
+  SHOVEL-PUBLIC-TYPES file that is inside package SHOVEL;
 * TODO documentation
 ** TODO Shript (language, required primitives)
 ** TODO VM 
@@ -166,8 +169,5 @@
      been returned by the primitive as a second value.
 *** TODO from Common Lisp
 * TODO tests for all the required primitives
-* TODO move SHRIPT-FILE and SHOVEL-ERROR and errors to a
-  SHOVEL-PUBLIC-TYPES package and file;
-* DONE use #-/#+ in the asd file to eliminate real-tests.lisp
 * TODO try to optimize step-vm by building a jump table with functions
 * TODO remove references to Shript and rename it ShovelScript

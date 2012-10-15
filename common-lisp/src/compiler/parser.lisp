@@ -344,7 +344,7 @@ parser. Macroish implementation of short-circuiting logical 'or'."
         ((shript-file (shovel-utils:find-source
                        (parse-state-source *parse-state*)
                        (parse-state-file-name *parse-state*)))
-         (content (shript-file-contents shript-file)))
+         (content (shovel:shript-file-contents shript-file)))
       (shovel-utils:find-position (parse-state-file-name *parse-state*)
                                   content
                                   char-position))))
@@ -365,7 +365,7 @@ parser. Macroish implementation of short-circuiting logical 'or'."
                 (format nil "~a~%~a~%~a" message
                         (first lines)
                         (second lines))))))
-    (error (make-condition 'shovel-error
+    (error (make-condition 'shovel:shovel-error
                            :message message
                            :line line
                            :file file-name

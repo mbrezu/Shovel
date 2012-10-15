@@ -15,7 +15,7 @@
   (let ((counter 0))
     (mapcar (lambda (source)
               (cond ((stringp source)
-                     (shovel-types:make-shript-file
+                     (shovel:make-shript-file
                       :contents source
                       :name (format nil "<unspecified-~d>" (incf counter))))
                     (t source)))
@@ -24,7 +24,7 @@
 (defun find-source (sources file-name)
   (setf sources (shovel-utils:prepare-sources sources))
   (dolist (source sources)
-    (when (string= file-name (shovel-types:shript-file-name source))
+    (when (string= file-name (shovel:shript-file-name source))
       (return-from find-source source)))
   (error (make-condition 'shovel-error
                          :message (format nil "File '~a' not found." file-name))))
@@ -59,7 +59,7 @@
       (setf source-lines
             (split-sequence:split-sequence
              #\newline
-             (shovel-types:shript-file-contents source)))))
+             (shovel:shript-file-contents source)))))
   (let* ((file-name (pos-file-name start-pos))
          (start-line (pos-line start-pos))
          (end-line (pos-line end-pos))
@@ -219,10 +219,10 @@
   (let ((stored-checksum (subseq data 0 16)))
     (replace data (16-zeroes) :start1 0 :start2 0)
     (unless (equalp stored-checksum (get-md5-checksum data))
-      (error (make-condition 'shovel-broken-checksum)))
+      (error (make-condition 'shovel:shovel-broken-checksum)))
     (let ((stored-version (decode-4-bytes-to-32-bit-integer
                            (subseq data 16 20))))
       (unless (<= stored-version shovel-vm:*version*)
-        (error (make-condition 'shovel-version-too-large)))
+        (error (make-condition 'shovel:shovel-version-too-large)))
       (flexi-streams:with-input-from-sequence (stream data :start 20)
         (messagepack:decode-stream stream)))))

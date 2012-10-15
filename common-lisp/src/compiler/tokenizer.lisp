@@ -103,7 +103,7 @@
                            (setf escaped (char= #\\ ch)))))
       (unless (= 2 quote-counter)
         (error (make-condition
-                'shovel-error
+                'shovel:shovel-error
                 :message "Expected an end quote, but reached the end of file."
                 :file (tokenizer-state-file-name *tokenizer-state*)
                 :at-eof t))))))
@@ -214,7 +214,7 @@
            (setf message (format nil "~a~%~a~%~a" message
                                  (first lines) (second lines)))
            (error (make-condition
-                   'shovel-error
+                   'shovel:shovel-error
                    :message message
                    :file (pos-file-name pos)
                    :line (pos-line pos)
@@ -226,8 +226,8 @@
                               (tokenizer-state-current-char *tokenizer-state*)))
 
 (defun tokenize-source-file (source-file)
-  (let* ((file-name (shript-file-name source-file))
-         (contents (shript-file-contents source-file))
+  (let* ((file-name (shovel:shript-file-name source-file))
+         (contents (shovel:shript-file-contents source-file))
          (*tokenizer-state* (make-tokenizer-state :source contents
                                                   :file-name file-name)))
     (cons (make-token :type :file-name

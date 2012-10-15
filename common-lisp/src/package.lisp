@@ -19,35 +19,19 @@
    :clone-pos
    :pos-line
    :pos-column
-   :pos-file-name
-   
-   :shript-file
-   :make-shript-file
-   :shript-file-name
-   :shript-file-contents
-
-   :shovel-error
-   :error-file
-   :error-line
-   :error-column
-   :error-message
-   :shovel-vm-match-error
-   :shovel-broken-checksum
-   :shovel-version-too-large
-   :shovel-total-ticks-quota-exceeded
-   :shovel-cell-quota-exceeded))
+   :pos-file-name))
 
 (defpackage #:shovel-utils
   (:use #:cl #:shovel-types)
   (:export
    :first-non-blank
-   :underline 
+   :underline
    :extract-relevant-source
    :when-one-of-strings
    :defbits
    :prepare-sources
    :find-source
-   :find-position 
+   :find-position
    :messagepack-encode-with-md5-checksum
    :check-md5-checksum-and-messagepack-decode))
 
@@ -69,7 +53,7 @@
    :token-is-logical-or-op
    :token-is-required-primitive
    :token-bits
-   
+
    :parse-tree
    :make-parse-tree
    :parse-tree-p
@@ -80,8 +64,8 @@
 
 (defpackage #:shovel-compiler-tokenizer
   (:use #:cl #:shovel-compiler-types #:shovel-types)
-  (:export 
-           :tokenize-source-file))
+  (:export
+   :tokenize-source-file))
 
 (defpackage #:shovel-compiler-parser
   (:use #:cl #:shovel-compiler-types #:shovel-types #:shovel-utils)
@@ -93,7 +77,7 @@
 
 (defpackage #:shovel-compiler
   (:use #:cl #:shovel-compiler-types #:shovel-types #:shovel-utils)
-  (:export 
+  (:export
    :assemble-instructions
    :show-instructions
    :compile-sources-to-instructions
@@ -102,17 +86,17 @@
 
 (defpackage #:shovel-vm-prim0
   (:use #:cl #:shovel-types)
-  (:export 
+  (:export
    :add
    :subtract
    :multiply
    :divide
    :shift-left
    :shift-right
-   :less-than 
+   :less-than
    :greater-than
    :less-than-or-equal
-   :greater-than-or-equal 
+   :greater-than-or-equal
    :unary-minus
    :bitwise-and
    :bitwise-or
@@ -160,9 +144,9 @@
 (defpackage #:shovel-vm
   (:use #:cl #:shovel-types #:shovel-utils)
   (:export
-   :run-vm 
+   :run-vm
    :step-vm
-   :serialize-vm-state 
+   :serialize-vm-state
    :*error-raiser*
    :*version*
    :vm-user-primitive-error
@@ -196,4 +180,20 @@
    :increment-ticks
    :increment-cells
    :vm-used-cells
-   :vm-used-ticks))
+   :vm-used-ticks
+
+   :shript-file
+   :make-shript-file
+   :shript-file-name
+   :shript-file-contents
+
+   :shovel-error
+   :error-file
+   :error-line
+   :error-column
+   :error-message
+   :shovel-vm-match-error
+   :shovel-broken-checksum
+   :shovel-version-too-large
+   :shovel-total-ticks-quota-exceeded
+   :shovel-cell-quota-exceeded))

@@ -10,13 +10,13 @@
              (progn
                (princ (funcall action))
                (terpri))
-           (shovel-types:shovel-error (er)
+           (shovel:shovel-error (er)
              (princ er)
              (terpri))))
      (values)))
 
 (let ((stdlib-file
-       (shovel-types:make-shript-file
+       (shovel:make-shript-file
         :name "stdlib.shr"
         :contents "
 var stdlib = {
@@ -249,8 +249,8 @@ you can use the *-QUOTA parameters:
 
  * CELLS-QUOTA limits the total number of cons cells the process can
    use; this is not a hard limit, but the VM will be stopped with a
-   SHOVEL-QUOTA-EXCEPTION if its memory usage is near this limit; 
- 
+   SHOVEL-QUOTA-EXCEPTION if its memory usage is near this limit;
+
  * TOTAL-TICKS-QUOTA limits the total number of Shovel VM instructions
    this process can run;
 

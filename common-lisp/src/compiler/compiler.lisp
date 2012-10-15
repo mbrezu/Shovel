@@ -25,7 +25,7 @@
     (dolist (source (prepare-sources sources))
       (ironclad:update-digest digester
                               (babel:string-to-octets
-                               (shript-file-contents source))))
+                               (shovel:shript-file-contents source))))
     (produce-digest-as-string digester)))
 
 (defun compute-instructions-md5 (instructions)
@@ -113,7 +113,7 @@ don't know how to compute MD5 hash.")))))
         (let ((file-name (instruction-arguments instruction)))
           (when (or (not last-file-name) (string/= last-file-name file-name))
             (setf last-file-name file-name
-                  source (shovel-types:shript-file-contents
+                  source (shovel:shript-file-contents
                           (shovel-utils:find-source sources last-file-name))
                   source-lines (split-sequence:split-sequence
                                 #\newline

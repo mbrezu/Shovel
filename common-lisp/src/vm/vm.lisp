@@ -189,7 +189,7 @@
         (alexandria:when-let*
             ((file-name (find-file-name vm program-counter))
              (shript-file (find-source sources file-name))
-             (content (shript-file-contents shript-file))
+             (content (shovel:shript-file-contents shript-file))
              (start-pos (find-position file-name
                                        content
                                        character-start-pos))
@@ -243,19 +243,19 @@
     (setf file-name (find-file-name vm (vm-program-counter vm)))
     (when (and file-name (vm-sources vm))
       (alexandria:when-let* ((shript-file (find-source (vm-sources vm) file-name))
-                             (content (shript-file-contents shript-file)))
+                             (content (shovel:shript-file-contents shript-file)))
         (setf pos (find-position file-name content (vm-last-start-pos vm)))
         (when pos
           (setf line (pos-line pos))
           (setf column (pos-column pos)))))
     (error
      (alexandria:if-let (pos (vm-last-start-pos vm))
-       (make-condition 'shovel-error
+       (make-condition 'shovel:shovel-error
                        :message message
                        :file file-name
                        :line line
                        :column column)
-       (make-condition 'shovel-error :message message)))))
+       (make-condition 'shovel:shovel-error :message message)))))
 
 (defun find-required-primitive (vm name)
   (let ((primitive (gethash name *primitives*)))
@@ -298,7 +298,7 @@
            (lambda (cells)
              (when (and (vm-cells-quota vm)
                         (> cells (vm-cells-quota vm)))
-               (error (make-condition 'shovel-cell-quota-exceeded))))))
+               (error (make-condition 'shovel:shovel-cell-quota-exceeded))))))
       (loop while (step-vm vm))
       (values (first (vm-stack vm)) vm))))
 
@@ -333,7 +333,7 @@
     (when (quota-exceeded)
       (vm-count-used-cells vm)
       (when (quota-exceeded)
-        (error (make-condition 'shovel-cell-quota-exceeded))))))
+        (error (make-condition 'shovel:shovel-cell-quota-exceeded))))))
 
 (defun vm-count-used-cells (vm)
   (setf (vm-used-cells vm) (count-active-objects-cells vm)))
@@ -406,7 +406,7 @@
   (when (and (vm-total-ticks-quota vm)
              (>= (vm-executed-ticks vm)
                  (vm-total-ticks-quota vm)))
-    (error (make-condition 'shovel-total-ticks-quota-exceeded)))
+    (error (make-condition 'shovel:shovel-total-ticks-quota-exceeded)))
   (when (and (vm-until-next-nap-ticks-quota vm)
              (>= (vm-executed-ticks-since-last-nap vm)
                  (vm-until-next-nap-ticks-quota vm)))
@@ -968,11 +968,11 @@ A 'valid value' (with Common Lisp as the host language) is:
                                                            :initial-element nil))))
     (unless (= vm-version (get-vm-version vm))
       (error (make-condition
-              'shovel-vm-match-error
+              'shovel:shovel-vm-match-error
               :message "VM version and serialized VM version do not match.")))
     (unless (string= vm-bytecode-md5 (get-vm-bytecode-md5 vm))
       (error (make-condition
-              'shovel-vm-match-error
+              'shovel:shovel-vm-match-error
               :message
               "VM bytecode MD5 and serialized VM bytecode MD5 do not match.")))
     (setf (vm-executed-ticks vm) vm-executed-ticks)

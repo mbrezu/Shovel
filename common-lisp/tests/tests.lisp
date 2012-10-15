@@ -24,8 +24,8 @@
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel-types:make-shript-file :name "test.shr"
-                                                         :contents "
+                          (shovel:make-shript-file :name "test.shr"
+                                                   :contents "
 var g = fn x x + 2
 var f = fn x g(x) + 2
 f('1")))))
@@ -36,8 +36,8 @@ f('1")))))
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel-types:make-shript-file :name "test.shr"
-                                                         :contents "
+                          (shovel:make-shript-file :name "test.shr"
+                                                   :contents "
 var g = fn #x x + 2
 var f = fn x g(x) + 2
 f('1')")))))
@@ -52,8 +52,8 @@ file 'test.shr' line 2:            ^
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel-types:make-shript-file :name "test.shr"
-                                                         :contents "
+                          (shovel:make-shript-file :name "test.shr"
+                                                   :contents "
 b(]
 ")))))
                "Shovel error in file 'test.shr' at line 2, column 3: Unexpected token ']'.
@@ -65,8 +65,8 @@ file 'test.shr' line 2:   ^
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel-types:make-shript-file :name "test.shr"
-                                                         :contents "
+                          (shovel:make-shript-file :name "test.shr"
+                                                   :contents "
 var a = fn [x] 1
 ")))))
                "Shovel error in file 'test.shr' at line 2, column 12: Expected a identifier, but got '['.
@@ -78,8 +78,8 @@ file 'test.shr' line 2:            ^
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel-types:make-shript-file :name "test.shr"
-                                                         :contents "
+                          (shovel:make-shript-file :name "test.shr"
+                                                   :contents "
 var fn = 1
 ")))))
                "Shovel error in file 'test.shr' at line 2, column 5: Expected a identifier, but got 'fn'.
@@ -91,8 +91,8 @@ file 'test.shr' line 2:     ^^
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel-types:make-shript-file :name "test.shr"
-                                                         :contents "
+                          (shovel:make-shript-file :name "test.shr"
+                                                   :contents "
 var slice = 1
 ")))))
                "Shovel error in file 'test.shr' at line 2, column 5: Name 'slice' is reserved for a primitive.
@@ -106,8 +106,8 @@ file 'test.shr' line 2:     ^^^^^
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel-types:make-shript-file :name "test.shr"
-                                                         :contents "
+                          (shovel:make-shript-file :name "test.shr"
+                                                   :contents "
 var a = 1
 var a = 2")))))
                "Shovel error in file 'test.shr' at line 3, column 5: Variable 'a' is already defined in this frame in file '\"test.shr\"', at line 2, column 5.
@@ -119,8 +119,8 @@ file 'test.shr' line 3:     ^
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel-types:make-shript-file :name "test.shr"
-                                                         :contents "
+                          (shovel:make-shript-file :name "test.shr"
+                                                   :contents "
 b = 3
 ")))))
                "Shovel error in file 'test.shr' at line 2, column 1: Undefined variable 'b'.
@@ -132,8 +132,8 @@ file 'test.shr' line 2: ^^^^^
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel-types:make-shript-file :name "test.shr"
-                                                         :contents "
+                          (shovel:make-shript-file :name "test.shr"
+                                                   :contents "
 b + 1
 ")))))
                "Shovel error in file 'test.shr' at line 2, column 1: Undefined variable 'b'.
@@ -147,8 +147,8 @@ file 'test.shr' line 2: ^
                           (let ((*standard-output* str))
                             (shovel:run-code
                              (list (shovel:stdlib)
-                                   (shovel-types:make-shript-file :name "test.shr"
-                                                                  :contents "
+                                   (shovel:make-shript-file :name "test.shr"
+                                                            :contents "
 var g = fn x x + 2
 var f = fn x g(x) + 2
 f('1')"))))))
@@ -361,8 +361,8 @@ var family = makeFamily()
                           (let ((*standard-output* str))
                             (shovel:run-code
                              (list (shovel:stdlib)
-                                   (shovel-types:make-shript-file :name "test.shr"
-                                                                  :contents "
+                                   (shovel:make-shript-file :name "test.shr"
+                                                            :contents "
 var a = arrayN(10)
 a[10] = 1
 "))))))
@@ -388,8 +388,8 @@ a = array(null, null, null, null, null, null, null, null, null, null)
                           (let ((*standard-output* str))
                             (shovel:run-code
                              (list (shovel:stdlib)
-                                   (shovel-types:make-shript-file :name "test.shr"
-                                                                  :contents "
+                                   (shovel:make-shript-file :name "test.shr"
+                                                            :contents "
 var a = arrayN(10)
 a[-1] = 1
 "))))))
@@ -417,8 +417,8 @@ a = array(null, null, null, null, null, null, null, null, null, null)
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel-types:make-shript-file :name "test.shr"
-                                                         :contents "
+                          (shovel:make-shript-file :name "test.shr"
+                                                   :contents "
 var a = array()
 push(a, 1)
 push(a, 2)
@@ -431,8 +431,8 @@ a
                           (let ((*standard-output* str))
                             (shovel:run-code
                              (list (shovel:stdlib)
-                                   (shovel-types:make-shript-file :name "test.shr"
-                                                                  :contents "
+                                   (shovel:make-shript-file :name "test.shr"
+                                                            :contents "
 var a = 1
 push(a, 1)
 "))))))
@@ -460,8 +460,8 @@ a = 1
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel-types:make-shript-file :name "test.shr"
-                                                         :contents "
+                          (shovel:make-shript-file :name "test.shr"
+                                                   :contents "
 var a = array(1, 2, 3)
 pop(a)
 ")))))
@@ -471,8 +471,8 @@ pop(a)
                  (let ((*standard-output* str))
                    (shovel:run-code
                     (list (shovel:stdlib)
-                          (shovel-types:make-shript-file :name "test.shr"
-                                                         :contents "
+                          (shovel:make-shript-file :name "test.shr"
+                                                   :contents "
 var a = array(1, 2, 3)
 pop(a)
 pop(a)
@@ -484,8 +484,8 @@ pop(a)
                           (let ((*standard-output* str))
                             (shovel:run-code
                              (list (shovel:stdlib)
-                                   (shovel-types:make-shript-file :name "test.shr"
-                                                                  :contents "
+                                   (shovel:make-shript-file :name "test.shr"
+                                                            :contents "
 var a = array()
 pop(a)
 "))))))
@@ -640,11 +640,11 @@ a = \"test\"
                                       :state bytes)))
                     second-run))
               (declare (ignore value))
-              (is (eql 'shovel-types:shovel-vm-match-error
+              (is (eql 'shovel:shovel-vm-match-error
                        (type-of error)))
               (is (string=
                    "VM bytecode MD5 and serialized VM bytecode MD5 do not match."
-                   (shovel-types:error-message error))))))))))
+                   (shovel:error-message error))))))))))
 
 (defun mess-with (bytes)
   (if (= 0 (aref bytes 10))
@@ -655,7 +655,7 @@ a = \"test\"
   (let* ((instructions (shovel:get-bytecode (list (shovel:stdlib))))
          (serialized-instructions (shovel:serialize-bytecode instructions)))
     (mess-with serialized-instructions)
-    (signals shovel-types:shovel-broken-checksum
+    (signals shovel:shovel-broken-checksum
       (shovel:deserialize-bytecode serialized-instructions))))
 
 (test bytecode-serializer-version-failure
@@ -663,7 +663,7 @@ a = \"test\"
          (serialized-instructions
           (let ((shovel-vm:*version* (1+ shovel-vm:*version*)))
             (shovel:serialize-bytecode instructions))))
-    (signals shovel-types:shovel-version-too-large
+    (signals shovel:shovel-version-too-large
       (shovel:deserialize-bytecode serialized-instructions))))
 
 (test vm-state-serializer-checksum-failure
@@ -685,7 +685,7 @@ a = \"test\"
             (declare (ignore first-run))
             (let ((bytes (shovel-vm:serialize-vm-state vm)))
               (mess-with bytes)
-              (signals shovel-types:shovel-broken-checksum
+              (signals shovel:shovel-broken-checksum
                 (shovel-vm::deserialize-vm-state vm bytes)))))))))
 
 (test vm-state-serializer-version-failure
@@ -707,7 +707,7 @@ a = \"test\"
             (declare (ignore first-run))
             (let ((bytes (let ((shovel-vm:*version* (1+ shovel-vm:*version*)))
                            (shovel-vm:serialize-vm-state vm))))
-              (signals shovel-types:shovel-version-too-large
+              (signals shovel:shovel-version-too-large
                 (shovel-vm::deserialize-vm-state vm bytes)))))))))
 
 (test non-local-exit-1
@@ -955,7 +955,7 @@ result
         (run-with-total-ticks-quota 10000)
       (is (= 15 result))
       (is (= 3594 ticks)))
-    (signals shovel-types:shovel-total-ticks-quota-exceeded
+    (signals shovel:shovel-total-ticks-quota-exceeded
       (run-with-total-ticks-quota 3593))))
 
 (test vm-nap-quota
@@ -999,7 +999,7 @@ result
                                   :total-ticks-quota quota
                                   :user-primitives (list (list "udp" #'udp 1)))
                  (values result (shovel-vm::vm-executed-ticks vm))))))
-    (signals shovel-types:shovel-total-ticks-quota-exceeded
+    (signals shovel:shovel-total-ticks-quota-exceeded
       (run-with-total-ticks-quota 100))))
 
 (test vm-cells-quota
@@ -1022,7 +1022,7 @@ stdlib.repeat(1000, fn() {
                        :cells-quota 900)
       (declare (ignore result))
       (is (= 838 (shovel-vm::vm-used-cells vm))))
-    (signals shovel-types:shovel-cell-quota-exceeded
+    (signals shovel:shovel-cell-quota-exceeded
       (shovel:run-vm bytecode
                      :sources sources
                      :cells-quota 700))))
@@ -1043,7 +1043,7 @@ stdlib.repeat(1000, fn() {
                                   :user-primitives (list (list "udp" #'udp 1)))
                  (declare (ignore result))
                  (shovel-vm::vm-used-cells vm)))))
-    (signals shovel-types:shovel-cell-quota-exceeded
+    (signals shovel:shovel-cell-quota-exceeded
       (let* ((sources (list "var a = @udp1(100)"))
              (bytecode (shovel:get-bytecode sources)))
         (multiple-value-bind (result vm)
@@ -1055,7 +1055,7 @@ stdlib.repeat(1000, fn() {
           (shovel-vm::vm-used-cells vm))))))
 
 (test vm-cells-quota-herald-cell-increment
-  (signals shovel-types:shovel-cell-quota-exceeded
+  (signals shovel:shovel-cell-quota-exceeded
     (let* ((sources (list "arrayN(100)"))
            (bytecode (shovel:get-bytecode sources)))
       (multiple-value-bind (result vm)
@@ -1086,4 +1086,3 @@ stdlib.repeat(1000, fn() {
 
 (defun run-tests ()
   (fiveam:run! :shovel-tests))
-
