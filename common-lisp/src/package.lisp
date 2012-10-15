@@ -33,7 +33,8 @@
    :error-message
    :shovel-vm-match-error
    :shovel-broken-checksum
-   :shovel-version-too-large))
+   :shovel-version-too-large
+   :shovel-total-ticks-quota-exceeded))
 
 (defpackage #:shovel-utils
   (:use #:cl #:shovel-types)

@@ -11,12 +11,17 @@
   current-environment
   stack
   user-primitives
+  (executed-ticks 0)
+  (executed-ticks-since-last-nap 0)
   (last-start-pos nil)
   (last-end-pos nil)
   (sources nil)
   (should-take-a-nap nil)
   (user-defined-primitive-error nil)
-  (programming-error nil))
+  (programming-error nil)
+  (cells-quota nil)
+  (total-ticks-quota nil)
+  (until-next-nap-ticks-quota nil))
 
 (defun get-vm-user-defined-primitive-error (vm)
   (vm-user-defined-primitive-error vm))
@@ -251,7 +256,9 @@
       (raise-shovel-error vm (format nil "Unknown prim0 '~a'." name)))
     primitive))
 
-(defun run-vm (bytecode &key sources user-primitives state vm)
+(defun run-vm (bytecode &key
+                          sources user-primitives state vm
+                          cells-quota total-ticks-quota until-next-nap-ticks-quota)
   (unless vm
     (setf vm (make-vm :bytecode bytecode
                       :program-counter 0
@@ -259,11 +266,18 @@
                       :stack nil
                       :user-primitives (make-hash-table :test #'equal)
                       :sources sources)))
+  (when cells-quota
+    (setf (vm-cells-quota vm) cells-quota))
+  (when total-ticks-quota
+    (setf (vm-total-ticks-quota vm) total-ticks-quota))
+  (when until-next-nap-ticks-quota
+    (setf (vm-until-next-nap-ticks-quota vm) until-next-nap-ticks-quota))
   (when state
     (deserialize-vm-state vm state))
   (dolist (user-primitive user-primitives)
     (setf (gethash (first user-primitive) (vm-user-primitives vm))
           (rest user-primitive)))
+  (setf (vm-executed-ticks-since-last-nap vm) 0)
   (handler-bind ((error (lambda (condition)
                           (setf (vm-programming-error vm) condition))))
     (loop while (step-vm vm))
@@ -294,6 +308,14 @@
 
 (defun step-vm (vm)
   (check-vm-without-error vm)
+  (when (and (vm-total-ticks-quota vm)
+             (>= (vm-executed-ticks vm)
+                 (vm-total-ticks-quota vm)))
+    (error (make-condition 'shovel-total-ticks-quota-exceeded)))
+  (when (and (vm-until-next-nap-ticks-quota vm)
+             (>= (vm-executed-ticks-since-last-nap vm)
+                 (vm-until-next-nap-ticks-quota vm)))
+    (setf (vm-should-take-a-nap vm) t))
   (when (vm-not-finished vm)
     (let* ((shovel-vm:*error-raiser* (lambda (message)
                                        (raise-shovel-error vm message)))
@@ -409,7 +431,9 @@
                                         ; These are just informational
                                         ; instructions, skip them.
          (incf (vm-program-counter vm)))
-        (t (error "Shovel internal WTF: unknown instruction '~a'." opcode)))))
+        (t (error "Shovel internal WTF: unknown instruction '~a'." opcode))))
+    (incf (vm-executed-ticks vm))
+    (incf (vm-executed-ticks-since-last-nap vm)))
   (vm-not-finished vm))
 
 (defun find-named-block (vm stack block-name)
@@ -809,7 +833,8 @@ A 'valid value' (with Common Lisp as the host language) is:
                                   (nreverse (serializer-state-array ss))
                                   (get-vm-version vm)
                                   (get-vm-bytecode-md5 vm)
-                                  (get-vm-sources-md5 vm))))
+                                  (get-vm-sources-md5 vm)
+                                  (vm-executed-ticks vm))))
       (messagepack-encode-with-md5-checksum serialized-state))))
 
 (defun deserialize-vm-state (vm state-bytes)
@@ -820,6 +845,7 @@ A 'valid value' (with Common Lisp as the host language) is:
          (array (aref vm-state 3))
          (vm-version (aref vm-state 4))
          (vm-bytecode-md5 (aref vm-state 5))
+         (vm-executed-ticks (aref vm-state 7))
          (ds (make-deserializer-state :array array
                                       :objects (make-array (length array)
                                                            :initial-element nil))))
@@ -832,6 +858,7 @@ A 'valid value' (with Common Lisp as the host language) is:
               'shovel-vm-match-error
               :message
               "VM bytecode MD5 and serialized VM bytecode MD5 do not match.")))
+    (setf (vm-executed-ticks vm) vm-executed-ticks)
     (setf (vm-stack vm) (deserialize stack-index ds))
     (setf (vm-current-environment vm) (deserialize current-environment-index ds))
     (setf (vm-program-counter vm) (deserialize program-counter-index ds))))

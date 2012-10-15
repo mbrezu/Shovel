@@ -934,5 +934,58 @@ a[1] = a
 stringRepresentation(a)"))
                "array(1, [...loop...])")))
 
+(test vm-total-ticks-quota
+  (labels ((run-with-total-ticks-quota (quota)
+             (let* ((sources (list (shovel:stdlib)
+                                   "
+var result = 0
+stdlib.repeat(10, fn () {
+  var a = array(1, 2, 3, 4, 5)
+  result = stdlib.reduceFromLeft(a, 0, fn (acc, item) acc + item)
+})
+result
+"))
+                    (bytecode (shovel:get-bytecode sources)))
+               (multiple-value-bind (result vm)
+                   (shovel:run-vm bytecode
+                                  :sources sources
+                                  :total-ticks-quota quota)
+                 (values result (shovel-vm::vm-executed-ticks vm))))))
+    (multiple-value-bind (result ticks)
+        (run-with-total-ticks-quota 10000)
+      (is (= 15 result))
+      (is (= 3594 ticks)))
+    (signals shovel-types:shovel-total-ticks-quota-exceeded
+      (run-with-total-ticks-quota 3593))))
+
+(test vm-nap-quota
+  (labels ((run-with-until-nap-ticks-quota (quota &optional vm)
+             (let* ((sources (list (shovel:stdlib)
+                                   "
+var result = 0
+stdlib.repeat(10, fn () {
+  var a = array(1, 2, 3, 4, 5)
+  result = stdlib.reduceFromLeft(a, 0, fn (acc, item) acc + item)
+})
+result
+"))
+                    (bytecode (shovel:get-bytecode sources)))
+               (multiple-value-bind (result vm)
+                   (shovel:run-vm bytecode
+                                  :sources sources
+                                  :until-next-nap-ticks-quota quota
+                                  :vm vm)
+                 (values result (shovel-vm::vm-executed-ticks vm) vm)))))
+    (multiple-value-bind (result ticks vm)
+        (run-with-until-nap-ticks-quota 1000)
+      (is (= 2 result))
+      (is (= 1000 ticks))
+      (is (shovel-vm::vm-should-take-a-nap vm))
+      (shovel:wake-up-vm vm)
+      (multiple-value-bind (result2 ticks2 vm)
+          (run-with-until-nap-ticks-quota 1000 vm)
+        (declare (ignore result2 vm))
+        (is (= 2000 ticks2))))))
+
 (defun run-tests ()
   (fiveam:run! :shovel-tests))

@@ -109,6 +109,14 @@ var stdlib = {
      array(try, throw)
    }
 
+   var repeat = fn (count, fun) {
+     var counter = 0
+     while (fn () counter < count, fn () {
+       fun()
+       counter = counter + 1
+     })
+   }
+
    hash('min', min,
         'max', max,
         'while', while,
@@ -124,7 +132,8 @@ var stdlib = {
         'getPrefixedBlockName', getPrefixedBlockName,
         'getBlockName', getBlockName,
         'try', tryAndThrow[0],
-        'throw' , tryAndThrow[1]
+        'throw' , tryAndThrow[1],
+        'repeat', repeat
        )
 }
 ")))
@@ -226,12 +235,29 @@ an array of bytes."
                    :comments (fifth bytecode))))
       result)))
 
-(defun run-vm (bytecode &key sources user-primitives state vm)
+(defun run-vm (bytecode &key
+                          sources user-primitives state vm
+                          cells-quota total-ticks-quota until-next-nap-ticks-quota)
   "Runs a Shovel VM made from BYTECODE or supplied as VM. Optionally,
 the sources for the VM are supplied as SOURCES. User-defined
 primitives are provided via USER-PRIMITIVES (a list containing a list
 of name, CL callable, number of arguments for each primitive). If you
 are resuming a serialized VM, provide the serialized state as STATE.
+
+If you want to limit the CPU and memory usage of the Shovel process,
+you can use the *-QUOTA parameters:
+
+ * CELLS-QUOTA limits the total number of cons cells the process can
+   use; this is not a hard limit, but the VM will be stopped with a
+   SHOVEL-QUOTA-EXCEPTION if its memory usage is near this limit; 
+ 
+ * TOTAL-TICKS-QUOTA limits the total number of Shovel VM instructions
+   this process can run;
+
+ * UNTIL-NEXT-NAP-TICKS-QUOTA limits the number of ticks (executed
+   Shovel VM instructions) until RUN-VM returns and sets the VM state
+   to 'napping'. Use WAKE-UP-VM to revive a VM and rerun RUN-VM if you
+   want to resume the VM.
 
 Example of passing PRINT and PRIN1 as user-defined primitives:
 
@@ -247,7 +273,10 @@ Returns two values: the top of the VM stack and the VM itself."
                     :sources sources
                     :user-primitives user-primitives
                     :state state
-                    :vm vm))
+                    :vm vm
+                    :cells-quota cells-quota
+                    :total-ticks-quota total-ticks-quota
+                    :until-next-nap-ticks-quota until-next-nap-ticks-quota))
 
 (defun get-vm-stack (vm)
   "Returns a string representation of the current stack for VM."
@@ -271,4 +300,3 @@ primitive, or NIL if none."
   "Returns the programming error thrown while running VM, or NIL if
 none."
   (shovel-vm:get-vm-programming-error vm))
-
