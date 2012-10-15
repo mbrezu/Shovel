@@ -245,22 +245,23 @@
       (raise-shovel-error vm (format nil "Unknown prim0 '~a'." name)))
     primitive))
 
-(defun run-vm (bytecode &key sources user-primitives state)
-  (let ((vm (make-vm :bytecode bytecode
-                     :program-counter 0
-                     :current-environment nil
-                     :stack nil
-                     :user-primitives (make-hash-table :test #'equal)
-                     :sources sources)))
-    (when state
-      (deserialize-vm-state vm state))
-    (dolist (user-primitive user-primitives)
-      (setf (gethash (first user-primitive) (vm-user-primitives vm))
-            (rest user-primitive)))
-    (handler-bind ((error (lambda (condition)
-                            (setf (vm-programming-error vm) condition))))
-      (loop while (step-vm vm))
-      (values (first (vm-stack vm)) vm))))
+(defun run-vm (bytecode &key sources user-primitives state vm)
+  (unless vm
+    (setf vm (make-vm :bytecode bytecode
+                      :program-counter 0
+                      :current-environment nil
+                      :stack nil
+                      :user-primitives (make-hash-table :test #'equal)
+                      :sources sources)))
+  (when state
+    (deserialize-vm-state vm state))
+  (dolist (user-primitive user-primitives)
+    (setf (gethash (first user-primitive) (vm-user-primitives vm))
+          (rest user-primitive)))
+  (handler-bind ((error (lambda (condition)
+                          (setf (vm-programming-error vm) condition))))
+    (loop while (step-vm vm))
+    (values (first (vm-stack vm)) vm)))
 
 (defun vm-not-finished (vm)
   (and
