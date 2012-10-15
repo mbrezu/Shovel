@@ -110,6 +110,9 @@
   - t1 && t2 - if t1 t2 else false.
 * DONE fix the 'string' and 'stringRepresentation' primitives
   to avoid infinite loops when stringifying circular data structures;
+* DONE Should not be able to serialize or restart VMs 
+  that threw an exception caused by a programming error;
+  or have an unhandled exception from a user-defined primitive;
 * TODO tests for all the required primitives
 * TODO documentation
 ** TODO Shript (language, required primitives)
@@ -122,8 +125,6 @@
      virtual machine goes to sleep as if :nap-and-retry-on-wake-up had
      been returned by the primitive as a second value.
 *** TODO from Common Lisp
-* TODO Should not be able to serialize VMs 
-  that threw an exception caused by a programming error;
 * TODO VM execution quotas for 'run-vm'
 ** TODO offer a way to specify how expensive user-primitives are
    in terms of the execution quota

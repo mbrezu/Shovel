@@ -15,7 +15,8 @@
   (last-end-pos nil)
   (sources nil)
   (should-take-a-nap nil)
-  (user-primitive-error nil))
+  (user-primitive-error nil)
+  (programming-error nil))
 
 (defstruct return-address
   program-counter
@@ -253,8 +254,10 @@
     (dolist (user-primitive user-primitives)
       (setf (gethash (first user-primitive) (vm-user-primitives vm))
             (rest user-primitive)))
-    (loop while (step-vm vm))
-    (values (first (vm-stack vm)) vm)))
+    (handler-bind ((error (lambda (condition)
+                            (setf (vm-programming-error vm) condition))))
+      (loop while (step-vm vm))
+      (values (first (vm-stack vm)) vm))))
 
 (defun vm-not-finished (vm)
   (and
@@ -265,7 +268,14 @@
   (unless (shovel-vm-prim0:is-bool (first (vm-stack vm)))
     (raise-shovel-error vm "Argument must be a boolean.")))
 
+(defun check-vm-without-error (vm)
+  (alexandria:when-let (err (vm-user-primitive-error vm))
+    (error err))
+  (alexandria:when-let (err (vm-programming-error vm))
+    (error err)))
+
 (defun step-vm (vm)
+  (check-vm-without-error vm)
   (when (vm-not-finished vm)
     (let* ((shovel-vm:*error-raiser* (lambda (message)
                                        (raise-shovel-error vm message)))
@@ -476,11 +486,13 @@
     (when (and primitive-arity (/= primitive-arity num-args))
       (arity-error vm primitive-arity num-args))
     (multiple-value-bind(result what-next)
-        (handler-case
+        (if is-required-primitive
             (apply primitive (reverse arg-values))
-          (simple-condition (err)
-            (setf (vm-user-primitive-error vm) err)
-            (values :null :nap-and-retry-on-wake-up)))
+            (handler-case
+                (apply primitive (reverse arg-values))
+              (error (err)
+                (setf (vm-user-primitive-error vm) err)
+                (values :null :nap-and-retry-on-wake-up))))
       (unless is-required-primitive
         (unless (is-shovel-type result)
           (raise-shovel-error
@@ -769,6 +781,7 @@ A 'valid value' (with Common Lisp as the host language) is:
   (get-vm-arguments-for-opcode vm :vm-sources-md5))
 
 (defun serialize-vm-state (vm)
+  (check-vm-without-error vm)
   (let ((ss (make-serializer-state))
         stack current-environment program-counter)
     (setf stack (serialize (vm-stack vm) ss))
