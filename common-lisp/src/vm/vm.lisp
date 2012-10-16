@@ -310,6 +310,7 @@
   (with-output-to-string (str)
     (write-environment (vm-current-environment vm) vm str)))
 
+(declaim (inline vm-not-finished))
 (defun vm-not-finished (vm)
   (and
    (< (vm-program-counter vm) (length (vm-bytecode vm)))
@@ -400,8 +401,6 @@
          (count-structure (vm-stack vm))))))
 
 (defun step-vm (vm)
-  (declare (optimize (speed 1))
-           (type vm vm))
   (check-vm-without-error vm)
   (when (and (vm-total-ticks-quota vm)
              (>= (vm-executed-ticks vm)
@@ -413,7 +412,7 @@
     (setf (vm-should-take-a-nap vm) t))
   (check-cells-quota vm)
   (when (vm-not-finished vm)
-    (let* ((instruction (elt (vm-bytecode vm) (vm-program-counter vm)))
+    (let* ((instruction (aref (vm-bytecode vm) (vm-program-counter vm)))
            (opcode (instruction-opcode instruction))
            (args (instruction-arguments instruction)))
       (alexandria:when-let ((start-pos (instruction-start-pos instruction))
@@ -426,7 +425,7 @@
          (push args (vm-stack vm))
          (incf (vm-program-counter vm))
          (if (stringp args)
-             ;; 1 for the strings, the rest for the contents
+             ;; 1 for the string, the rest for the contents
              (increment-cells-quota vm (1+ (length args)))
 
              ;; for the pushed value
