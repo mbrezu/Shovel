@@ -63,8 +63,16 @@ Beyond these, the source code is the real source of information :-)
 ## THANKS!
 
 The code generator and Shovel VM are modeled after the Scheme compiler
-from Peter Norvig's *Paradigms in Artificial Intelligence Programming*
+from Peter Norvig's *Paradigms of Artificial Intelligence Programming*
 book (chapter 23). Thank you, Peter Norvig! (I hope I haven't broke
 your code beyond recognition, any bugs in the Shovel code generator
 and VM are obviously my bugs and my fault)
+
+## WARNING!
+
+The 'interruptible' feature is what makes Shovel unusual. It also
+makes it rather slow, so don't expect to write large programs in
+it. Shovel is for very small applications or for writing glue code (a
+CPU-intensive operation should be written in the host language -- Common
+Lisp for now -- and exposed to Shovel as a primitive.).
 

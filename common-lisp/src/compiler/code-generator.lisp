@@ -369,7 +369,10 @@ SVM_SET_INDEXED required primitive."
 
 (defun compile-atom-value (label value)
   (case label
-    (:number (read-from-string value))
+    (:number (let ((result (read-from-string value)))
+               (if (eq 'single-float (type-of result))
+                   (coerce result 'double-float)
+                   result)))
     (:string (subseq value 1 (1- (length value))))
     (:bool (cond ((string= value "true") :true)
                  ((string= value "false") :false)

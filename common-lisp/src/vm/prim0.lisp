@@ -166,6 +166,8 @@
     result))
 
 (defun array-constructor-n (n)
+  (unless (integerp n)
+    (vm-error "Argument must be an integer."))
   (funcall shovel-vm:*cells-increment-herald* (+ 1 n))
   (funcall shovel-vm:*cells-incrementer* (+ 1 n))
   (make-array n :initial-element :null :adjustable t :fill-pointer n))

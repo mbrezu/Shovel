@@ -165,18 +165,6 @@ token positions."
   (with-new-anchored-parse-tree (parse-tree-start-pos lhs) :set!
     (list lhs (token-as-parse-tree :prim0) (parse-expression))))
 
-;; Precedence table:
-;;
-;; ()
-;; function call, array access, dot access.
-;; unary -
-;; * /
-;; + -
-;; < > <= >= != ==
-;; &&
-;; ||
-;; =
-;; fn, if
 (defun parse-expression ()
   (cond
     ((tokenp :keyword "fn") ; Handle function literals.

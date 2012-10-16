@@ -356,7 +356,8 @@ cannot access state other than what is passed to them as arguments)
 and they can only harm the environment by 'denial of service'
 (e.g. allocating a huge array which occupies all the memory available
 to Shovel or running infinite loops). This problem can be solved by
-setting CPU and RAM usage quotas for a VM.
+setting CPU and RAM usage quotas for a VM (see section 'Quotas'
+below).
 
 ### User Defined Primitives
 
