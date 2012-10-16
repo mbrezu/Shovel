@@ -11,6 +11,10 @@ The VM is stack based. It has the following primitive scalar types:
  * double precision floating point,
  * boolean and 
  * void (with only one value, `null`).
+ 
+NOTE: the integers are limited to 60 bits because bounding the
+CPU/memory usage is more difficult in the presence of unbounded
+bignums.
 
 The other types allowed are:
 
@@ -35,8 +39,8 @@ The stack can hold the following kinds of elements:
 ## Environments
 
 Variables are stored in environments (in the
-[SICP](http://mitpress.mit.edu/sicp/full-text/book/book-Z-H-21.html#%_sec_3.2);
-this gives easy closures.
+[SICP](http://mitpress.mit.edu/sicp/full-text/book/book-Z-H-21.html#%_sec_3.2)
+sense) this gives easy closures.
 
 An environment is a stack of 'frames' (the environment stack). Frames
 are arrays of (name, value) pairs. The names are only needed to offer
@@ -55,8 +59,10 @@ index of the variable in the frame.
 The VM state is defined by:
 
  * the stack (and objects reachable from it),
- * the current environment (and objects reachable from it) and
- * the 'program counter' (the next instruction to be executed).
+ * the current environment (and objects reachable from it),
+ * the 'program counter' (the next instruction to be executed),
+ * the total-ticks counter (see section 'Quotas' below) and
+ * the used cells counter (see section 'Quotas' below).
 
 The Shovel implementation must provide means to serialize and
 deserialize the state of the VM, and to stop and start the VM.
@@ -69,8 +75,10 @@ bytecode, the state is also serialized with three additional elements:
 
  * the VM version (state serialized from a VM version 10 won't run on
    VMs with versions less than 10),
- * the MD5 hash of the bytecode and
- * the MD5 hash of the source from which the bytecode was compiled.
+ * the MD5 hash of the bytecode (the bytecode MD5 from the serialized
+   state must match the bytecode MD5 of the VM) and
+ * the MD5 hash of the source from which the bytecode was compiled
+   (this is informational, no checks are made).
  
 This way it is immediately obvious if an attempt is made to restart a
 VM with the state of another VM.
@@ -87,6 +95,15 @@ A description of the serialization algorithm and storage is [TBD]
 (will be done probably after there are more than 1 implementations of
 Shovel) - see the `vm.lisp` file, functions `serialize-vm-state` and
 `deserialize-vm-state` for now.
+
+## Sleeping
+
+A VM loaded in memory can be active or sleeping. A sleeping VM can be
+woken up (thus becoming active) or it can be serialized and stored.
+
+A VM goes to sleep if it exceeds a ticks quota (see section 'Quotas'
+below) or if a user-defined primitive (see section 'Primitives' below)
+asks it to go to sleep.
 
 ## Opcodes
 
@@ -338,15 +355,111 @@ operators, string functions etc.). They are considered 'safe' (they
 cannot access state other than what is passed to them as arguments)
 and they can only harm the environment by 'denial of service'
 (e.g. allocating a huge array which occupies all the memory available
-to Shovel). This will be fixed in the future by limiting the memory
-available to Shovel.
+to Shovel or running infinite loops). This problem can be solved by
+setting CPU and RAM usage quotas for a VM.
 
 ### User Defined Primitives
 
-'User defined primitives' are similar functions, but they are defined
-by the user and they can do whatever the user wants (e.g. read and
-write files on disk, access the database etc.). A Shovel VM process
-has no way of accessing the local disk etc. unless a user defined
-primitive offers that capability.
+'User defined primitives' (UDPs) are similar functions, but they are
+defined by the user and they can do whatever the user wants (e.g. read
+and write files on disk, access a database etc.). A Shovel VM
+process has no way of accessing the local disk etc. unless a user
+defined primitive offers that capability.
 
+UDPs are responsible for not running too long or allocating too much
+memory (because they are explicitly provided to the VM by the
+programmer setting up the VM environment, unlike the required
+primitives which are always available). UDPs can model their CPU and
+RAM usage by telling Shovel how much of these resources they are
+using.
+
+UDPs can also ask the VM to 'go to sleep'. They can do this by
+returning two values instead of just one. The second value will
+specify what to do next:
+
+ * CONTINUE or no second value means that the VM is still active and
+   still runs;
+ * NAP-AND-RETRY-ON-WAKEUP means that the VM is rewinded to the state
+   before the call to this UDP and then goes to sleep; when the VM is
+   woken up again, it will retry calling the UDP that told it to go to
+   sleep;
+ * NAP means that the UDP returns normally, but instead of executing
+   the next instruction, the VM goes to sleep; when woken up, the VM
+   will continue from the instruction after the UDP call.
+
+## Quotas
+
+Shovel VMs can limit the amount of RAM and CPU available to the
+programs running inside them. This is done by providing soft quotas
+for 'ticks' (a tick is the CPU time required to execute a Shovel VM
+instruction) and 'cells' (a cell is a basic unit of memory allocation,
+typically a few bytes - e.g. a CONS cell in Common Lisp). The quotas
+are 'soft' because the process is not guaranteed to stop immediatelly
+after exceeding the quota and because the count of ticks and cells is
+approximative (the definition for ticks and cells is also 'soft' -
+i.e. if you want to build a real time system on top of Shovel VM tick
+quotas or if you want a Shovel VM not to use more than 5 MB of memory
+no matter what you mistook Shovel quotas for something they are not).
+
+The point of Shovel quotas is to provide some basic isolation between
+VMs, so that a runaway Shovel process won't bring down or take over
+the entire OS process.
+
+### RAM Quota
+
+You can specify the total number of cells that are available to a
+VM. The VM keeps a counter of used cells. It increments that counter
+whenever it executes an operation that allocates memory.
+
+UDPs can model their memory allocation by incrementing this counter by
+a value of their choice (hopefully representative of the amount of
+memory they allocated).
+
+Before executing each instruction, the VM checks if this cell counter
+went over the cell quota. If it did, it walks the active objects in
+the VM (i.e. the objects reachable from the stack and the current
+environment) and adds up their cell usage. The cell counter is then
+set to this (more accurate) cell usage. If the cell counter is still
+over the cell quota, the VM throws a cell-quota-exceeded exception.
+
+The ever-incrementing cell counter is a means of avoiding to count all
+the live objects before every instruction.
+
+The cells quota is soft because:
+ 
+ * the size of the cell is implementation dependent;
+ * the cell count is approximative;
+ * the UDPs are trusted to declare their approximative memory usage;
+ * a more accurate cell usage is calculated only now and then (but it
+   is still an approximation).
+ 
+Nevertheless, setting a cell usage quota will prevent a misbehaving VM
+process from using all the available memory.
+
+### CPU Quota
+
+There are two CPU-related quotas: a total ticks quota (how many Shovel
+VM instructions is a particular VM allowed to execute) and a
+ticks-until-next-nap quota (how many Shovel VM instructions will a
+particular VM execute before it is interrupted and asked to go to
+sleep).
+
+There are two corresponding tick counters which are incremented by one
+after executing any Shovel VM instruction. The user-defined primitives
+can model their CPU cost by incrementing these counters by values
+representative of their CPU usage.
+
+Before each instruction the tick quotas are checked. If the total
+ticks quota is exceeded, the VM throws a total-ticks-quota-exceeded
+exception. If the ticks-until-next-nap quota is exceeded, the VM goes
+to sleep.
+
+These CPU quotas are soft because:
+
+ * the CPU cost of a 'tick' is approximative and unequal (not all
+   ticks have the same cost);
+ * the UDPs are trusted to declare their approximative CPU usage.
+
+Despite these limitations, CPU quotas can be used to stop VM processes
+which enter infinite loops.
 

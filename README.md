@@ -8,12 +8,13 @@ Shovel is a bytecode virtual machine (VM) that allows programs written
 for it to be:
 
  * embeddable - Shovel is implemented as a library, it can be loaded
-   and used by your program,
+   and used by your program;
  * secure/sandboxed - Shovel processes can only perform the operations
-   you explicitly allow
+   you explicitly allow and the CPU/RAM usage of the process can be
+   bound by soft limits;
  * and interruptible - a Shovel process can be stopped, saved to a
    database and resumed later, possibly on another machine.
-
+   
 ## WHY?
 
 Have you ever needed to make RPC calls, but didn't know in advance the

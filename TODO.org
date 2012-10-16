@@ -156,13 +156,15 @@
   not worth it
 * DONE remove references to Shript and rename it ShovelScript
 * TODO documentation
-** TODO Shript (language, required primitives)
-** TODO VM 
+** TODO ShovelScript (language, required primitives)
+*** TODO language reference
+*** TODO required primitives description
+** DONE VM 
 *** DONE VM instructions
 *** DONE VM state
-*** TODO VM Serialization
-*** TODO explain the CPU and RAM bounds for the VM
-**** TODO explain why integers are modulo 2^60.
+*** DONE VM Serialization
+*** DONE explain the CPU and RAM bounds for the VM
+**** DONE explain why integers are modulo 2^60.
 ** TODO how to use things
 *** TODO calling conventions
 **** TODO document the fact that user primitives should handle their exceptions;
@@ -172,3 +174,5 @@
      been returned by the primitive as a second value.
 *** TODO from Common Lisp
 * TODO tests for all the required primitives
+* TODO add license information to files (see CL-MESSAGEPACK)
+* TODO document VM serialization format in the VM SPEC

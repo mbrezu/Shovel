@@ -952,7 +952,8 @@ A 'valid value' (with Common Lisp as the host language) is:
                                   (get-vm-version vm)
                                   (get-vm-bytecode-md5 vm)
                                   (get-vm-sources-md5 vm)
-                                  (vm-executed-ticks vm))))
+                                  (vm-executed-ticks vm)
+                                  (vm-used-cells vm))))
       (messagepack-encode-with-md5-checksum serialized-state))))
 
 (defun deserialize-vm-state (vm state-bytes)
@@ -964,6 +965,7 @@ A 'valid value' (with Common Lisp as the host language) is:
          (vm-version (aref vm-state 4))
          (vm-bytecode-md5 (aref vm-state 5))
          (vm-executed-ticks (aref vm-state 7))
+         (vm-used-cells (aref vm-state 8))
          (ds (make-deserializer-state :array array
                                       :objects (make-array (length array)
                                                            :initial-element nil))))
@@ -977,6 +979,7 @@ A 'valid value' (with Common Lisp as the host language) is:
               :message
               "VM bytecode MD5 and serialized VM bytecode MD5 do not match.")))
     (setf (vm-executed-ticks vm) vm-executed-ticks)
+    (setf (vm-used-cells vm) vm-used-cells)
     (setf (vm-stack vm) (deserialize stack-index ds))
     (setf (vm-current-environment vm) (deserialize current-environment-index ds))
     (setf (vm-program-counter vm) (deserialize program-counter-index ds))))
