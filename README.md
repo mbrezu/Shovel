@@ -17,12 +17,11 @@ for it to be:
    
 ## WHY?
 
-Have you ever needed to make RPC calls, but didn't know in advance the
-sequence of RPC calls? Maybe you wanted those RPC calls to be executed
-transactionally (all or none), but you didn't want to (or couldn't)
-use distributed transactions? Maybe you wanted to replace a long
-sequence of 'tiny' RPC calls with just one 'large' call? Shovel is
-great in this case.
+Have you ever needed to make RPC calls in an unspecified sequence and
+wanted them to be executed transactionally (all or none), but you
+didn't want to (or couldn't) use distributed transactions?  Maybe you
+wanted to replace a long sequence of 'tiny' RPC calls with just one
+'large' call? Shovel is great in this case.
 
 Maybe you like continuation-based web frameworks, but would like to be
 able to stop the server and restart it without losing the
@@ -52,11 +51,16 @@ A Shovel quick start guide for Common Lisp:
 
 A simple number guessing demo: [WebGuessNumber.md](WebGuessNumber.md).
 
-If you want more information: The language specification:
-[ShovelScriptSpec.md](ShovelScriptSpec.md).
+If you want more information: The language specification (for small
+values of 'specification'): [ShovelScriptSpec.md](ShovelScriptSpec.md).
 
-If you want even more information: The VM specification:
-[ShovelVmSpec.md](ShovelVmSpec.md).
+If you want even more information: The VM specification (also for
+small values of 'specification'): [ShovelVmSpec.md](ShovelVmSpec.md).
+
+The two 'specifications' above are probably very low quality (they
+specify little) but I include them here hoping that they are better
+than nothing. Once I get another implementation running (or questions
+about what is unspecified) I will be able to improve them.
 
 Beyond these, the source code is the real source of information :-)
 

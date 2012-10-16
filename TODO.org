@@ -156,16 +156,16 @@
   not worth it
 * DONE remove references to Shript and rename it ShovelScript
 * TODO documentation
-** TODO ShovelScript (language, required primitives)
-*** TODO language reference
-*** TODO required primitives description
+** DONE ShovelScript (language, required primitives)
+*** DONE language reference
+*** DONE required primitives description
 ** DONE VM 
 *** DONE VM instructions
 *** DONE VM state
 *** DONE VM Serialization
 *** DONE explain the CPU and RAM bounds for the VM
 **** DONE explain why integers are modulo 2^60.
-** TODO how to use things
+** TODO how to use things (guide)
 *** TODO calling conventions
 **** TODO document the fact that user primitives should handle their exceptions;
      When they don't, the error is stored in the
