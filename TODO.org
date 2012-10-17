@@ -176,3 +176,9 @@
 * TODO tests for all the required primitives
 * TODO add license information to files (see CL-MESSAGEPACK)
 * TODO document VM serialization format in the VM SPEC
+* TODO the documentation should mention that primitives
+  can't call a closure (it breaks interruptability)
+* TODO add APIs to access the MD5 of bytecode
+  (so we can check if the other party already has the bytecode and not
+  send the bytecode over and over again).
+  (also update the CL getting started guide to mention this)

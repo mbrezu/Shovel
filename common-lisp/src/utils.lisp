@@ -217,9 +217,10 @@
 
 (defun check-md5-checksum-and-messagepack-decode (data)
   (let ((stored-checksum (subseq data 0 16)))
-    (replace data (16-zeroes) :start1 0 :start2 0)
+    (replace data (16-zeroes))
     (unless (equalp stored-checksum (get-md5-checksum data))
       (error (make-condition 'shovel:shovel-broken-checksum)))
+    (replace data stored-checksum)
     (let ((stored-version (decode-4-bytes-to-32-bit-integer
                            (subseq data 16 20))))
       (unless (<= stored-version shovel-vm:*version*)

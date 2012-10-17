@@ -197,7 +197,10 @@ inside quotes escaped with a backspace), a literal boolean (`true` or
 
 An expression can also be an unnamed block, which is a sequence of
 statements enclosed by `{` and `}`. The value of the unnamed block is
-the value of the last statement inside the block.
+the value of the last statement inside the block. An unnamed block
+introduces a fresh scope for variables (variables defined in it are
+only visible inside the block - including closures defined inside the
+block).
 
 An expression can also be an identifier, an expression followed by `.`
 and another identifier (hash access), an expression followed by `(`, a
