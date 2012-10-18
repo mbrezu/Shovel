@@ -172,6 +172,8 @@
      'user-primitive-error' field of the virtual machine and the
      virtual machine goes to sleep as if :nap-and-retry-on-wake-up had
      been returned by the primitive as a second value.
+**** TODO the documentation should mention that primitives
+     can't call a closure (it breaks interruptability)
 *** TODO Web number-guessing game
 **** DONE Version 1
 **** TODO Version 2 - db, multiple users, redirects
@@ -179,8 +181,6 @@
 * TODO tests for all the required primitives
 * TODO add license information to files (see CL-MESSAGEPACK)
 * TODO document VM serialization format in the VM SPEC
-* TODO the documentation should mention that primitives
-  can't call a closure (it breaks interruptability)
 * DONE add APIs to access the MD5 of bytecode
   (so we can check if the other party already has the bytecode and not
   send the bytecode over and over again).
