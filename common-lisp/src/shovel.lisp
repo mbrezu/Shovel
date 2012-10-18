@@ -329,3 +329,18 @@ which they made available to the VM via their return value)."
 (defun vm-used-cells (vm)
   "The number of cells currently used by the VM."
   (shovel-vm:vm-really-used-cells vm))
+
+(defun vm-version (vm)
+  "This function returns the version encoded in this particular VM's
+bytecode (meaning you need an interpreter with at least this version
+to resume this VM)."
+  (shovel-vm:get-vm-version vm))
+
+(defun vm-bytecode-md5 (vm)
+  "Returns the MD5 hash for the bytecode for this VM."
+  (shovel-vm:get-vm-bytecode-md5 vm))
+
+(defun vm-sources-md5 (vm)
+  "Returns the MD5 hash for the sources used to compile the bytecode
+  for this VM."
+  (shovel-vm:get-vm-sources-md5 vm))

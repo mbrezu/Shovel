@@ -217,20 +217,20 @@ functions. Context first.
 
 Suppose we need to expose a few functions via a RPC mechanism. We need
 to make calls of several of these functions at once (the sequence is
-not known in advance and it may branch depending on results) and we
-want to group calls into transactions (they all execute or none
-executes). One way would be to write an extra function for every
-scenario, and also expose these larger functions via RPC. This way
-doesn't scale very well (every new use case requires changing the code
-on the server), and with Shovel we can do better.
+not known in advance and it may branch depending on intermediate
+results) and we want to group calls into transactions (they all
+execute or none executes). One way would be to write an extra function
+for every scenario, and also expose these larger functions via
+RPC. This way doesn't scale very well (every new use case requires
+changing the code on the server), and with Shovel we can do better.
 
 On the server we'll accept Shovel programs instead of plain RPC
-calls. This way, to make a 'Shovel RPC call', the client would start a Shovel
-VM, provide it with user-defined primitives (UDPs) to access arguments
-for the calls on the client and with an UDP to 'transfer to the
-server' (say `goToServer`). The server would also accept a serialized
-Shovel VM, resume it and provide it with UDPs for the functions we
-wanted to expose in the first place, plus `goToClient`.
+calls. This way, to make a 'Shovel RPC call', the client would start a
+Shovel VM, provide it with user-defined primitives (UDPs) to access
+arguments for the calls on the client and with an UDP to 'transfer to
+the server' (say `goToServer`). The server would also accept a
+serialized Shovel VM, resume it and provide it with UDPs for the
+functions we wanted to expose in the first place, plus `goToClient`.
 
 Then the generic scenario would go like this:
 
@@ -289,39 +289,28 @@ The UDPs on the server are:
 Since we need to return something to the client and the transferred
 amount isn't interesting enough (the client already knows it), we
 assume that our transaction on the server simply places the transfer
-orders in a bank transaction queue (which is then verified - maybe by
-humans), and we return to the client the date of the bank transaction
-deadline (by that date the bank guarantees the transfer is actually
-executed).
+orders in a bank transaction queue (which is then verified and
+executed - maybe by humans), and we return to the client the date of
+the bank transaction deadline (by that date the bank guarantees the
+transfer is actually executed).
 
 A simplified simulated setup:
 
-    (defvar *transfer-ready* nil)
     (defun get-source-account-no () 2)
     (defun get-destination-account-no () 4)
     (defun get-amount () 1)
     (defun go-to-server ()
-      (setf *transfer-ready* t)
       (values :null :nap))
 
-The four `get-*` functions provide some test data. `go-to-server`
-marks the transfer as ready to go to server. By returning a second
-value of `:nap`, it signals the Shovel VM to go to sleep. We need
-`*transfer-ready*` (or another way to signal to the Shovel VM host
-that `go-to-server` actually executed) because the VM may have gone to
-sleep because of an exceeded CPU quota and we want to be sure that we
-actually executed the ShovelScript program up to and including the
-call to `go-to-server`.
+The `get-*` functions provide some test data. `go-to-server` marks the
+transfer as ready to go to server. By returning a second value of
+`:nap`, it signals the Shovel VM to go to sleep.
 
 We use global variables to simulate the communication between the
 client and server:
 
     (defvar *sent-bytecode* nil)
-    (defvar *sent-sources* nil)
     (defvar *sent-state* nil)
-
-It is not mandatory to send the sources, but the error messages will
-make more sense if the source is included.
 
 The client to server call is simulated by setting these variables on
 the 'client' side and reading them on the 'server' side. The server to
@@ -357,17 +346,13 @@ The code to make the call from the client:
                                   (list "getAmount" #'get-amount 0)
                                   (list "goToServer" #'go-to-server 0)))
            (bytecode (shovel:get-bytecode sources)))
-      (setf *transfer-ready* nil)
       (multiple-value-bind (result vm)
           (shovel:run-vm bytecode :sources sources
                          :user-primitives user-primitives)
         (declare (ignore result))
-        (unless *transfer-ready*
-          (error "Something is wrong."))
         (let ((serialized-bytecode (shovel:serialize-bytecode bytecode))
               (serialized-state (shovel-vm:serialize-vm-state vm)))
           ;; send request to server:
-          (setf *sent-sources* sources)
           (setf *sent-bytecode* serialized-bytecode)
           (setf *sent-state* serialized-state))))
 
@@ -383,13 +368,11 @@ server UDPs:
     (defun get-transaction-deadline ()
       "Judgment Day")
     (defun go-to-client ()
-      (setf *transfer-ready* t)
       (values :null :nap))
 
 We are now ready to resume the ShovelVM on the server:
 
     (let ((bytecode (shovel:deserialize-bytecode *sent-bytecode*))
-          (sources *sent-sources*)
           (vm-state *sent-state*)
           (user-primitives (list (list "subtractFromAccount"
                                        #'subtract-from-account 2)
@@ -399,19 +382,14 @@ We are now ready to resume the ShovelVM on the server:
                                        #'get-transaction-deadline 0)
                                  (list "goToClient"
                                        #'go-to-client 0))))
-      (setf *transfer-ready* nil)
       (multiple-value-bind (result vm)
           (shovel:run-vm bytecode
-                         :sources sources
                          :user-primitives user-primitives
                          :state vm-state)
         (declare (ignore result))
-        (unless *transfer-ready*
-          (error "Something is wrong."))
         (let ((serialized-bytecode (shovel:serialize-bytecode bytecode))
               (serialized-state (shovel-vm:serialize-vm-state vm)))
           ;; send reply to client:
-          (setf *sent-sources* sources)
           (setf *sent-bytecode* serialized-bytecode)
           (setf *sent-state* serialized-state))))
 
@@ -425,13 +403,11 @@ more UDP on the client:
 Now we can run the final part of the ShovelVM code on the client:
 
     (let ((bytecode (shovel:deserialize-bytecode *sent-bytecode*))
-          (sources *sent-sources*)
           (vm-state *sent-state*)
           (user-primitives (list (list "setTransactionDeadline"
                                        #'set-transaction-deadline 1))))
       (multiple-value-bind (result vm)
           (shovel:run-vm bytecode
-                         :sources sources
                          :user-primitives user-primitives
                          :state vm-state)
         (declare (ignore result vm))))
@@ -442,35 +418,29 @@ money soon. In fact, that final message makes me feel so good I want
 to see it again (we can resume a VM more than once):
 
     (let ((bytecode (shovel:deserialize-bytecode *sent-bytecode*))
-          (sources *sent-sources*)
           (vm-state *sent-state*)
           (user-primitives (list (list "setTransactionDeadline"
                                        #'set-transaction-deadline 1))))
       (multiple-value-bind (result vm)
           (shovel:run-vm bytecode
-                         :sources sources
                          :user-primitives user-primitives
                          :state vm-state)
         (declare (ignore result vm))))
     The bank promised to do it by Judgment Day.
+    
+Note that the user-defined primitives supplied to the VM varied in
+each case - as various stages needed different UDPs. It would of
+course be an error to try to call a client UDP on the server or a
+server UDP on the client.
 
 Lots of details got glossed over, some 'trivial' (such as actually
 sending data back and forth between a client and a server, taking care
 of exceptional situations, or wrapping the `run-vm` call on the server
 in a transaction), some not so trivial (i.e. requiring more knowledge
 of Shovel - redoing a `run-vm` in case it returned because of an
-exceeded CPU quota, setting CPU and RAM quotas etc.). Some of the
-tasks that require more information about Shovel are documented in the
-description of an example which is slightly closer to real programming
-tasks: [WebGuessNumber.md](WebGuessNumber.md).
+exceeded CPU quota, setting CPU and RAM quotas, saving bandwith by not
+sending the bytecode every time etc.). Some of the tasks that require
+more information about Shovel are documented in the description of an
+example which is slightly closer to real programming tasks:
+[WebGuessNumber.md](WebGuessNumber.md).
 
-[TBD] reduce transfered data by checking if the server doesn't already
-have this program.
-
-[TBD] simplify this section by removing *transfer-ready* and
-associated text - the web-guess-number example will introduce similar
-mechanism.
-
-[TBD] a similiar simplification about *sent-sources* - we will
-introduce the discussion about sending sources after discussing how to
-reduce traffic via hash checking.

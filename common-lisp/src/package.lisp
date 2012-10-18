@@ -159,7 +159,10 @@
    :*cells-incrementer*
    :*cells-increment-herald*
    :vm-used-ticks
-   :vm-really-used-cells))
+   :vm-really-used-cells
+   :get-vm-bytecode-md5
+   :get-vm-version
+   :get-vm-sources-md5))
 
 (defpackage #:shovel
   (:use #:cl)
@@ -196,4 +199,7 @@
    :shovel-broken-checksum
    :shovel-version-too-large
    :shovel-total-ticks-quota-exceeded
-   :shovel-cell-quota-exceeded))
+   :shovel-cell-quota-exceeded
+   :vm-version
+   :vm-bytecode-md5
+   :vm-sources-md5))

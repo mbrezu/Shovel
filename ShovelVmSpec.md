@@ -387,6 +387,11 @@ specify what to do next:
  * NAP means that the UDP returns normally, but instead of executing
    the next instruction, the VM goes to sleep; when woken up, the VM
    will continue from the instruction after the UDP call.
+   
+One thing UDPs CANNOT DO is call ShovelScript functions - what should
+the VM do if UDP `A` calls ShovelScript function `B` which calls UDP
+`C` which asks the VM to go to sleep? (we have some state in `A` which
+we cannot serialize, hence we lose interruptibility)
 
 ## Quotas
 

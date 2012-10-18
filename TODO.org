@@ -165,6 +165,9 @@
 *** DONE VM Serialization
 *** DONE explain the CPU and RAM bounds for the VM
 **** DONE explain why integers are modulo 2^60.
+*** TODO CL getting started Guide
+*** TODO API documentation
+*** TODO Web number-guessing game
 ** TODO how to use things (guide)
 *** TODO calling conventions
 **** TODO document the fact that user primitives should handle their exceptions;
@@ -178,7 +181,7 @@
 * TODO document VM serialization format in the VM SPEC
 * TODO the documentation should mention that primitives
   can't call a closure (it breaks interruptability)
-* TODO add APIs to access the MD5 of bytecode
+* DONE add APIs to access the MD5 of bytecode
   (so we can check if the other party already has the bytecode and not
   send the bytecode over and over again).
   (also update the CL getting started guide to mention this)
