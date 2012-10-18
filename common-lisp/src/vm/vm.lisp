@@ -310,11 +310,14 @@
   (with-output-to-string (str)
     (write-environment (vm-current-environment vm) vm str)))
 
-(declaim (inline vm-not-finished))
-(defun vm-not-finished (vm)
+(declaim (inline vm-is-live))
+(defun vm-is-live (vm)
   (and
    (< (vm-program-counter vm) (length (vm-bytecode vm)))
    (not (vm-should-take-a-nap vm))))
+
+(defun vm-execution-complete (vm)
+  (= (vm-program-counter vm) (length (vm-bytecode vm))))
 
 (defun check-bool (vm)
   (unless (shovel-vm-prim0:is-bool (first (vm-stack vm)))
@@ -411,7 +414,7 @@
                  (vm-until-next-nap-ticks-quota vm)))
     (setf (vm-should-take-a-nap vm) t))
   (check-cells-quota vm)
-  (when (vm-not-finished vm)
+  (when (vm-is-live vm)
     (let* ((instruction (aref (vm-bytecode vm) (vm-program-counter vm)))
            (opcode (instruction-opcode instruction))
            (args (instruction-arguments instruction)))
@@ -551,7 +554,7 @@
         (t (error "Shovel internal WTF: unknown instruction '~a'." opcode))))
     (incf (vm-executed-ticks vm))
     (incf (vm-executed-ticks-since-last-nap vm)))
-  (vm-not-finished vm))
+  (vm-is-live vm))
 
 (defun find-named-block (vm stack block-name)
   (cond ((null stack)

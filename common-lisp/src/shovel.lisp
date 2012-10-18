@@ -235,6 +235,10 @@ an array of bytes."
                    :comments (fifth bytecode))))
       result)))
 
+(defun serialize-vm-state (vm)
+  "Serializes the state of this VM to an array of bytes."
+  (shovel-vm:serialize-vm-state vm))
+
 (defun run-vm (bytecode &key
                           sources user-primitives state vm
                           cells-quota total-ticks-quota until-next-nap-ticks-quota)
@@ -344,3 +348,7 @@ to resume this VM)."
   "Returns the MD5 hash for the sources used to compile the bytecode
   for this VM."
   (shovel-vm:get-vm-sources-md5 vm))
+
+(defun vm-execution-complete (vm)
+  "T if the VM finished execution (not asleep, actually finished)."
+  (shovel-vm:vm-execution-complete vm))

@@ -162,7 +162,8 @@
    :vm-really-used-cells
    :get-vm-bytecode-md5
    :get-vm-version
-   :get-vm-sources-md5))
+   :get-vm-sources-md5
+   :vm-execution-complete))
 
 (defpackage #:shovel
   (:use #:cl)
@@ -202,4 +203,6 @@
    :shovel-cell-quota-exceeded
    :vm-version
    :vm-bytecode-md5
-   :vm-sources-md5))
+   :vm-sources-md5
+   :serialize-vm-state
+   :vm-execution-complete))

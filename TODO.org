@@ -185,3 +185,6 @@
   (so we can check if the other party already has the bytecode and not
   send the bytecode over and over again).
   (also update the CL getting started guide to mention this)
+* TODO ClGettingStarted.md uses shovel-vm:serialize-vm-state
+  All public APIs should are moved to package 'shovel'. Update the
+  document.
