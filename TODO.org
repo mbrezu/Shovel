@@ -165,17 +165,17 @@
 *** DONE VM Serialization
 *** DONE explain the CPU and RAM bounds for the VM
 **** DONE explain why integers are modulo 2^60.
-*** TODO CL getting started Guide
+*** DONE CL getting started Guide
 *** TODO API documentation
-*** TODO Web number-guessing game
-** TODO how to use things (guide)
-*** TODO calling conventions
 **** TODO document the fact that user primitives should handle their exceptions;
      When they don't, the error is stored in the
      'user-primitive-error' field of the virtual machine and the
      virtual machine goes to sleep as if :nap-and-retry-on-wake-up had
      been returned by the primitive as a second value.
-*** TODO from Common Lisp
+*** TODO Web number-guessing game
+**** DONE Version 1
+**** TODO Version 2 - db, multiple users, redirects
+**** TODO The user writes the program
 * TODO tests for all the required primitives
 * TODO add license information to files (see CL-MESSAGEPACK)
 * TODO document VM serialization format in the VM SPEC
@@ -185,6 +185,6 @@
   (so we can check if the other party already has the bytecode and not
   send the bytecode over and over again).
   (also update the CL getting started guide to mention this)
-* TODO ClGettingStarted.md uses shovel-vm:serialize-vm-state
+* DONE ClGettingStarted.md uses shovel-vm:serialize-vm-state
   All public APIs should are moved to package 'shovel'. Update the
   document.

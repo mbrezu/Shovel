@@ -313,7 +313,7 @@
 (declaim (inline vm-is-live))
 (defun vm-is-live (vm)
   (and
-   (< (vm-program-counter vm) (length (vm-bytecode vm)))
+   (not (vm-execution-complete vm))
    (not (vm-should-take-a-nap vm))))
 
 (defun vm-execution-complete (vm)

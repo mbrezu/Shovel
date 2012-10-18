@@ -351,7 +351,7 @@ The code to make the call from the client:
                          :user-primitives user-primitives)
         (declare (ignore result))
         (let ((serialized-bytecode (shovel:serialize-bytecode bytecode))
-              (serialized-state (shovel-vm:serialize-vm-state vm)))
+              (serialized-state (shovel:serialize-vm-state vm)))
           ;; send request to server:
           (setf *sent-bytecode* serialized-bytecode)
           (setf *sent-state* serialized-state))))
@@ -388,7 +388,7 @@ We are now ready to resume the ShovelVM on the server:
                          :state vm-state)
         (declare (ignore result))
         (let ((serialized-bytecode (shovel:serialize-bytecode bytecode))
-              (serialized-state (shovel-vm:serialize-vm-state vm)))
+              (serialized-state (shovel:serialize-vm-state vm)))
           ;; send reply to client:
           (setf *sent-bytecode* serialized-bytecode)
           (setf *sent-state* serialized-state))))
