@@ -310,14 +310,17 @@
   (with-output-to-string (str)
     (write-environment (vm-current-environment vm) vm str)))
 
-(declaim (inline vm-is-live))
 (defun vm-is-live (vm)
+  (declare (optimize speed)
+           (inline vm-execution-complete))
   (and
    (not (vm-execution-complete vm))
    (not (vm-should-take-a-nap vm))))
 
 (defun vm-execution-complete (vm)
-  (= (vm-program-counter vm) (length (vm-bytecode vm))))
+  (declare (optimize speed))
+  (= (the fixnum (vm-program-counter vm))
+     (the fixnum (length (the vector (vm-bytecode vm))))))
 
 (defun check-bool (vm)
   (unless (shovel-vm-prim0:is-bool (first (vm-stack vm)))
@@ -636,6 +639,7 @@
                       (return-from is-shovel-type nil)))
                   data)
          t)))
+
 
 (defun call-primitive (callable vm num-args save-return-address)
   (let* ((arg-values (subseq (vm-stack vm) 0 num-args))
