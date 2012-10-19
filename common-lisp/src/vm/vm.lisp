@@ -310,6 +310,7 @@
   (with-output-to-string (str)
     (write-environment (vm-current-environment vm) vm str)))
 
+(declaim (inline vm-is-live))
 (defun vm-is-live (vm)
   (declare (optimize speed)
            (inline vm-execution-complete))
@@ -317,6 +318,7 @@
    (not (vm-execution-complete vm))
    (not (vm-should-take-a-nap vm))))
 
+(declaim (inline vm-execution-complete))
 (defun vm-execution-complete (vm)
   (declare (optimize speed))
   (= (the fixnum (vm-program-counter vm))
@@ -589,9 +591,7 @@
            (environment (vm-current-environment vm)))
       (loop
          for i from (1- args) downto 0
-         do (set-in-environment environment
-                                0 i
-                                (pop stack)))
+         do (set-in-top-frame environment i (pop stack)))
       (if return-address
           (setf (vm-stack vm) (cons return-address stack))
           (setf (vm-stack vm) stack))))
@@ -640,9 +640,14 @@
                   data)
          t)))
 
+(defun reversed-prefix (list n &optional acc)
+  (declare (optimize speed (safety 0))
+           (type fixnum n))
+  (if (= n 0) acc
+      (reversed-prefix (rest list) (1- n) (cons (first list) acc))))
 
 (defun call-primitive (callable vm num-args save-return-address)
-  (let* ((arg-values (subseq (vm-stack vm) 0 num-args))
+  (let* ((arg-values (reversed-prefix (vm-stack vm) num-args))
          (primitive-record (or (alexandria:if-let (prim0 (callable-prim0 callable))
                                  (find-required-primitive vm prim0))
                                (alexandria:if-let (prim (callable-prim callable))
@@ -655,9 +660,9 @@
       (arity-error vm primitive-arity num-args))
     (multiple-value-bind(result what-next)
         (if is-required-primitive
-            (apply primitive (reverse arg-values))
+            (apply primitive arg-values)
             (handler-case
-                (apply primitive (reverse arg-values))
+                (apply primitive arg-values)
               (error (err)
                 (setf (vm-user-defined-primitive-error vm) err)
                 (values :null :nap-and-retry-on-wake-up))))
@@ -697,6 +702,13 @@ A 'valid value' (with Common Lisp as the host language) is:
               (incf (vm-program-counter vm))
               (apply-return-address vm (pop (vm-stack vm))))
           (push result (vm-stack vm)))))))
+
+(defun set-in-top-frame (environment var-index value)
+  (declare (optimize speed))
+  (let ((vars (env-frame-vars (first environment))))
+    (declare (type (simple-array t *) vars))
+    (setf (second (aref vars var-index))
+          value)))
 
 (defun set-in-environment (environment frame-number var-index value)
   (setf (second (aref (env-frame-vars (nth frame-number environment))
