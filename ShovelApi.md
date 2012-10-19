@@ -1,4 +1,4 @@
--*- markdown -*-
+<!-- -*- markdown -*- -->
 
 # Description of the Shovel API
 
