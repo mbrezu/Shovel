@@ -657,6 +657,58 @@
   (if (= n 0) acc
       (reversed-prefix (rest list) (1- n) (cons (first list) acc))))
 
+(defun finish-calling-required-primitive (primitive arg-values num-args save-return-address vm)
+  (let ((result (apply primitive arg-values)))
+    (finish-primitive-call vm num-args result save-return-address)))
+
+(defun finish-calling-user-defined-primitive (primitive arg-values num-args
+                                              current-program-counter callable
+                                              save-return-address
+                                              vm)
+  (multiple-value-bind(result what-next)
+      (handler-case
+          (apply primitive arg-values)
+        (error (err)
+          (setf (vm-user-defined-primitive-error vm) err)
+          (values :null :nap-and-retry-on-wake-up)))
+    (unless (is-shovel-type result)
+      (raise-shovel-error
+       vm
+       (format nil "User defined primitive returned invalid value (~a).
+
+A 'valid value' (with Common Lisp as the host language) is:
+
+ * :null, :true or :false;
+ * a string;
+ * a number;
+ * an array of elements that are themselves valid values;
+ * a hash with strings as keys and valid values.
+"
+               result)))
+    (let (should-finish-this-call)
+      (cond ((or (null what-next)
+                 (eq :continue what-next))
+             (setf should-finish-this-call t))
+            ((eq :nap what-next)
+             (setf (vm-should-take-a-nap vm) t)
+             (setf should-finish-this-call t))
+            ((eq :nap-and-retry-on-wake-up what-next)
+             (setf (vm-should-take-a-nap vm) t)
+             (setf (vm-program-counter vm) current-program-counter)
+             (push callable (vm-stack vm)))
+            (t (raise-shovel-error
+                vm
+                "A user-defined primitive returned an unknown second value.")))
+      (when should-finish-this-call
+        (finish-primitive-call vm num-args result save-return-address)))))
+
+(defun finish-primitive-call (vm num-args result save-return-address)
+  (setf (vm-stack vm) (nthcdr num-args (vm-stack vm)))
+  (if save-return-address
+      (incf (vm-program-counter vm))
+      (apply-return-address vm (pop (vm-stack vm))))
+  (push result (vm-stack vm)))
+
 (defun call-primitive (callable vm num-args save-return-address)
   (unless (callable-cached-prim callable)
     (setf (callable-cached-prim callable)
@@ -672,50 +724,13 @@
          (current-program-counter (vm-program-counter vm)))
     (when (and primitive-arity (/= primitive-arity num-args))
       (arity-error vm primitive-arity num-args))
-    (multiple-value-bind(result what-next)
-        (if is-required-primitive
-            (apply primitive arg-values)
-            (handler-case
-                (apply primitive arg-values)
-              (error (err)
-                (setf (vm-user-defined-primitive-error vm) err)
-                (values :null :nap-and-retry-on-wake-up))))
-      (unless is-required-primitive
-        (unless (is-shovel-type result)
-          (raise-shovel-error
-           vm
-           (format nil "User defined primitive returned invalid value (~a).
-
-A 'valid value' (with Common Lisp as the host language) is:
-
- * :null, :true or :false;
- * a string;
- * a number;
- * an array of elements that are themselves valid values;
- * a hash with strings as keys and valid values.
-"
-                   result))))
-      (let (should-finish-this-call)
-        (cond ((or is-required-primitive
-                   (null what-next)
-                   (eq :continue what-next))
-               (setf should-finish-this-call t))
-              ((eq :nap what-next)
-               (setf (vm-should-take-a-nap vm) t)
-               (setf should-finish-this-call t))
-              ((eq :nap-and-retry-on-wake-up what-next)
-               (setf (vm-should-take-a-nap vm) t)
-               (setf (vm-program-counter vm) current-program-counter)
-               (push callable (vm-stack vm)))
-              (t (raise-shovel-error
-                  vm
-                  "A user-defined primitive returned an unknown second value.")))
-        (when should-finish-this-call
-          (setf (vm-stack vm) (nthcdr num-args (vm-stack vm)))
-          (if save-return-address
-              (incf (vm-program-counter vm))
-              (apply-return-address vm (pop (vm-stack vm))))
-          (push result (vm-stack vm)))))))
+    (if is-required-primitive
+        (finish-calling-required-primitive
+         primitive arg-values num-args save-return-address vm)
+        (finish-calling-user-defined-primitive
+         primitive arg-values num-args
+         current-program-counter callable
+         save-return-address vm))))
 
 (defun set-in-top-frame (environment var-index value)
   (declare (optimize speed))
