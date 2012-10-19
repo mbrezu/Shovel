@@ -629,12 +629,14 @@
               expected-arity actual-arity)))
 
 (defun call-function (callable vm num-args save-return-address)
+  (declare (optimize speed (safety 0)))
   (when save-return-address
-    (push (make-return-address :program-counter (1+ (vm-program-counter vm))
+    (push (make-return-address :program-counter (the fixnum (1+ (the fixnum (vm-program-counter vm))))
                                :environment (vm-current-environment vm))
           (vm-stack vm)))
-  (when (and (callable-num-args callable )
-             (/= (callable-num-args callable) num-args))
+  (when (and (callable-num-args callable)
+             (/= (the fixnum (callable-num-args callable))
+                 (the fixnum num-args)))
     (arity-error vm (callable-num-args callable) num-args))
   (setf (vm-program-counter vm) (callable-program-counter callable)
         (vm-current-environment vm) (callable-environment callable)))
@@ -659,16 +661,19 @@
 (defun reversed-prefix (list n &optional acc)
   (declare (optimize speed (safety 0))
            (type fixnum n))
-  (if (= n 0) acc
+  (if (= n 0) (values acc list)
       (reversed-prefix (rest list) (1- n) (cons (first list) acc))))
 
-(defun finish-calling-required-primitive (primitive arg-values num-args save-return-address vm)
+(defun finish-calling-required-primitive (primitive arg-values 
+                                          save-return-address new-stack
+                                          vm)
   (let ((result (apply primitive arg-values)))
-    (finish-primitive-call vm num-args result save-return-address)))
+    (finish-primitive-call vm result 
+                           save-return-address new-stack)))
 
-(defun finish-calling-user-defined-primitive (primitive arg-values num-args
+(defun finish-calling-user-defined-primitive (primitive arg-values 
                                               current-program-counter callable
-                                              save-return-address
+                                              save-return-address new-stack
                                               vm)
   (multiple-value-bind(result what-next)
       (handler-case
@@ -705,11 +710,12 @@ A 'valid value' (with Common Lisp as the host language) is:
                 vm
                 "A user-defined primitive returned an unknown second value.")))
       (when should-finish-this-call
-        (finish-primitive-call vm num-args result save-return-address)))))
+        (finish-primitive-call vm result 
+                               save-return-address new-stack)))))
 
-(defun finish-primitive-call (vm num-args result save-return-address)
+(defun finish-primitive-call (vm result save-return-address new-stack)
   (declare (optimize speed (safety 0)))
-  (setf (vm-stack vm) (nthcdr num-args (vm-stack vm)))
+  (setf (vm-stack vm) new-stack)
   (if save-return-address
       (incf (the fixnum (vm-program-counter vm)))
       (apply-return-address vm (pop (vm-stack vm))))
@@ -723,22 +729,24 @@ A 'valid value' (with Common Lisp as the host language) is:
                 (find-required-primitive vm prim0))
               (alexandria:if-let (prim (callable-prim callable))
                 (find-user-primitive vm prim)))))
-  (let* ((arg-values (reversed-prefix (vm-stack vm) num-args))
-         (primitive-record (callable-cached-prim callable))
-         (primitive (first primitive-record))
-         (is-required-primitive (callable-prim0 callable))
-         (primitive-arity (second primitive-record))
-         (current-program-counter (vm-program-counter vm)))
-    (declare (type (or fixnum null) num-args primitive-arity))
-    (when (and primitive-arity (/= primitive-arity num-args))
-      (arity-error vm primitive-arity num-args))
-    (if is-required-primitive
-        (finish-calling-required-primitive
-         primitive arg-values num-args save-return-address vm)
-        (finish-calling-user-defined-primitive
-         primitive arg-values num-args
-         current-program-counter callable
-         save-return-address vm))))
+  (multiple-value-bind (arg-values new-stack)
+      (reversed-prefix (vm-stack vm) num-args)
+    (let* ((primitive-record (callable-cached-prim callable))
+           (primitive (first primitive-record))
+           (is-required-primitive (callable-prim0 callable))
+           (primitive-arity (second primitive-record))
+           (current-program-counter (vm-program-counter vm)))
+      (declare (type (or fixnum null) num-args primitive-arity))
+      (when (and primitive-arity (/= primitive-arity num-args))
+        (arity-error vm primitive-arity num-args))
+      (if is-required-primitive
+          (finish-calling-required-primitive
+           primitive arg-values save-return-address 
+           new-stack vm)
+          (finish-calling-user-defined-primitive
+           primitive arg-values 
+           current-program-counter callable
+           save-return-address new-stack vm)))))
 
 (defun set-in-top-frame (environment var-index value)
   (declare (optimize speed))
@@ -753,8 +761,8 @@ A 'valid value' (with Common Lisp as the host language) is:
         value))
 
 (defun get-from-environment (enviroment frame-number var-index)
-  (second (aref (env-frame-vars (nth frame-number enviroment))
-                var-index)))
+  (let ((frame (env-frame-vars (nth frame-number enviroment))))
+    (second (aref frame var-index))))
 
 (defstruct serializer-state (hash (make-hash-table)) (array nil))
 
