@@ -51,6 +51,8 @@ A Shovel quick start guide for Common Lisp:
 
 A simple number guessing demo: [WebGuessNumber.md](WebGuessNumber.md).
 
+The description of the API: [ShovelApi.md](ShovelApi.md).
+
 If you want more information: The language specification (for small
 values of 'specification'): [ShovelScriptSpec.md](ShovelScriptSpec.md).
 

@@ -155,7 +155,7 @@
 * DONE try to optimize step-vm by building a jump table with functions
   not worth it
 * DONE remove references to Shript and rename it ShovelScript
-* TODO documentation
+* DONE documentation
 ** DONE ShovelScript (language, required primitives)
 *** DONE language reference
 *** DONE required primitives description
@@ -166,21 +166,10 @@
 *** DONE explain the CPU and RAM bounds for the VM
 **** DONE explain why integers are modulo 2^60.
 *** DONE CL getting started Guide
-*** TODO API documentation
-**** TODO document the fact that user primitives should handle their exceptions;
-     When they don't, the error is stored in the
-     'user-primitive-error' field of the virtual machine and the
-     virtual machine goes to sleep as if :nap-and-retry-on-wake-up had
-     been returned by the primitive as a second value.
-**** TODO the documentation should mention that primitives
-     can't call a closure (it breaks interruptability)
-*** TODO Web number-guessing game
+*** DONE Web number-guessing game
 **** DONE Version 1
-**** TODO Version 2 - db, multiple users, redirects
-**** TODO The user writes the program
-* TODO tests for all the required primitives
-* TODO add license information to files (see CL-MESSAGEPACK)
-* TODO document VM serialization format in the VM SPEC
+**** DONE Version 2 - db, multiple users, redirects
+**** DONE The user writes the program
 * DONE add APIs to access the MD5 of bytecode
   (so we can check if the other party already has the bytecode and not
   send the bytecode over and over again).
@@ -188,3 +177,17 @@
 * DONE ClGettingStarted.md uses shovel-vm:serialize-vm-state
   All public APIs should are moved to package 'shovel'. Update the
   document.
+* TODO test the documentation by reading it and pasting the code
+** TODO the getting started guide
+** TODO the number guessing tutorial
+* TODO API documentation
+** TODO document the fact that user primitives should handle their exceptions;
+   When they don't, the error is stored in the 'user-primitive-error'
+   field of the virtual machine and the virtual machine goes to sleep
+   as if :nap-and-retry-on-wake-up had been returned by the primitive
+   as a second value.
+** TODO the documentation should mention that primitives
+     can't call a closure (it breaks interruptability)
+* TODO tests for all the required primitives
+* TODO add license information to files (see CL-MESSAGEPACK)
+* TODO document VM serialization format in the VM SPEC

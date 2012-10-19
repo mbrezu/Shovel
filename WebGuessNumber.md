@@ -659,6 +659,14 @@ store programs in a separate table and store pointers to that table in
 the 'Sessions' table (such as the MD5 hashes of the bytecode and
 source). This improvement is left as an exercise to the reader.
 
+Updating the `LastAccessTime` when a session is loaded and deleting
+sessions older than, say, a few hours, is also left as an exercise to
+the reader. Since we have versioned sessions, maybe it's an
+interesting idea to store the 'parent' session for each session and
+update the 'LastAccessTime' for all parents recursively, so the 'back
+button' still works for the entire branch (branches are either kept or
+deleted as a whole). Implementing this idea is another exercise.
+
 ## Turning the Tables: the User Writes the Shovel Program
 
 Time to go with the cloud (err... crowd) and let the users write the
@@ -819,8 +827,9 @@ Let's [try it out](http://localhost:4242/whatever) with the following program:
     var name = @readLine()
     @printLn('Hello, ' + name)
     
-It works! (use the code from branch `turn-tables` if it doesn't work
-for you)
+It works! (try the Github code, branch `turn-tables`, if it doesn't
+work for you - either I messed up when copying code into this document
+or you mistyped/mispasted something)
 
 Try it again, with the number guessing game:
 
