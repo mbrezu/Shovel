@@ -12,6 +12,7 @@
    :instruction-start-pos
    :instruction-end-pos
    :instruction-comments
+   :instruction-cache
 
    :pos
    :make-pos

@@ -47,7 +47,8 @@
   (prim nil)
   (num-args nil)
   (program-counter nil)
-  (environment nil))
+  (environment nil)
+  (cached-prim nil))
 
 (defstruct env-frame introduced-at-program-counter vars)
 
@@ -439,12 +440,21 @@
              ;; for the pushed value
              (increment-cells-quota vm 1)))
         (:prim0
-         (push (make-callable :prim0 args) (vm-stack vm))
+         (unless (instruction-cache instruction)
+           (setf (instruction-cache instruction)
+                 (make-callable :prim0 args
+                                :cached-prim (find-required-primitive vm args))))
+         (push (instruction-cache instruction)
+               (vm-stack vm))
          (incf (vm-program-counter vm))
          ;; for the pushed callable (5 fields):
          (increment-cells-quota vm 5))
         (:prim
-         (push (make-callable :prim args) (vm-stack vm))
+         (unless (instruction-cache instruction)
+           (setf (instruction-cache instruction)
+                 (make-callable :prim args
+                                :cached-prim (find-user-primitive vm args))))
+         (push (instruction-cache instruction) (vm-stack vm))
          (incf (vm-program-counter vm))
          ;; for the pushed callable (5 fields):
          (increment-cells-quota vm 5))
@@ -598,6 +608,7 @@
   (incf (vm-program-counter vm)))
 
 (defun handle-call (vm num-args save-return-address)
+  (declare (optimize speed))
   (let ((callable (pop (vm-stack vm))))
     (unless (callable-p callable)
       (raise-shovel-error vm (format nil "Object [~a] is not callable."
@@ -647,11 +658,14 @@
       (reversed-prefix (rest list) (1- n) (cons (first list) acc))))
 
 (defun call-primitive (callable vm num-args save-return-address)
+  (unless (callable-cached-prim callable)
+    (setf (callable-cached-prim callable)
+          (or (alexandria:if-let (prim0 (callable-prim0 callable))
+                (find-required-primitive vm prim0))
+              (alexandria:if-let (prim (callable-prim callable))
+                (find-user-primitive vm prim)))))
   (let* ((arg-values (reversed-prefix (vm-stack vm) num-args))
-         (primitive-record (or (alexandria:if-let (prim0 (callable-prim0 callable))
-                                 (find-required-primitive vm prim0))
-                               (alexandria:if-let (prim (callable-prim callable))
-                                 (find-user-primitive vm prim))))
+         (primitive-record (callable-cached-prim callable))
          (primitive (first primitive-record))
          (is-required-primitive (callable-prim0 callable))
          (primitive-arity (second primitive-record))
