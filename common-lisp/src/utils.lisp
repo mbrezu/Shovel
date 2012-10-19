@@ -43,7 +43,8 @@
        do
          (incf (pos-line result))
          (setf (pos-column result) 1)
-       when (char/= (aref content i) #\newline)
+       when (and (char/= (aref content i) #\newline)
+                 (char/= (aref content i) #\return))
        do
          (incf (pos-column result)))
     (decf (pos-column result))

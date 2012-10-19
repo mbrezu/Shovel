@@ -44,7 +44,7 @@
 (declaim (inline is-white-space))
 (defun is-white-space (ch)
   (declare (optimize speed))
-  (and ch (or (char= #\space ch) (char= #\newline ch) (char= #\tab ch))))
+  (and ch (or (char= #\space ch) (char= #\newline ch) (char= #\return ch) (char= #\tab ch))))
 
 (defun eat-white-space ()
   (declare (optimize speed))
