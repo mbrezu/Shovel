@@ -337,9 +337,11 @@
     (error err)))
 
 (defun check-cells-quota (vm)
+  (declare (optimize speed))
   (labels ((quota-exceeded ()
              (and (vm-cells-quota vm)
-                  (> (vm-used-cells vm) (vm-cells-quota vm)))))
+                  (> (the fixnum (vm-used-cells vm))
+                     (the fixnum (vm-cells-quota vm))))))
     (when (quota-exceeded)
       (vm-count-used-cells vm)
       (when (quota-exceeded)
@@ -349,7 +351,8 @@
   (setf (vm-used-cells vm) (count-active-objects-cells vm)))
 
 (defun increment-cells-quota (vm cells)
-  (incf (vm-used-cells vm) cells))
+  (declare (optimize speed (safety 0)))
+  (incf (the fixnum (vm-used-cells vm)) (the fixnum cells)))
 
 (defun count-active-objects-cells (vm)
   (let ((visited  (make-hash-table :test #'eq)))
@@ -595,6 +598,8 @@
         (vm-current-environment vm) (return-address-environment retaddr)))
 
 (defun handle-args (vm args)
+  (declare (optimize speed (safety 0))
+           (type fixnum args))
   (when (< 0 args)
     (let* ((stack (vm-stack vm))
            (return-address (if (return-address-p (first stack)) (pop stack)))
@@ -605,7 +610,7 @@
       (if return-address
           (setf (vm-stack vm) (cons return-address stack))
           (setf (vm-stack vm) stack))))
-  (incf (vm-program-counter vm)))
+  (incf (the fixnum (vm-program-counter vm))))
 
 (defun handle-call (vm num-args save-return-address)
   (declare (optimize speed))
@@ -703,13 +708,15 @@ A 'valid value' (with Common Lisp as the host language) is:
         (finish-primitive-call vm num-args result save-return-address)))))
 
 (defun finish-primitive-call (vm num-args result save-return-address)
+  (declare (optimize speed (safety 0)))
   (setf (vm-stack vm) (nthcdr num-args (vm-stack vm)))
   (if save-return-address
-      (incf (vm-program-counter vm))
+      (incf (the fixnum (vm-program-counter vm)))
       (apply-return-address vm (pop (vm-stack vm))))
   (push result (vm-stack vm)))
 
 (defun call-primitive (callable vm num-args save-return-address)
+  (declare (optimize speed))
   (unless (callable-cached-prim callable)
     (setf (callable-cached-prim callable)
           (or (alexandria:if-let (prim0 (callable-prim0 callable))
@@ -722,6 +729,7 @@ A 'valid value' (with Common Lisp as the host language) is:
          (is-required-primitive (callable-prim0 callable))
          (primitive-arity (second primitive-record))
          (current-program-counter (vm-program-counter vm)))
+    (declare (type (or fixnum null) num-args primitive-arity))
     (when (and primitive-arity (/= primitive-arity num-args))
       (arity-error vm primitive-arity num-args))
     (if is-required-primitive
