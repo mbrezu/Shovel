@@ -211,18 +211,18 @@
 
 (defun write-stack-trace (vm stream &optional stack-dump)
   (labels ((iter (stack)
-             (when stack
-               (if (return-address-p (car stack))
-                   (let* ((pc (return-address-program-counter (car stack)))
-                          (call-site (elt (vm-bytecode vm) (1- pc))))
-                     (print-line-for vm stream pc
-                                     (instruction-start-pos call-site)
-                                     (instruction-end-pos call-site)))
-                   (if stack-dump
-                       (format stream "~a~%"
-                               (shovel-vm-prim0:shovel-string-representation
-                                (car stack)))))
-               (iter (cdr stack)))))
+                 (when stack
+                   (if (return-address-p (car stack))
+                       (let* ((pc (return-address-program-counter (car stack)))
+                              (call-site (elt (vm-bytecode vm) (1- pc))))
+                         (print-line-for vm stream pc
+                                         (instruction-start-pos call-site)
+                                         (instruction-end-pos call-site)))
+                       (if stack-dump
+                           (format stream "~a~%"
+                                   (shovel-vm-prim0:shovel-string-representation
+                                    (car stack)))))
+                   (iter (cdr stack)))))
     (unless stack-dump
       (print-line-for vm stream
                       (vm-program-counter vm)
@@ -580,13 +580,18 @@
         (vm-current-environment vm) (return-address-environment retaddr)))
 
 (defun handle-args (vm args)
-  (let ((arg-values (subseq (vm-stack vm) 0 args)))
-    (setf (vm-stack vm) (nthcdr args (vm-stack vm)))
-    (setf arg-values (nreverse arg-values))
-    (dotimes (i (length arg-values))
-      (set-in-environment (vm-current-environment vm)
-                          0 i
-                          (nth i arg-values))))
+  (when (< 0 args)
+    (let* ((stack (vm-stack vm))
+           (return-address (if (return-address-p (first stack)) (pop stack)))
+           (environment (vm-current-environment vm)))
+      (loop
+         for i from (1- args) downto 0
+         do (set-in-environment environment
+                                0 i
+                                (pop stack)))
+      (if return-address
+          (setf (vm-stack vm) (cons return-address stack))
+          (setf (vm-stack vm) stack))))
   (incf (vm-program-counter vm)))
 
 (defun handle-call (vm num-args save-return-address)
@@ -606,12 +611,9 @@
 
 (defun call-function (callable vm num-args save-return-address)
   (when save-return-address
-    (setf (vm-stack vm)
-          (append
-           (subseq (vm-stack vm) 0 num-args)
-           (cons (make-return-address :program-counter (1+ (vm-program-counter vm))
-                                      :environment (vm-current-environment vm))
-                 (nthcdr num-args (vm-stack vm))))))
+    (push (make-return-address :program-counter (1+ (vm-program-counter vm))
+                               :environment (vm-current-environment vm))
+          (vm-stack vm)))
   (when (and (callable-num-args callable )
              (/= (callable-num-args callable) num-args))
     (arity-error vm (callable-num-args callable) num-args))
