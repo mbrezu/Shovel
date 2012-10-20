@@ -65,6 +65,7 @@
   (if var :true :false))
 
 (defun is-true (var)
+  (declare (optimize speed))
   (eq :true var))
 
 (defmacro both-bools (op)

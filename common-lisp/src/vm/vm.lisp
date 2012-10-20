@@ -315,7 +315,8 @@
 
 (declaim (inline vm-is-live))
 (defun vm-is-live (vm)
-  (declare (optimize speed)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
            (inline vm-execution-complete))
   (and
    (not (vm-execution-complete vm))
@@ -323,16 +324,20 @@
 
 (declaim (inline vm-execution-complete))
 (defun vm-execution-complete (vm)
-  (declare (optimize speed))
-  (= (the fixnum (vm-program-counter vm))
-     (the fixnum (length (the vector (vm-bytecode vm))))))
+  (declare (optimize speed (safety 0))
+           (type vm vm))
+  (= (vm-program-counter vm)
+     (length (the simple-array (vm-bytecode vm)))))
 
 (defun check-bool (vm)
+  (declare (optimize speed (safety 0))
+           (type vm vm))
   (unless (shovel-vm-prim0:is-bool (first (vm-stack vm)))
     (raise-shovel-error vm "Argument must be a boolean.")))
 
 (defun check-vm-without-error (vm)
-  (declare (optimize speed))
+  (declare (optimize speed (safety 0))
+           (type vm vm))
   (alexandria:when-let (err (vm-user-defined-primitive-error vm))
     (error err))
   (alexandria:when-let (err (vm-programming-error vm))
@@ -416,7 +421,8 @@
          (count-structure (vm-stack vm))))))
 
 (defun check-ticks-quota (vm)
-  (declare (type vm vm))
+  (declare (type vm vm)
+           (optimize (speed 1) (safety 0)))
   (when (and (vm-total-ticks-quota vm)
              (>= (vm-executed-ticks vm)
                  (vm-total-ticks-quota vm)))
@@ -432,8 +438,236 @@
            (type vm vm))
   (incf (vm-program-counter vm)))
 
+(defun handle-jump (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type instruction instruction))
+  (let ((args (instruction-arguments instruction)))
+    (setf (vm-program-counter vm) args)))
+
+(defun handle-const (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type instruction instruction))
+  (let ((args (instruction-arguments instruction)))
+    (push args (vm-stack vm))
+    (inc-pc vm)
+    (if (stringp args)
+        ;; 1 for the string, the rest for the contents
+        (increment-cells-quota vm (1+ (length args)))
+
+        ;; for the pushed value
+        (increment-cells-quota vm 1))))
+
+(defun handle-prim0 (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type instruction instruction))
+  (let ((args (instruction-arguments instruction)))
+    (unless (instruction-cache instruction)
+      (setf (instruction-cache instruction)
+            (make-callable :prim0 args
+                           :cached-prim (cons nil (find-required-primitive vm args)))))
+    (push (instruction-cache instruction)
+          (vm-stack vm))
+    (inc-pc vm)
+    ;; for the pushed callable (5 fields):
+    (increment-cells-quota vm 5)))
+
+(defun handle-prim (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type instruction instruction))
+  (let ((args (instruction-arguments instruction)))
+    (unless (instruction-cache instruction)
+      (setf (instruction-cache instruction)
+            (make-callable :prim args
+                           :cached-prim (cons nil (find-user-primitive vm args)))))
+    (push (instruction-cache instruction) (vm-stack vm))
+    (inc-pc vm)
+    ;; for the pushed callable (5 fields):
+    (increment-cells-quota vm 5)))
+
+(defun handle-fjump (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type instruction instruction))
+  (let ((args (instruction-arguments instruction)))
+    (check-bool vm)
+    (jump-if (shovel-vm-prim0:logical-not (pop (vm-stack vm))) vm args)))
+
+(defun handle-lset (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type instruction instruction))
+  (let ((args (instruction-arguments instruction)))
+    (set-in-environment (vm-current-environment vm)
+                        (first args) (second args)
+                        (first (vm-stack vm)))
+    (inc-pc vm)))
+
+(defun handle-pop (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (ignore instruction))
+  (pop (vm-stack vm))
+  (inc-pc vm))
+
+(defun handle-lget (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type instruction instruction))
+  (let ((args (instruction-arguments instruction)))
+    (push (get-from-environment (vm-current-environment vm)
+                                (first args) (second args))
+          (vm-stack vm))
+    (inc-pc vm)
+    ;; for the pushed value
+    (increment-cells-quota vm 1)))
+
+(defun handle-fn (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type instruction instruction))
+  (let ((args (instruction-arguments instruction)))
+    (push (make-callable :program-counter (first args)
+                         :environment (vm-current-environment vm)
+                         :num-args (second args))
+          (vm-stack vm))
+    (increment-cells-quota vm 5) ;; for the pushed callable (5 fields)
+    (inc-pc vm)))
+
+(defun handle-new-frame (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type instruction instruction))
+  (let ((args (instruction-arguments instruction)))
+    (let* ((length-args (length (the list args)))
+           (new-frame (make-env-frame
+                       :introduced-at-program-counter (vm-program-counter vm)
+                       :vars (make-array length-args))))
+      (loop
+         for i = 0 then (1+ i)
+         for var in args
+         do (setf (aref (the (simple-array cons *) (env-frame-vars new-frame)) i)
+                  (list var :null)))
+      (push new-frame (vm-current-environment vm))
+      ;; for the frame, the saved program counter and the
+      ;; contents:
+      (increment-cells-quota vm (+ 2 length-args)))
+    (inc-pc vm)))
+
+(defun handle-drop-frame (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (ignore instruction))
+  (pop (vm-current-environment vm))
+  (inc-pc vm))
+
+(defun handle-return (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (ignore instruction))
+  (let ((other-stack (cddr (vm-stack vm)))
+        (result (first (vm-stack vm)))
+        (retaddr (second (vm-stack vm))))
+    (apply-return-address vm retaddr)
+    (setf (vm-stack vm)
+          (cons result other-stack))))
+
+(defun handle-block (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type instruction instruction))
+  (let ((name (pop (vm-stack vm)))
+        (args (instruction-arguments instruction)))
+    (unless (stringp name)
+      (raise-shovel-error vm "The name of a block must be a string."))
+    (push (make-named-block :name name
+                            :end-address args
+                            :environment (vm-current-environment vm))
+          (vm-stack vm)))
+  (increment-cells-quota vm 3) ;; for the named block record (3 fields)
+  (inc-pc vm))
+
+(defun handle-pop-block (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (ignore instruction))
+  (let ((return-value (first (vm-stack vm)))
+        (named-block (second (vm-stack vm)))
+        (rest-of-the-stack (cddr (vm-stack vm))))
+    (unless (named-block-p named-block)
+      (raise-shovel-error vm "Invalid context for POP_BLOCK."))
+    (setf (vm-stack vm) (cons return-value rest-of-the-stack)))
+  (inc-pc vm))
+
+(defun handle-block-return (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (ignore instruction))
+  (let ((return-value (first (vm-stack vm)))
+        (name (second (vm-stack vm))))
+    (unless (stringp name)
+      (raise-shovel-error vm "The name of a block must be a string."))
+    (multiple-value-bind (named-block stack-below)
+        (find-named-block vm (vm-stack vm) name)
+      (setf (vm-stack vm) (list* return-value
+                                 named-block
+                                 stack-below))
+      (setf (vm-current-environment vm)
+            (named-block-environment named-block))
+      (setf (vm-program-counter vm)
+            (named-block-end-address named-block)))))
+
+(defun handle-context (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (ignore instruction))
+  (let ((stack-trace (with-output-to-string (str)
+                       (write-stack-trace vm str)))
+        (current-environment (with-output-to-string (str)
+                               (write-environment (vm-current-environment vm)
+                                                  vm str)))
+        (context (make-hash-table :test #'equal)))
+    (setf (gethash "stack" context) stack-trace)
+    (setf (gethash "environment" context) current-environment)
+    (push context (vm-stack vm))
+    ;; for the pushed hash: 1 (the pushed hash), 1 (the hash), 2 keys
+    ;; and 2 values.
+    (increment-cells-quota vm 6)
+    (inc-pc vm)))
+
+(defun handle-tjump (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type instruction instruction))
+  (let ((args (instruction-arguments instruction)))
+    (check-bool vm)
+    (jump-if (pop (vm-stack vm)) vm args)))
+
+(defun handle-nop (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (ignore instruction))
+  (inc-pc vm))
+
+(defun handle-call (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type instruction instruction))
+  (let ((args (instruction-arguments instruction)))
+    (handle-call-impl vm args t)))
+
+(defun handle-callj (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type instruction instruction))
+  (let ((args (instruction-arguments instruction)))
+    (handle-call-impl vm args nil)))
+
 (defun step-vm (vm)
-  (declare (optimize speed)
+  (declare (optimize speed (safety 0))
            (type vm vm))
   (locally (declare (inline check-vm-without-error
                             check-ticks-quota
@@ -442,154 +676,40 @@
     (check-ticks-quota vm)
     (check-cells-quota vm))
   (when (vm-is-live vm)
-    (let* ((instruction (aref (the (simple-array instruction *) (vm-bytecode vm))
-                              (vm-program-counter vm)))
-           (opcode (instruction-opcode instruction))
-           (args (instruction-arguments instruction)))
-      (alexandria:when-let ((start-pos (instruction-start-pos instruction))
-                            (end-pos (instruction-end-pos instruction)))
-        (setf (vm-last-start-pos vm) start-pos
-              (vm-last-end-pos vm) end-pos))
-      (case opcode
-        (:jump (setf (vm-program-counter vm) args))
-        (:const
-         (push args (vm-stack vm))
-         (inc-pc vm)
-         (if (stringp args)
-             ;; 1 for the string, the rest for the contents
-             (increment-cells-quota vm (1+ (length args)))
-
-             ;; for the pushed value
-             (increment-cells-quota vm 1)))
-        (:prim0
-         (unless (instruction-cache instruction)
-           (setf (instruction-cache instruction)
-                 (make-callable :prim0 args
-                                :cached-prim (cons nil (find-required-primitive vm args)))))
-         (push (instruction-cache instruction)
-               (vm-stack vm))
-         (inc-pc vm)
-         ;; for the pushed callable (5 fields):
-         (increment-cells-quota vm 5))
-        (:prim
-         (unless (instruction-cache instruction)
-           (setf (instruction-cache instruction)
-                 (make-callable :prim args
-                                :cached-prim (cons nil (find-user-primitive vm args)))))
-         (push (instruction-cache instruction) (vm-stack vm))
-         (inc-pc vm)
-         ;; for the pushed callable (5 fields):
-         (increment-cells-quota vm 5))
-        (:call
-         (handle-call vm args t)
-         ;; for the pushed return address:
-         (increment-cells-quota vm 1))
-        (:callj
-         (handle-call vm args nil))
-        (:fjump
-         (check-bool vm)
-         (jump-if (shovel-vm-prim0:logical-not (pop (vm-stack vm))) vm args))
-        (:lset
-         (set-in-environment (vm-current-environment vm)
-                             (first args) (second args)
-                             (first (vm-stack vm)))
-         (inc-pc vm))
-        (:pop
-         (pop (vm-stack vm))
-         (inc-pc vm))
-        (:lget
-         (push (get-from-environment (vm-current-environment vm)
-                                     (first args) (second args))
-               (vm-stack vm))
-         (inc-pc vm)
-         (increment-cells-quota vm 1)) ;; for the pushed value
-        (:fn
-         (push (make-callable :program-counter (first args)
-                              :environment (vm-current-environment vm)
-                              :num-args (second args))
-               (vm-stack vm))
-         (increment-cells-quota vm 5) ;; for the pushed callable (5 fields)
-         (inc-pc vm))
-        (:new-frame
-         (let* ((length-args (length (the list args)))
-                (new-frame (make-env-frame
-                            :introduced-at-program-counter (vm-program-counter vm)
-                            :vars (make-array length-args))))
-           (loop
-              for i = 0 then (1+ i)
-              for var in args
-              do (setf (aref (the (simple-array cons *) (env-frame-vars new-frame)) i)
-                       (list var :null)))
-           (push new-frame (vm-current-environment vm))
-           ;; for the frame, the saved program counter and the
-           ;; contents:
-           (increment-cells-quota vm (+ 2 length-args)))
-         (inc-pc vm))
-        (:drop-frame
-         (pop (vm-current-environment vm))
-         (inc-pc vm))
-        (:args (handle-args vm args))
-        (:return
-          (let ((other-stack (cddr (vm-stack vm)))
-                (result (first (vm-stack vm)))
-                (retaddr (second (vm-stack vm))))
-            (apply-return-address vm retaddr)
-            (setf (vm-stack vm)
-                  (cons result other-stack))))
-        (:block
-            (let ((name (pop (vm-stack vm))))
-              (unless (stringp name)
-                (raise-shovel-error vm "The name of a block must be a string."))
-              (push (make-named-block :name name
-                                      :end-address args
-                                      :environment (vm-current-environment vm))
-                    (vm-stack vm)))
-          (increment-cells-quota vm 3) ;; for the named block record (3 fields)
-          (inc-pc vm))
-        (:pop-block
-         (let ((return-value (first (vm-stack vm)))
-               (named-block (second (vm-stack vm)))
-               (rest-of-the-stack (cddr (vm-stack vm))))
-           (unless (named-block-p named-block)
-             (raise-shovel-error vm "Invalid context for POP_BLOCK."))
-           (setf (vm-stack vm) (cons return-value rest-of-the-stack)))
-         (inc-pc vm))
-        (:block-return
-         (let ((return-value (first (vm-stack vm)))
-               (name (second (vm-stack vm))))
-           (unless (stringp name)
-             (raise-shovel-error vm "The name of a block must be a string."))
-           (multiple-value-bind (named-block stack-below)
-               (find-named-block vm (vm-stack vm) name)
-             (setf (vm-stack vm) (list* return-value
-                                        named-block
-                                        stack-below))
-             (setf (vm-current-environment vm)
-                   (named-block-environment named-block))
-             (setf (vm-program-counter vm)
-                   (named-block-end-address named-block)))))
-        (:context
-         (let ((stack-trace (with-output-to-string (str)
-                              (write-stack-trace vm str)))
-               (current-environment (with-output-to-string (str)
-                                      (write-environment (vm-current-environment vm)
-                                                         vm str)))
-               (context (make-hash-table :test #'equal)))
-           (setf (gethash "stack" context) stack-trace)
-           (setf (gethash "environment" context) current-environment)
-           (push context (vm-stack vm))
-           (increment-cells-quota vm 6) ;; for the pushed hash: 1 (the
-           ;; pushed hash), 1 (the hash),
-           ;; 2 keys and 2 values.
-           (inc-pc vm)))
-        (:tjump
-         (check-bool vm)
-         (jump-if (pop (vm-stack vm)) vm args))
-        ((:file-name :vm-version :vm-sources-md5 :vm-bytecode-md5)
+    (let ((instruction (aref (the (simple-array instruction *) (vm-bytecode vm))
+                             (vm-program-counter vm))))
+      (declare (type instruction instruction))
+      (let* ((opcode (instruction-opcode instruction)))
+        (alexandria:when-let ((start-pos (instruction-start-pos instruction))
+                              (end-pos (instruction-end-pos instruction)))
+          (setf (vm-last-start-pos vm) start-pos
+                (vm-last-end-pos vm) end-pos))
+        (case opcode
+          (:jump (handle-jump vm instruction))
+          (:const (handle-const vm instruction))
+          (:prim0 (handle-prim0 vm instruction))
+          (:prim (handle-prim vm instruction))
+          (:call (handle-call vm instruction))
+          (:callj (handle-callj vm instruction))
+          (:fjump (handle-fjump vm instruction))
+          (:lset (handle-lset vm instruction))
+          (:pop (handle-pop vm instruction))
+          (:lget (handle-lget vm instruction))
+          (:fn (handle-fn vm instruction))
+          (:new-frame (handle-new-frame vm instruction))
+          (:drop-frame (handle-drop-frame vm instruction))
+          (:args (handle-args vm instruction))
+          (:return (handle-return vm instruction))
+          (:block (handle-block vm instruction))
+          (:pop-block (handle-pop-block vm instruction))
+          (:block-return (handle-block-return vm instruction))
+          (:context (handle-context vm instruction))
+          (:tjump (handle-tjump vm instruction))
+          ((:file-name :vm-version :vm-sources-md5 :vm-bytecode-md5)
                                         ; These are just informational
                                         ; instructions, skip them.
-         (inc-pc vm))
-        (t (error "Shovel internal WTF: unknown instruction '~a'." opcode))))
+           (handle-nop vm instruction))
+          (t (error "Shovel internal WTF: unknown instruction '~a'." opcode)))))
     (locally
         (declare (inline increment-vm-ticks)
                  (optimize (speed 1)))
@@ -616,6 +736,8 @@
                                   primitive-name))))
 
 (defun jump-if (value vm jump-address)
+  (declare (optimize speed (safety 0))
+           (type vm vm))
   (if (shovel-vm-prim0:is-true value)
       (setf (vm-program-counter vm) jump-address)
       (incf (vm-program-counter vm))))
@@ -627,23 +749,25 @@
   (setf (vm-program-counter vm) (return-address-program-counter retaddr)
         (vm-current-environment vm) (return-address-environment retaddr)))
 
-(defun handle-args (vm args)
+(defun handle-args (vm instruction)
   (declare (optimize speed (safety 0))
            (type vm vm)
-           (type fixnum args))
-  (when (< 0 args)
-    (let* ((stack (vm-stack vm))
-           (return-address (if (return-address-p (first stack)) (pop stack)))
-           (environment (vm-current-environment vm)))
-      (loop
-         for i from (1- args) downto 0
-         do (set-in-top-frame environment i (pop stack)))
-      (if return-address
-          (setf (vm-stack vm) (cons return-address stack))
-          (setf (vm-stack vm) stack))))
+           (type instruction instruction))
+  (let ((args (instruction-arguments instruction)))
+    (declare (type fixnum args))
+    (when (< 0 args)
+      (let* ((stack (vm-stack vm))
+             (return-address (if (return-address-p (first stack)) (pop stack)))
+             (environment (vm-current-environment vm)))
+        (loop
+           for i from (1- args) downto 0
+           do (set-in-top-frame environment i (pop stack)))
+        (if return-address
+            (setf (vm-stack vm) (cons return-address stack))
+            (setf (vm-stack vm) stack)))))
   (incf (the fixnum (vm-program-counter vm))))
 
-(defun handle-call (vm num-args save-return-address)
+(defun handle-call-impl (vm num-args save-return-address)
   (declare (optimize speed (safety 0))
            (type vm vm)
            (type fixnum num-args))
@@ -652,9 +776,13 @@
       (raise-shovel-error vm (format nil "Object [~a] is not callable."
                                      (shovel-vm-prim0:shovel-string-representation
                                       callable))))
-    (if (or (callable-prim callable) (callable-prim0 callable))
-        (call-primitive callable vm num-args save-return-address)
-        (call-function callable vm num-args save-return-address))))
+    (locally (declare (type callable callable))
+      (if (or (callable-prim callable) (callable-prim0 callable))
+          (call-primitive callable vm num-args save-return-address)
+          (call-function callable vm num-args save-return-address))))
+  (when save-return-address
+    ;; for the pushed return address:
+    (increment-cells-quota vm 1)))
 
 (defun arity-error (vm expected-arity actual-arity)
   (raise-shovel-error
