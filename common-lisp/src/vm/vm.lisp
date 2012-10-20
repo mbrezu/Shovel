@@ -13,22 +13,22 @@
 
 (defstruct vm
   bytecode
-  program-counter
+  (program-counter 0 :type fixnum)
   current-environment
   stack
   user-primitives
-  (used-cells 0)
-  (executed-ticks 0)
-  (executed-ticks-since-last-nap 0)
+  (used-cells 0 :type fixnum)
+  (executed-ticks 0 :type integer)
+  (executed-ticks-since-last-nap 0 :type integer)
   (last-start-pos nil)
   (last-end-pos nil)
   (sources nil)
   (should-take-a-nap nil)
   (user-defined-primitive-error nil)
   (programming-error nil)
-  (cells-quota nil)
-  (total-ticks-quota nil)
-  (until-next-nap-ticks-quota nil))
+  (cells-quota nil :type (or null integer))
+  (total-ticks-quota nil :type (or null integer))
+  (until-next-nap-ticks-quota nil :type (or null integer)))
 
 (defun get-vm-user-defined-primitive-error (vm)
   (vm-user-defined-primitive-error vm))
@@ -300,7 +300,9 @@
              (when (and (vm-cells-quota vm)
                         (> cells (vm-cells-quota vm)))
                (error (make-condition 'shovel:shovel-cell-quota-exceeded))))))
-      (loop while (step-vm vm))
+      (locally
+          (declare (optimize speed))
+        (loop while (step-vm vm)))
       (values (first (vm-stack vm)) vm))))
 
 (defun get-vm-stack (vm)
@@ -337,7 +339,8 @@
     (error err)))
 
 (defun check-cells-quota (vm)
-  (declare (optimize speed))
+  (declare (optimize speed (safety 0))
+           (type vm vm))
   (labels ((quota-exceeded ()
              (and (vm-cells-quota vm)
                   (> (the fixnum (vm-used-cells vm))
@@ -412,8 +415,8 @@
       (+ (count-structure (vm-current-environment vm))
          (count-structure (vm-stack vm))))))
 
-(defun step-vm (vm)
-  (check-vm-without-error vm)
+(defun check-ticks-quota (vm)
+  (declare (type vm vm))
   (when (and (vm-total-ticks-quota vm)
              (>= (vm-executed-ticks vm)
                  (vm-total-ticks-quota vm)))
@@ -421,10 +424,26 @@
   (when (and (vm-until-next-nap-ticks-quota vm)
              (>= (vm-executed-ticks-since-last-nap vm)
                  (vm-until-next-nap-ticks-quota vm)))
-    (setf (vm-should-take-a-nap vm) t))
-  (check-cells-quota vm)
+    (setf (vm-should-take-a-nap vm) t)))
+
+(declaim (inline inc-pc))
+(defun inc-pc (vm)
+  (declare (optimize speed (safety 0))
+           (type vm vm))
+  (incf (vm-program-counter vm)))
+
+(defun step-vm (vm)
+  (declare (optimize speed)
+           (type vm vm))
+  (locally (declare (inline check-vm-without-error
+                            check-ticks-quota
+                            check-cells-quota))
+    (check-vm-without-error vm)
+    (check-ticks-quota vm)
+    (check-cells-quota vm))
   (when (vm-is-live vm)
-    (let* ((instruction (aref (vm-bytecode vm) (vm-program-counter vm)))
+    (let* ((instruction (aref (the (simple-array instruction *) (vm-bytecode vm))
+                              (vm-program-counter vm)))
            (opcode (instruction-opcode instruction))
            (args (instruction-arguments instruction)))
       (alexandria:when-let ((start-pos (instruction-start-pos instruction))
@@ -435,7 +454,7 @@
         (:jump (setf (vm-program-counter vm) args))
         (:const
          (push args (vm-stack vm))
-         (incf (vm-program-counter vm))
+         (inc-pc vm)
          (if (stringp args)
              ;; 1 for the string, the rest for the contents
              (increment-cells-quota vm (1+ (length args)))
@@ -449,7 +468,7 @@
                                 :cached-prim (find-required-primitive vm args))))
          (push (instruction-cache instruction)
                (vm-stack vm))
-         (incf (vm-program-counter vm))
+         (inc-pc vm)
          ;; for the pushed callable (5 fields):
          (increment-cells-quota vm 5))
         (:prim
@@ -458,7 +477,7 @@
                  (make-callable :prim args
                                 :cached-prim (find-user-primitive vm args))))
          (push (instruction-cache instruction) (vm-stack vm))
-         (incf (vm-program-counter vm))
+         (inc-pc vm)
          ;; for the pushed callable (5 fields):
          (increment-cells-quota vm 5))
         (:call
@@ -474,15 +493,15 @@
          (set-in-environment (vm-current-environment vm)
                              (first args) (second args)
                              (first (vm-stack vm)))
-         (incf (vm-program-counter vm)))
+         (inc-pc vm))
         (:pop
          (pop (vm-stack vm))
-         (incf (vm-program-counter vm)))
+         (inc-pc vm))
         (:lget
          (push (get-from-environment (vm-current-environment vm)
                                      (first args) (second args))
                (vm-stack vm))
-         (incf (vm-program-counter vm))
+         (inc-pc vm)
          (increment-cells-quota vm 1)) ;; for the pushed value
         (:fn
          (push (make-callable :program-counter (first args)
@@ -490,24 +509,25 @@
                               :num-args (second args))
                (vm-stack vm))
          (increment-cells-quota vm 5) ;; for the pushed callable (5 fields)
-         (incf (vm-program-counter vm)))
+         (inc-pc vm))
         (:new-frame
-         (let* ((length-args (length args))
+         (let* ((length-args (length (the list args)))
                 (new-frame (make-env-frame
                             :introduced-at-program-counter (vm-program-counter vm)
                             :vars (make-array length-args))))
            (loop
               for i = 0 then (1+ i)
               for var in args
-              do (setf (aref (env-frame-vars new-frame) i) (list var :null)))
+              do (setf (aref (the (simple-array cons *) (env-frame-vars new-frame)) i)
+                       (list var :null)))
            (push new-frame (vm-current-environment vm))
            ;; for the frame, the saved program counter and the
            ;; contents:
            (increment-cells-quota vm (+ 2 length-args)))
-         (incf (vm-program-counter vm)))
+         (inc-pc vm))
         (:drop-frame
          (pop (vm-current-environment vm))
-         (incf (vm-program-counter vm)))
+         (inc-pc vm))
         (:args (handle-args vm args))
         (:return
           (let ((other-stack (cddr (vm-stack vm)))
@@ -525,7 +545,7 @@
                                       :environment (vm-current-environment vm))
                     (vm-stack vm)))
           (increment-cells-quota vm 3) ;; for the named block record (3 fields)
-          (incf (vm-program-counter vm)))
+          (inc-pc vm))
         (:pop-block
          (let ((return-value (first (vm-stack vm)))
                (named-block (second (vm-stack vm)))
@@ -533,7 +553,7 @@
            (unless (named-block-p named-block)
              (raise-shovel-error vm "Invalid context for POP_BLOCK."))
            (setf (vm-stack vm) (cons return-value rest-of-the-stack)))
-         (incf (vm-program-counter vm)))
+         (inc-pc vm))
         (:block-return
          (let ((return-value (first (vm-stack vm)))
                (name (second (vm-stack vm))))
@@ -561,18 +581,25 @@
            (increment-cells-quota vm 6) ;; for the pushed hash: 1 (the
            ;; pushed hash), 1 (the hash),
            ;; 2 keys and 2 values.
-           (incf (vm-program-counter vm))))
+           (inc-pc vm)))
         (:tjump
          (check-bool vm)
          (jump-if (pop (vm-stack vm)) vm args))
         ((:file-name :vm-version :vm-sources-md5 :vm-bytecode-md5)
                                         ; These are just informational
                                         ; instructions, skip them.
-         (incf (vm-program-counter vm)))
+         (inc-pc vm))
         (t (error "Shovel internal WTF: unknown instruction '~a'." opcode))))
-    (incf (vm-executed-ticks vm))
-    (incf (vm-executed-ticks-since-last-nap vm)))
+    (locally
+        (declare (inline increment-vm-ticks)
+                 (optimize (speed 1)))
+      (increment-vm-ticks vm)))
   (vm-is-live vm))
+
+(defun increment-vm-ticks (vm)
+  (declare (type vm vm))
+  (incf (vm-executed-ticks vm))
+  (incf (vm-executed-ticks-since-last-nap vm)))
 
 (defun find-named-block (vm stack block-name)
   (cond ((null stack)
@@ -613,7 +640,9 @@
   (incf (the fixnum (vm-program-counter vm))))
 
 (defun handle-call (vm num-args save-return-address)
-  (declare (optimize speed))
+  (declare (optimize speed)
+           (type vm vm)
+           (type fixnum num-args))
   (let ((callable (pop (vm-stack vm))))
     (unless (callable-p callable)
       (raise-shovel-error vm (format nil "Object [~a] is not callable."
@@ -629,7 +658,10 @@
               expected-arity actual-arity)))
 
 (defun call-function (callable vm num-args save-return-address)
-  (declare (optimize speed (safety 0)))
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type callable callable)
+           (type fixnum num-args))
   (when save-return-address
     (push (make-return-address :program-counter (the fixnum (1+ (the fixnum (vm-program-counter vm))))
                                :environment (vm-current-environment vm))
@@ -664,14 +696,14 @@
   (if (= n 0) (values acc list)
       (reversed-prefix (rest list) (1- n) (cons (first list) acc))))
 
-(defun finish-calling-required-primitive (primitive arg-values 
+(defun finish-calling-required-primitive (primitive arg-values
                                           save-return-address new-stack
                                           vm)
   (let ((result (apply primitive arg-values)))
-    (finish-primitive-call vm result 
+    (finish-primitive-call vm result
                            save-return-address new-stack)))
 
-(defun finish-calling-user-defined-primitive (primitive arg-values 
+(defun finish-calling-user-defined-primitive (primitive arg-values
                                               current-program-counter callable
                                               save-return-address new-stack
                                               vm)
@@ -710,7 +742,7 @@ A 'valid value' (with Common Lisp as the host language) is:
                 vm
                 "A user-defined primitive returned an unknown second value.")))
       (when should-finish-this-call
-        (finish-primitive-call vm result 
+        (finish-primitive-call vm result
                                save-return-address new-stack)))))
 
 (defun finish-primitive-call (vm result save-return-address new-stack)
@@ -722,7 +754,10 @@ A 'valid value' (with Common Lisp as the host language) is:
   (push result (vm-stack vm)))
 
 (defun call-primitive (callable vm num-args save-return-address)
-  (declare (optimize speed))
+  (declare (optimize speed)
+           (type vm vm)
+           (type callable callable)
+           (type fixnum num-args))
   (unless (callable-cached-prim callable)
     (setf (callable-cached-prim callable)
           (or (alexandria:if-let (prim0 (callable-prim0 callable))
@@ -741,10 +776,10 @@ A 'valid value' (with Common Lisp as the host language) is:
         (arity-error vm primitive-arity num-args))
       (if is-required-primitive
           (finish-calling-required-primitive
-           primitive arg-values save-return-address 
+           primitive arg-values save-return-address
            new-stack vm)
           (finish-calling-user-defined-primitive
-           primitive arg-values 
+           primitive arg-values
            current-program-counter callable
            save-return-address new-stack vm)))))
 
@@ -756,12 +791,19 @@ A 'valid value' (with Common Lisp as the host language) is:
           value)))
 
 (defun set-in-environment (environment frame-number var-index value)
-  (setf (second (aref (env-frame-vars (nth frame-number environment))
-                      var-index))
-        value))
+  (declare (optimize speed)
+           (type fixnum frame-number var-index))
+  (let ((frame (env-frame-vars (nth frame-number environment))))
+    (declare (type (simple-array t *) frame))
+    (setf (second (aref frame var-index))
+          value)))
 
-(defun get-from-environment (enviroment frame-number var-index)
-  (let ((frame (env-frame-vars (nth frame-number enviroment))))
+(defun get-from-environment (environment frame-number var-index)
+  (declare (optimize speed)
+           (type fixnum frame-number var-index)
+           (type list environment))
+  (let ((frame (env-frame-vars (nth frame-number environment))))
+    (declare (type (simple-array t *) frame))
     (second (aref frame var-index))))
 
 (defstruct serializer-state (hash (make-hash-table)) (array nil))
@@ -778,7 +820,8 @@ A 'valid value' (with Common Lisp as the host language) is:
     (:callable 8)
     (:return-address 9)
     (:env-frame 10)
-    (:named-block 11)))
+    (:named-block 11)
+    (:simple-array 12)))
 
 (defun serialize (object ss)
   (labels ((store-one (obj &key (store-as obj))
@@ -815,7 +858,10 @@ A 'valid value' (with Common Lisp as the host language) is:
             ((vectorp object)
              (let* ((result-array (make-array (1+ (length object))))
                     (result (store-one result-array :store-as object)))
-               (setf (aref result-array 0) (get-serialization-code :array))
+               (setf (aref result-array 0)
+                     (if (typep object '(simple-array t *))
+                         (get-serialization-code :simple-array)
+                         (get-serialization-code :array)))
                (loop
                   for i from 0 to (1- (length object))
                   do (setf (aref result-array (1+ i))
@@ -913,11 +959,12 @@ A 'valid value' (with Common Lisp as the host language) is:
                           (setf (cdr result)
                                 (deserialize (aref serialized-object 2) ds))
                           result))
-                       ((= code (get-serialization-code :array))
+                       ((or (= code (get-serialization-code :array))
+                            (= code (get-serialization-code :simple-array)))
                         (let* ((n (1- (length serialized-object)))
-                               (result (make-array n
-                                                   :adjustable t
-                                                   :fill-pointer n)))
+                               (result (if (= code (get-serialization-code :array))
+                                           (make-array n :adjustable t :fill-pointer n)
+                                           (make-array n))))
                           (setf object-ref result)
                           (loop
                              for i from 0 to (1- (length result))

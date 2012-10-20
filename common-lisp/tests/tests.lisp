@@ -1085,4 +1085,5 @@ stdlib.repeat(1000, fn() {
       (is (= 610 (shovel:vm-used-cells vm))))))
 
 (defun run-tests ()
-  (fiveam:run! :shovel-tests))
+  (let ((*print-circle* t))
+    (fiveam:run! :shovel-tests)))
