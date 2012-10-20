@@ -45,15 +45,15 @@
 (defstruct callable
   (prim0 nil)
   (prim nil)
-  (num-args nil)
-  (program-counter nil)
+  (num-args nil :type (or null fixnum))
+  (program-counter nil :type (or null fixnum))
   (environment nil)
   (cached-prim nil))
 
 (defstruct env-frame introduced-at-program-counter vars)
 
 (defmacro def-prim0 (op lisp-op &optional (arity 2))
-  `(list ,(format nil "~a" op) ',lisp-op ,arity))
+  `(list ,(format nil "~a" op) #',lisp-op ,arity))
 
 (defparameter *primitives*
   (let ((prim0-alist
@@ -465,7 +465,7 @@
          (unless (instruction-cache instruction)
            (setf (instruction-cache instruction)
                  (make-callable :prim0 args
-                                :cached-prim (find-required-primitive vm args))))
+                                :cached-prim (cons nil (find-required-primitive vm args)))))
          (push (instruction-cache instruction)
                (vm-stack vm))
          (inc-pc vm)
@@ -475,7 +475,7 @@
          (unless (instruction-cache instruction)
            (setf (instruction-cache instruction)
                  (make-callable :prim args
-                                :cached-prim (find-user-primitive vm args))))
+                                :cached-prim (cons nil (find-user-primitive vm args)))))
          (push (instruction-cache instruction) (vm-stack vm))
          (inc-pc vm)
          ;; for the pushed callable (5 fields):
@@ -621,11 +621,15 @@
       (incf (vm-program-counter vm))))
 
 (defun apply-return-address (vm retaddr)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (return-address retaddr))
   (setf (vm-program-counter vm) (return-address-program-counter retaddr)
         (vm-current-environment vm) (return-address-environment retaddr)))
 
 (defun handle-args (vm args)
   (declare (optimize speed (safety 0))
+           (type vm vm)
            (type fixnum args))
   (when (< 0 args)
     (let* ((stack (vm-stack vm))
@@ -640,7 +644,7 @@
   (incf (the fixnum (vm-program-counter vm))))
 
 (defun handle-call (vm num-args save-return-address)
-  (declare (optimize speed)
+  (declare (optimize speed (safety 0))
            (type vm vm)
            (type fixnum num-args))
   (let ((callable (pop (vm-stack vm))))
@@ -663,7 +667,7 @@
            (type callable callable)
            (type fixnum num-args))
   (when save-return-address
-    (push (make-return-address :program-counter (the fixnum (1+ (the fixnum (vm-program-counter vm))))
+    (push (make-return-address :program-counter (the fixnum (1+ (vm-program-counter vm)))
                                :environment (vm-current-environment vm))
           (vm-stack vm)))
   (when (and (callable-num-args callable)
@@ -700,6 +704,15 @@
                                           save-return-address new-stack
                                           vm)
   (let ((result (apply primitive arg-values)))
+    (finish-primitive-call vm result
+                           save-return-address new-stack)))
+
+(defun finish-calling-required-binary-primitive (primitive arg1 arg2
+                                                 save-return-address new-stack
+                                                 vm)
+  (declare (optimize speed)
+           (type (function (t t) t) primitive))
+  (let ((result (funcall primitive arg1 arg2)))
     (finish-primitive-call vm result
                            save-return-address new-stack)))
 
@@ -745,43 +758,83 @@ A 'valid value' (with Common Lisp as the host language) is:
         (finish-primitive-call vm result
                                save-return-address new-stack)))))
 
+(declaim (inline finish-primitive-call))
 (defun finish-primitive-call (vm result save-return-address new-stack)
-  (declare (optimize speed (safety 0)))
+  (declare (optimize speed (safety 0))
+           (type vm vm))
   (setf (vm-stack vm) new-stack)
   (if save-return-address
-      (incf (the fixnum (vm-program-counter vm)))
+      (incf (vm-program-counter vm))
       (apply-return-address vm (pop (vm-stack vm))))
   (push result (vm-stack vm)))
 
 (defun call-primitive (callable vm num-args save-return-address)
-  (declare (optimize speed)
+  (declare (optimize speed (safety 0))
            (type vm vm)
            (type callable callable)
            (type fixnum num-args))
   (unless (callable-cached-prim callable)
     (setf (callable-cached-prim callable)
-          (or (alexandria:if-let (prim0 (callable-prim0 callable))
-                (find-required-primitive vm prim0))
-              (alexandria:if-let (prim (callable-prim callable))
-                (find-user-primitive vm prim)))))
-  (multiple-value-bind (arg-values new-stack)
-      (reversed-prefix (vm-stack vm) num-args)
-    (let* ((primitive-record (callable-cached-prim callable))
-           (primitive (first primitive-record))
-           (is-required-primitive (callable-prim0 callable))
-           (primitive-arity (second primitive-record))
-           (current-program-counter (vm-program-counter vm)))
-      (declare (type (or fixnum null) num-args primitive-arity))
-      (when (and primitive-arity (/= primitive-arity num-args))
-        (arity-error vm primitive-arity num-args))
-      (if is-required-primitive
-          (finish-calling-required-primitive
-           primitive arg-values save-return-address
-           new-stack vm)
-          (finish-calling-user-defined-primitive
-           primitive arg-values
-           current-program-counter callable
-           save-return-address new-stack vm)))))
+          (cons nil
+                (or (alexandria:if-let (prim0 (callable-prim0 callable))
+                      (find-required-primitive vm prim0))
+                    (alexandria:if-let (prim (callable-prim callable))
+                      (find-user-primitive vm prim))))))
+  (labels ((handle-generic-arity (vm callable num-args)
+             (declare (optimize speed)
+                      (type vm vm)
+                      (type callable callable)
+                      (type fixnum num-args))
+             (multiple-value-bind (arg-values new-stack)
+                 (reversed-prefix (vm-stack vm) num-args)
+               (let* ((primitive-record (callable-cached-prim callable))
+                      (primitive (second primitive-record))
+                      (is-required-primitive (callable-prim0 callable))
+                      (primitive-arity (third primitive-record))
+                      (current-program-counter (vm-program-counter vm)))
+                 (declare (type (or fixnum null) num-args primitive-arity))
+                 (when (and primitive-arity (/= primitive-arity num-args))
+                   (arity-error vm primitive-arity num-args))
+                 (if is-required-primitive
+                     (finish-calling-required-primitive
+                      primitive arg-values save-return-address
+                      new-stack vm)
+                     (finish-calling-user-defined-primitive
+                      primitive arg-values
+                      current-program-counter callable
+                      save-return-address new-stack vm)))))
+           (handle-binary-arity (vm callable num-args)
+             (declare (optimize speed)
+                      (type vm vm)
+                      (type callable callable)
+                      (type fixnum num-args))
+             (when (/= 2 num-args)
+               (arity-error vm 2 num-args))
+             (let* ((primitive-record (callable-cached-prim callable))
+                    (primitive (second primitive-record))
+                    (stack (vm-stack vm))
+                    (arg2 (first stack))
+                    (arg1 (second stack))
+                    (new-stack (cddr stack))
+                    (is-required-primitive (callable-prim0 callable)))
+               (if is-required-primitive
+                   (finish-calling-required-binary-primitive
+                    primitive arg1 arg2 save-return-address
+                    new-stack vm)
+                   (finish-calling-user-defined-primitive
+                    primitive (list arg1 arg2)
+                    (vm-program-counter vm) callable
+                    save-return-address new-stack vm)))))
+    (let* ((cache (callable-cached-prim callable))
+           (arity (third cache)))
+      (declare (type (or null fixnum) arity))
+      (unless (first cache)
+        (setf (first cache)
+              (cond ((and arity (= 2 arity)) #'handle-binary-arity)
+                    (t #'handle-generic-arity))))
+      (funcall (the (function (vm callable fixnum) t)
+                 (first cache))
+               vm callable num-args))))
 
 (defun set-in-top-frame (environment var-index value)
   (declare (optimize speed))
@@ -799,7 +852,7 @@ A 'valid value' (with Common Lisp as the host language) is:
           value)))
 
 (defun get-from-environment (environment frame-number var-index)
-  (declare (optimize speed)
+  (declare (optimize speed (safety 0))
            (type fixnum frame-number var-index)
            (type list environment))
   (let ((frame (env-frame-vars (nth frame-number environment))))
