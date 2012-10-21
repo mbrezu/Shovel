@@ -335,6 +335,7 @@
   (unless (shovel-vm-prim0:is-bool (car (vm-stack vm)))
     (raise-shovel-error vm "Argument must be a boolean.")))
 
+(declaim (inline check-vm-without-error))
 (defun check-vm-without-error (vm)
   (declare (optimize speed (safety 0))
            (type vm vm))
@@ -343,6 +344,7 @@
   (alexandria:when-let (err (vm-programming-error vm))
     (error err)))
 
+(declaim (inline check-cells-quota))
 (defun check-cells-quota (vm)
   (declare (optimize speed (safety 0))
            (type vm vm))
@@ -420,6 +422,7 @@
       (+ (count-structure (vm-current-environment vm))
          (count-structure (vm-stack vm))))))
 
+(declaim (inline check-ticks-quota))
 (defun check-ticks-quota (vm)
   (declare (type vm vm)
            (optimize (speed 1) (safety 0)))
@@ -549,7 +552,7 @@
                          :num-args (second args))
           (vm-stack vm))
     ;; for the pushed callable (5 fields)
-    (increment-cells-quota vm 5) 
+    (increment-cells-quota vm 5)
     (inc-pc vm)))
 
 (defun handle-new-frame (vm instruction)
@@ -684,12 +687,9 @@
 (defun step-vm (vm)
   (declare (optimize speed (safety 0))
            (type vm vm))
-  (locally (declare (inline check-vm-without-error
-                            check-ticks-quota
-                            check-cells-quota))
-    (check-vm-without-error vm)
-    (check-ticks-quota vm)
-    (check-cells-quota vm))
+  (check-vm-without-error vm)
+  (check-ticks-quota vm)
+  (check-cells-quota vm)
   (when (vm-is-live vm)
     (let ((instruction (aref (the (simple-array instruction *) (vm-bytecode vm))
                              (vm-program-counter vm))))
@@ -725,12 +725,11 @@
                                         ; instructions, skip them.
            (handle-nop vm instruction))
           (t (error "Shovel internal WTF: unknown instruction '~a'." opcode)))))
-    (locally
-        (declare (inline increment-vm-ticks)
-                 (optimize (speed 1)))
+    (locally (declare (optimize (speed 1)))
       (increment-vm-ticks vm)))
   (vm-is-live vm))
 
+(declaim (inline increment-vm-ticks))
 (defun increment-vm-ticks (vm)
   (declare (type vm vm))
   (incf (vm-executed-ticks vm))
