@@ -535,7 +535,7 @@
                   #'lget-generic)))))
   (let ((lget (instruction-cache instruction))
         (environment (vm-current-environment vm)))
-    (declare (type (function (vm) t) lget))
+    (declare (type (function (t) t) lget))
     (push (funcall lget environment)
           (vm-stack vm)))
   (inc-pc vm)
@@ -684,6 +684,48 @@
   (let ((args (instruction-arguments instruction)))
     (handle-call-impl vm args nil)))
 
+(defun handle-args (vm instruction)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type instruction instruction))
+  (let ((args (instruction-arguments instruction)))
+    (declare (type fixnum args))
+    (when (< 0 args)
+      (let* ((stack (vm-stack vm))
+             (return-address (if (return-address-p (car stack)) (pop stack)))
+             (environment (vm-current-environment vm)))
+        (loop
+           for i from (1- args) downto 0
+           do (set-in-top-frame environment i (pop stack)))
+        (if return-address
+            (setf (vm-stack vm) (cons return-address stack))
+            (setf (vm-stack vm) stack)))))
+  (inc-pc vm))
+
+(defparameter *instruction-handlers*
+  (vector #'handle-jump
+          #'handle-const
+          #'handle-prim0
+          #'handle-prim
+          #'handle-call
+          #'handle-callj
+          #'handle-fjump
+          #'handle-lset
+          #'handle-pop
+          #'handle-lget
+          #'handle-fn
+          #'handle-new-frame
+          #'handle-drop-frame
+          #'handle-args
+          #'handle-return
+          #'handle-block
+          #'handle-pop-block
+          #'handle-block-return
+          #'handle-context
+          #'handle-tjump
+          #'handle-nop))
+
+(declaim (inline step-vm))
 (defun step-vm (vm)
   (declare (optimize speed (safety 0))
            (type vm vm))
@@ -694,37 +736,17 @@
     (let ((instruction (aref (the (simple-array instruction *) (vm-bytecode vm))
                              (vm-program-counter vm))))
       (declare (type instruction instruction))
-      (let* ((opcode (instruction-opcode instruction)))
-        (alexandria:when-let ((start-pos (instruction-start-pos instruction))
-                              (end-pos (instruction-end-pos instruction)))
-          (setf (vm-last-start-pos vm) start-pos
-                (vm-last-end-pos vm) end-pos))
-        (case opcode
-          (:jump (handle-jump vm instruction))
-          (:const (handle-const vm instruction))
-          (:prim0 (handle-prim0 vm instruction))
-          (:prim (handle-prim vm instruction))
-          (:call (handle-call vm instruction))
-          (:callj (handle-callj vm instruction))
-          (:fjump (handle-fjump vm instruction))
-          (:lset (handle-lset vm instruction))
-          (:pop (handle-pop vm instruction))
-          (:lget (handle-lget vm instruction))
-          (:fn (handle-fn vm instruction))
-          (:new-frame (handle-new-frame vm instruction))
-          (:drop-frame (handle-drop-frame vm instruction))
-          (:args (handle-args vm instruction))
-          (:return (handle-return vm instruction))
-          (:block (handle-block vm instruction))
-          (:pop-block (handle-pop-block vm instruction))
-          (:block-return (handle-block-return vm instruction))
-          (:context (handle-context vm instruction))
-          (:tjump (handle-tjump vm instruction))
-          ((:file-name :vm-version :vm-sources-md5 :vm-bytecode-md5)
-                                        ; These are just informational
-                                        ; instructions, skip them.
-           (handle-nop vm instruction))
-          (t (error "Shovel internal WTF: unknown instruction '~a'." opcode)))))
+      (alexandria:when-let ((start-pos (instruction-start-pos instruction))
+                            (end-pos (instruction-end-pos instruction)))
+        (setf (vm-last-start-pos vm) start-pos
+              (vm-last-end-pos vm) end-pos))
+      (let ((opcode-num (instruction-opcode-num instruction)))
+        (declare (type fixnum opcode-num)
+                 (type (simple-array (function (vm instruction) t)) *instruction-handlers*))
+        (when (or (< opcode-num 0)
+                  (> opcode-num 20))
+          (error "Shovel Internal WTF: broken instruction."))
+        (funcall (aref *instruction-handlers* opcode-num) vm instruction)))
     (locally (declare (optimize (speed 1)))
       (increment-vm-ticks vm)))
   (vm-is-live vm))
@@ -762,24 +784,6 @@
            (return-address retaddr))
   (setf (vm-program-counter vm) (return-address-program-counter retaddr)
         (vm-current-environment vm) (return-address-environment retaddr)))
-
-(defun handle-args (vm instruction)
-  (declare (optimize speed (safety 0))
-           (type vm vm)
-           (type instruction instruction))
-  (let ((args (instruction-arguments instruction)))
-    (declare (type fixnum args))
-    (when (< 0 args)
-      (let* ((stack (vm-stack vm))
-             (return-address (if (return-address-p (car stack)) (pop stack)))
-             (environment (vm-current-environment vm)))
-        (loop
-           for i from (1- args) downto 0
-           do (set-in-top-frame environment i (pop stack)))
-        (if return-address
-            (setf (vm-stack vm) (cons return-address stack))
-            (setf (vm-stack vm) stack)))))
-  (incf (the fixnum (vm-program-counter vm))))
 
 (defun handle-call-impl (vm num-args save-return-address)
   (declare (optimize speed (safety 0))

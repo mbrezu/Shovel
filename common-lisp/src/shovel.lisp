@@ -213,7 +213,8 @@ an array of bytes."
                           (shovel-types:instruction-arguments instruction))
                          (shovel-types:instruction-start-pos instruction)
                          (shovel-types:instruction-end-pos instruction)
-                         (shovel-types:instruction-comments instruction)))
+                         (shovel-types:instruction-comments instruction)
+                         (shovel-types:instruction-opcode-num instruction)))
                  (coerce bytecode 'list))))
     (shovel-utils:messagepack-encode-with-md5-checksum transformed-bytecode)))
 
@@ -232,7 +233,8 @@ an array of bytes."
                    :arguments (decode-arguments (second bytecode))
                    :start-pos (third bytecode)
                    :end-pos (fourth bytecode)
-                   :comments (fifth bytecode))))
+                   :comments (fifth bytecode)
+                   :opcode-num (sixth bytecode))))
       result)))
 
 (defun serialize-vm-state (vm)

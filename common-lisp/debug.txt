@@ -107,13 +107,14 @@ the same effect):
 
 Profiler invocation:
 
-    (sb-sprof:with-profiling (:max-samples 1000
+    (sb-sprof:with-profiling (:max-samples 10000
                                                     :report :flat
-                                                    :loop nil)
+                                                    :loop nil
+                                                    :sample-interval 0.001)
                (let ((sources (list (shovel:stdlib)
                                     "
     var result = 0
-    stdlib.repeat(10000, fn () {
+    stdlib.repeat(150000, fn () {
       var a = array(1, 2, 3, 4, 5)
       result = stdlib.reduceFromLeft(a, 0, fn (acc, item) acc + item)
     })

@@ -6,7 +6,8 @@
 (defstruct instruction
   opcode (arguments nil)
   (start-pos nil) (end-pos nil) (comments nil)
-  (cache nil))
+  (cache nil)
+  (opcode-num 255 :type (unsigned-byte 8)))
 
 (declaim (inline make-pos clone-pos copy-pos-slots))
 (defstruct (pos (:copier clone-pos))

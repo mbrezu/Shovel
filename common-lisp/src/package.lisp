@@ -13,6 +13,7 @@
    :instruction-end-pos
    :instruction-comments
    :instruction-cache
+   :instruction-opcode-num
 
    :pos
    :make-pos
