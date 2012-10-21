@@ -517,13 +517,27 @@
   (declare (optimize speed (safety 0))
            (type vm vm)
            (type instruction instruction))
-  (let ((args (instruction-arguments instruction)))
-    (push (get-from-environment (vm-current-environment vm)
-                                (first args) (second args))
-          (vm-stack vm))
-    (inc-pc vm)
-    ;; for the pushed value
-    (increment-cells-quota vm 1)))
+  (unless (instruction-cache instruction)
+    (let* ((args (instruction-arguments instruction))
+           (frame-number (first args))
+           (var-index (second args)))
+      (declare (type fixnum frame-number var-index))
+      (labels ((lget-generic (env)
+                 (get-from-environment env frame-number var-index))
+               (lget-0 (env)
+                 (get-from-top-frame env var-index)))
+        (setf (instruction-cache instruction)
+              (if (= 0 frame-number)
+                  #'lget-0
+                  #'lget-generic)))))
+  (let ((lget (instruction-cache instruction))
+        (environment (vm-current-environment vm)))
+    (declare (type (function (vm) t) lget))
+    (push (funcall lget environment)
+          (vm-stack vm)))
+  (inc-pc vm)
+  ;; for the pushed value
+  (increment-cells-quota vm 1))
 
 (defun handle-fn (vm instruction)
   (declare (optimize speed (safety 0))
@@ -838,7 +852,7 @@
 (defun finish-calling-required-binary-primitive (primitive arg1 arg2
                                                  save-return-address new-stack
                                                  vm)
-  (declare (optimize speed)
+  (declare (optimize speed (safety 0))
            (type (function (t t) t) primitive))
   (let ((result (funcall primitive arg1 arg2)))
     (finish-primitive-call vm result
@@ -979,13 +993,26 @@ A 'valid value' (with Common Lisp as the host language) is:
     (setf (second (aref frame var-index))
           value)))
 
+(declaim (inline get-from-top-frame))
+(defun get-from-top-frame (environment var-index)
+  (declare (optimize speed (safety 0))
+           (type fixnum var-index)
+           (type list environment))
+  (let ((frame (first environment)))
+    (declare (type env-frame frame))
+    (let ((frame-vars (env-frame-vars frame)))
+      (declare (type (simple-array t *) frame-vars))
+      (second (aref frame-vars var-index)))))
+
 (defun get-from-environment (environment frame-number var-index)
   (declare (optimize speed (safety 0))
            (type fixnum frame-number var-index)
            (type list environment))
-  (let ((frame (env-frame-vars (nth frame-number environment))))
-    (declare (type (simple-array t *) frame))
-    (second (aref frame var-index))))
+  (let ((frame (nth frame-number environment)))
+    (declare (type env-frame frame))
+    (let ((frame-vars (env-frame-vars frame)))
+      (declare (type (simple-array t *) frame-vars))
+      (second (aref frame-vars var-index)))))
 
 (defstruct serializer-state (hash (make-hash-table)) (array nil))
 
