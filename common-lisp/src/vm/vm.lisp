@@ -50,7 +50,7 @@
   (environment nil)
   (cached-prim nil))
 
-(defstruct env-frame introduced-at-program-counter vars)
+(defstruct env-frame introduced-at-program-counter var-names vars)
 
 (defmacro def-prim0 (op lisp-op &optional (arity 2))
   `(list ,(format nil "~a" op) #',lisp-op ,arity))
@@ -163,11 +163,11 @@
       (format stream "Frame variables are:~%")
       (loop
          for i from 0 to (1- (length (env-frame-vars frame)))
-         do (let ((var (elt (env-frame-vars frame) i)))
+         do (let ((val (elt (env-frame-vars frame) i))
+                  (var (elt (env-frame-var-names frame) i)))
               (format stream "~a = ~a~%"
-                      (first var)
-                      (shovel-vm-prim0:shovel-string-representation
-                       (second var)))))
+                      var
+                      (shovel-vm-prim0:shovel-string-representation val))))
       (terpri stream))
     (write-environment (cdr env) vm stream)))
 
@@ -283,7 +283,7 @@
   (when state
     (deserialize-vm-state vm state))
   (dolist (user-primitive user-primitives)
-    (setf (gethash (first user-primitive) (vm-user-primitives vm))
+    (setf (gethash (car user-primitive) (vm-user-primitives vm))
           (rest user-primitive)))
   (setf (vm-executed-ticks-since-last-nap vm) 0)
   (handler-bind ((error (lambda (condition)
@@ -303,7 +303,7 @@
       (locally
           (declare (optimize speed))
         (loop while (step-vm vm)))
-      (values (first (vm-stack vm)) vm))))
+      (values (car (vm-stack vm)) vm))))
 
 (defun get-vm-stack (vm)
   (with-output-to-string (str)
@@ -332,7 +332,7 @@
 (defun check-bool (vm)
   (declare (optimize speed (safety 0))
            (type vm vm))
-  (unless (shovel-vm-prim0:is-bool (first (vm-stack vm)))
+  (unless (shovel-vm-prim0:is-bool (car (vm-stack vm)))
     (raise-shovel-error vm "Argument must be a boolean.")))
 
 (defun check-vm-without-error (vm)
@@ -502,8 +502,8 @@
            (type instruction instruction))
   (let ((args (instruction-arguments instruction)))
     (set-in-environment (vm-current-environment vm)
-                        (first args) (second args)
-                        (first (vm-stack vm)))
+                        (car args) (second args)
+                        (car (vm-stack vm)))
     (inc-pc vm)))
 
 (defun handle-pop (vm instruction)
@@ -519,7 +519,7 @@
            (type instruction instruction))
   (unless (instruction-cache instruction)
     (let* ((args (instruction-arguments instruction))
-           (frame-number (first args))
+           (frame-number (car args))
            (var-index (second args)))
       (declare (type fixnum frame-number var-index))
       (labels ((lget-generic (env)
@@ -544,31 +544,32 @@
            (type vm vm)
            (type instruction instruction))
   (let ((args (instruction-arguments instruction)))
-    (push (make-callable :program-counter (first args)
+    (push (make-callable :program-counter (car args)
                          :environment (vm-current-environment vm)
                          :num-args (second args))
           (vm-stack vm))
-    (increment-cells-quota vm 5) ;; for the pushed callable (5 fields)
+    ;; for the pushed callable (5 fields)
+    (increment-cells-quota vm 5) 
     (inc-pc vm)))
 
 (defun handle-new-frame (vm instruction)
   (declare (optimize speed (safety 0))
            (type vm vm)
            (type instruction instruction))
-  (let ((args (instruction-arguments instruction)))
-    (let* ((length-args (length (the list args)))
-           (new-frame (make-env-frame
-                       :introduced-at-program-counter (vm-program-counter vm)
-                       :vars (make-array length-args))))
-      (loop
-         for i = 0 then (1+ i)
-         for var in args
-         do (setf (aref (the (simple-array cons *) (env-frame-vars new-frame)) i)
-                  (list var :null)))
-      (push new-frame (vm-current-environment vm))
-      ;; for the frame, the saved program counter and the
-      ;; contents:
-      (increment-cells-quota vm (+ 2 length-args)))
+  (unless (instruction-cache instruction)
+    (let* ((args (instruction-arguments instruction)))
+      (declare (type list args))
+      (setf (instruction-cache instruction)
+            (cons (length args) args))))
+  (let* ((cache (instruction-cache instruction))
+         (var-names (cdr cache))
+         (frame-count (the fixnum (car cache))))
+    (push (make-env-frame :introduced-at-program-counter (vm-program-counter vm)
+                          :var-names var-names
+                          :vars (make-array frame-count :initial-element :null))
+          (vm-current-environment vm))
+    ;; for the frame, the saved program counter and the contents:
+    (increment-cells-quota vm frame-count)
     (inc-pc vm)))
 
 (defun handle-drop-frame (vm instruction)
@@ -583,7 +584,7 @@
            (type vm vm)
            (ignore instruction))
   (let ((other-stack (cddr (vm-stack vm)))
-        (result (first (vm-stack vm)))
+        (result (car (vm-stack vm)))
         (retaddr (second (vm-stack vm))))
     (apply-return-address vm retaddr)
     (setf (vm-stack vm)
@@ -608,7 +609,7 @@
   (declare (optimize speed (safety 0))
            (type vm vm)
            (ignore instruction))
-  (let ((return-value (first (vm-stack vm)))
+  (let ((return-value (car (vm-stack vm)))
         (named-block (second (vm-stack vm)))
         (rest-of-the-stack (cddr (vm-stack vm))))
     (unless (named-block-p named-block)
@@ -620,7 +621,7 @@
   (declare (optimize speed (safety 0))
            (type vm vm)
            (ignore instruction))
-  (let ((return-value (first (vm-stack vm)))
+  (let ((return-value (car (vm-stack vm)))
         (name (second (vm-stack vm))))
     (unless (stringp name)
       (raise-shovel-error vm "The name of a block must be a string."))
@@ -738,9 +739,9 @@
 (defun find-named-block (vm stack block-name)
   (cond ((null stack)
          (raise-shovel-error vm (format nil "Cannot find block '~a'." block-name)))
-        ((and (named-block-p (first stack))
-              (string= block-name (named-block-name (first stack))))
-         (values (first stack) (rest stack)))
+        ((and (named-block-p (car stack))
+              (string= block-name (named-block-name (car stack))))
+         (values (car stack) (rest stack)))
         (t (find-named-block vm (rest stack) block-name))))
 
 (defun find-user-primitive (vm primitive-name)
@@ -771,7 +772,7 @@
     (declare (type fixnum args))
     (when (< 0 args)
       (let* ((stack (vm-stack vm))
-             (return-address (if (return-address-p (first stack)) (pop stack)))
+             (return-address (if (return-address-p (car stack)) (pop stack)))
              (environment (vm-current-environment vm)))
         (loop
            for i from (1- args) downto 0
@@ -840,7 +841,7 @@
   (declare (optimize speed (safety 0))
            (type fixnum n))
   (if (= n 0) (values acc list)
-      (reversed-prefix (rest list) (1- n) (cons (first list) acc))))
+      (reversed-prefix (rest list) (1- n) (cons (car list) acc))))
 
 (defun finish-calling-required-primitive (primitive arg-values
                                           save-return-address new-stack
@@ -955,7 +956,7 @@ A 'valid value' (with Common Lisp as the host language) is:
              (let* ((primitive-record (callable-cached-prim callable))
                     (primitive (second primitive-record))
                     (stack (vm-stack vm))
-                    (arg2 (first stack))
+                    (arg2 (car stack))
                     (arg1 (second stack))
                     (new-stack (cddr stack))
                     (is-required-primitive (callable-prim0 callable)))
@@ -970,39 +971,41 @@ A 'valid value' (with Common Lisp as the host language) is:
     (let* ((cache (callable-cached-prim callable))
            (arity (third cache)))
       (declare (type (or null fixnum) arity))
-      (unless (first cache)
-        (setf (first cache)
+      (unless (car cache)
+        (setf (car cache)
               (cond ((and arity (= 2 arity)) #'handle-binary-arity)
                     (t #'handle-generic-arity))))
       (funcall (the (function (vm callable fixnum) t)
-                 (first cache))
+                 (car cache))
                vm callable num-args))))
 
 (defun set-in-top-frame (environment var-index value)
-  (declare (optimize speed))
-  (let ((vars (env-frame-vars (first environment))))
-    (declare (type (simple-array t *) vars))
-    (setf (second (aref vars var-index))
-          value)))
+  (declare (optimize speed (safety 0)))
+  (let ((frame (car environment)))
+    (declare (type env-frame frame))
+    (let ((vars (env-frame-vars frame)))
+      (declare (type (simple-array t *) vars))
+      (setf (aref vars var-index) value))))
 
 (defun set-in-environment (environment frame-number var-index value)
-  (declare (optimize speed)
+  (declare (optimize speed (safety 0))
            (type fixnum frame-number var-index))
-  (let ((frame (env-frame-vars (nth frame-number environment))))
-    (declare (type (simple-array t *) frame))
-    (setf (second (aref frame var-index))
-          value)))
+  (let ((frame (nth frame-number environment)))
+    (declare (type env-frame frame))
+    (let ((frame-vars (env-frame-vars frame)))
+      (declare (type (simple-array t *) frame-vars))
+      (setf (aref frame-vars var-index) value))))
 
 (declaim (inline get-from-top-frame))
 (defun get-from-top-frame (environment var-index)
   (declare (optimize speed (safety 0))
            (type fixnum var-index)
            (type list environment))
-  (let ((frame (first environment)))
+  (let ((frame (car environment)))
     (declare (type env-frame frame))
     (let ((frame-vars (env-frame-vars frame)))
       (declare (type (simple-array t *) frame-vars))
-      (second (aref frame-vars var-index)))))
+      (aref frame-vars var-index))))
 
 (defun get-from-environment (environment frame-number var-index)
   (declare (optimize speed (safety 0))
@@ -1012,7 +1015,7 @@ A 'valid value' (with Common Lisp as the host language) is:
     (declare (type env-frame frame))
     (let ((frame-vars (env-frame-vars frame)))
       (declare (type (simple-array t *) frame-vars))
-      (second (aref frame-vars var-index)))))
+      (aref frame-vars var-index))))
 
 (defstruct serializer-state (hash (make-hash-table)) (array nil))
 

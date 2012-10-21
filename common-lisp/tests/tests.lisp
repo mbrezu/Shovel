@@ -1008,7 +1008,7 @@ result
     (multiple-value-bind (result vm)
         (shovel:run-vm bytecode :sources sources)
       (declare (ignore result))
-      (is (= 111 (shovel-vm::vm-used-cells vm)))))
+      (is (= 109 (shovel-vm::vm-used-cells vm)))))
   (let* ((sources (list (shovel:stdlib)
                         "
 stdlib.repeat(1000, fn() {
@@ -1021,11 +1021,11 @@ stdlib.repeat(1000, fn() {
                        :sources sources
                        :cells-quota 900)
       (declare (ignore result))
-      (is (= 838 (shovel-vm::vm-used-cells vm))))
+      (is (= 373 (shovel-vm::vm-used-cells vm))))
     (signals shovel:shovel-cell-quota-exceeded
       (shovel:run-vm bytecode
                      :sources sources
-                     :cells-quota 700))))
+                     :cells-quota 300))))
 
 (test vm-user-defined-primitive-cells-quota
   (labels ((udp (cells)
@@ -1082,7 +1082,7 @@ stdlib.repeat(1000, fn() {
                                                     0)))
       (declare (ignore result))
       (is (= 31171 (shovel:vm-used-ticks vm)))
-      (is (= 610 (shovel:vm-used-cells vm))))))
+      (is (= 328 (shovel:vm-used-cells vm))))))
 
 (defun run-tests ()
   (let ((*print-circle* t))
