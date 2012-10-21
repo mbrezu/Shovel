@@ -4,14 +4,17 @@
 (defstruct env-frame (vars nil))
 
 (declaim (optimize speed))
-(defstruct generator-state label-counter source
-           (instructions nil)
-           (file-name nil))
+(defstruct generator-state
+  (label-counter 0 :type fixnum)
+  source
+  (instructions nil)
+  (file-name nil))
 (declaim (optimize (speed 1)))
 
 (defvar *generator-state*)
 
 (defun gen-label (&optional (symbol 'l))
+  (declare (optimize speed (safety 0)))
   (alexandria:format-symbol
    nil "~a~a" symbol
    (incf (generator-state-label-counter *generator-state*))))
@@ -46,13 +49,17 @@
         (t (error "Shovel internal WTF."))))))
 
 (defun compile-var (ast env val? more?)
+  (declare (optimize speed (safety 0)))
   (validate-var ast)
-  (let ((var-name (name-identifier (var-name ast))))
-    (extend-frame env var-name (var-name ast))
-    (compile-ast (var-initializer ast) env t t)
-    (compile-set-var var-name env val? more? ast)))
+  (locally (declare (type parse-tree ast))
+    (let ((var-name (name-identifier (var-name ast))))
+      (extend-frame env var-name (var-name ast))
+      (compile-ast (var-initializer ast) env t t)
+      (compile-set-var var-name env val? more? ast))))
 
 (defun compile-name (ast env val? more?)
+  (declare (optimize speed)
+           (type parse-tree ast))
   (validate-name ast)
   (let ((var-name (name-identifier ast)))
     (gen :lget :arguments (find-name var-name env
@@ -136,6 +143,8 @@ SVM_SET_INDEXED required primitive."
 (defun gref-call-index (ast) (third (parse-tree-children ast)))
 
 (defun compile-set-var (name env val? more? ast-for-pos)
+  (declare (optimize speed (safety 0))
+           (type parse-tree ast-for-pos))
   (gen :lset
        :arguments (find-name name env
                              (parse-tree-start-pos ast-for-pos)
@@ -164,7 +173,8 @@ SVM_SET_INDEXED required primitive."
         (compile-ast (if-else ast) env val? nil))))
 
 (defun compile-funcall (ast env val? more?)
-  (declare (optimize speed))
+  (declare (optimize speed (safety 0))
+           (type parse-tree ast))
   (let* ((children (parse-tree-children ast)))
     (dolist (arg (rest children))
       (compile-ast arg env t t))
@@ -281,9 +291,17 @@ SVM_SET_INDEXED required primitive."
 
 (defun fn-body (fn-ast) (second (parse-tree-children fn-ast)))
 
-(defun var-name (var-ast) (first (parse-tree-children var-ast)))
+(declaim (inline var-name))
+(defun var-name (var-ast)
+  (declare (optimize speed (safety 0))
+           (type parse-tree var-ast))
+  (car (parse-tree-children var-ast)))
 
-(defun var-initializer (var-ast) (second (parse-tree-children var-ast)))
+(declaim (inline var-name))
+(defun var-initializer (var-ast)
+  (declare (optimize speed (safety 0))
+           (type parse-tree var-ast))
+  (cadr (parse-tree-children var-ast)))
 
 (defun var-p (var-ast)
   (and (eq :var (parse-tree-label var-ast))
@@ -298,7 +316,11 @@ SVM_SET_INDEXED required primitive."
   (and (eq :name (parse-tree-label name))
        (stringp (parse-tree-children name))))
 
-(defun name-identifier (name) (parse-tree-children name))
+(declaim (inline name-identifier))
+(defun name-identifier (name)
+  (declare (optimize speed (safety 0))
+           (type parse-tree name))
+  (parse-tree-children name))
 
 (defun raise-error (character-start-pos character-end-pos message)
   (let (start-pos end-pos error-file-name line column)
@@ -350,6 +372,8 @@ SVM_SET_INDEXED required primitive."
                 (env-frame-vars top-frame)))))
 
 (defun find-name (name env start-pos end-pos &optional (frame-number 0))
+  (declare (optimize speed (safety 0))
+           (type fixnum frame-number))
   (when (null env)
     (raise-error start-pos end-pos (format nil "Undefined variable '~a'." name)))
   (let ((pair (assoc name (env-frame-vars (first env)) :test #'equal)))
@@ -391,7 +415,8 @@ SVM_SET_INDEXED required primitive."
                      (comments nil)
                      (start-pos nil)
                      (end-pos nil))
-  (declare (optimize speed))
+  (declare (optimize speed (safety 0))
+           (type (or null parse-tree) pos))
   (push (make-instruction :opcode opcode
                           :arguments arguments
                           :start-pos (or start-pos

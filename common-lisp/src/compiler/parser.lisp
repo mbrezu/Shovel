@@ -40,15 +40,17 @@
                  expr)))))
 
 (defun tokenp (expected-type &optional expected-content)
-  (declare (optimize speed))
+  (declare (optimize speed (safety 0)))
   (let ((token (current-token)))
     (when token
-      (let ((type (token-type token))
-            (content (token-content token)))
-        (declare (type (simple-array character (*)) content))
-        (and (eq type expected-type)
-             (or (null expected-content)
-                 (string= content expected-content)))))))
+      (locally 
+          (declare (type token token))
+        (let ((type (token-type token))
+              (content (token-content token)))
+          (declare (type (simple-array character (*)) content))
+          (and (eq type expected-type)
+               (or (null expected-content)
+                   (string= content expected-content))))))))
 
 (defun get-current-start-pos () (token-start-pos (current-token)))
 
@@ -191,20 +193,20 @@ token positions."
            (type (function () parse-tree) sub-parser)
            (type (or null (function (parse-tree) parse-tree)) post-processor))
   (labels ((iter (start)
-             (let ((token (current-token)))
-               (if (and token (funcall operator-pred token))
-                   (iter
-                    (let ((result
-                           (with-new-anchored-parse-tree
-                               (parse-tree-start-pos start)
-                               :call
-                             (list (make-prim0-parse-tree (token-content token))
-                                   start
-                                   (funcall sub-parser)))))
-                      (if post-processor
-                          (funcall post-processor result)
-                          result)))
-                   start))))
+                 (let ((token (current-token)))
+                   (if (and token (funcall operator-pred token))
+                       (iter
+                         (let ((result
+                                (with-new-anchored-parse-tree
+                                    (parse-tree-start-pos start)
+                                    :call
+                                  (list (make-prim0-parse-tree (token-content token))
+                                        start
+                                        (funcall sub-parser)))))
+                           (if post-processor
+                               (funcall post-processor result)
+                               result)))
+                       start))))
     (iter (funcall sub-parser))))
 
 (defun is-required-primitive-call (parse-tree required-primitive)
@@ -407,7 +409,7 @@ parser. Macroish implementation of short-circuiting logical 'or'."
         (list (parse-name nil)))))
 
 (defun parse-list (item-parser open-paren separator close-paren)
-  (declare (optimize speed)
+  (declare (optimize speed (safety 0))
            (type (function () t) item-parser))
   (let (result)
     (apply #'consume-token open-paren)
