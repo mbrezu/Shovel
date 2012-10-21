@@ -329,6 +329,7 @@
   (= (vm-program-counter vm)
      (length (the simple-array (vm-bytecode vm)))))
 
+(declaim (inline check-bool))
 (defun check-bool (vm)
   (declare (optimize speed (safety 0))
            (type vm vm))
