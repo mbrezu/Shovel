@@ -361,6 +361,7 @@
 (defun vm-count-used-cells (vm)
   (setf (vm-used-cells vm) (count-active-objects-cells vm)))
 
+(declaim (inline increment-cells-quota))
 (defun increment-cells-quota (vm cells)
   (declare (optimize speed (safety 0)))
   (incf (the fixnum (vm-used-cells vm)) (the fixnum cells)))
@@ -808,6 +809,7 @@
    vm (format nil "Function of ~d arguments called with ~d arguments."
               expected-arity actual-arity)))
 
+(declaim (inline call-function))
 (defun call-function (callable vm num-args save-return-address)
   (declare (optimize speed (safety 0))
            (type vm vm)
@@ -915,6 +917,72 @@ A 'valid value' (with Common Lisp as the host language) is:
       (apply-return-address vm (pop (vm-stack vm))))
   (push result (vm-stack vm)))
 
+(defmacro handle-generic-arity (is-required-primitive)
+  `(multiple-value-bind (arg-values new-stack)
+       (reversed-prefix (vm-stack vm) num-args)
+     (let* ((primitive-record (callable-cached-prim callable))
+            (primitive (second primitive-record))
+            (primitive-arity (third primitive-record)))
+       (declare (type (or fixnum null) num-args primitive-arity))
+       (when (and primitive-arity (/= primitive-arity num-args))
+         (arity-error vm primitive-arity num-args))
+       ,(if is-required-primitive
+            '(finish-calling-required-primitive
+              primitive arg-values save-return-address
+              new-stack vm)
+            '(finish-calling-user-defined-primitive
+              primitive arg-values
+              (vm-program-counter vm) callable
+              save-return-address new-stack vm)))))
+
+(defun handle-prim0-generic-arity (vm callable num-args save-return-address)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type callable callable)
+           (type fixnum num-args))
+  (handle-generic-arity t))
+
+(defun handle-prim-generic-arity (vm callable num-args save-return-address)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type callable callable)
+           (type fixnum num-args))
+  (handle-generic-arity nil))
+
+(defmacro handle-binary-arity (is-required-primitive)
+  `(progn
+     (when (/= 2 num-args)
+       (arity-error vm 2 num-args))
+     (let* ((primitive-record (callable-cached-prim callable))
+            (primitive (second primitive-record))
+            (stack (vm-stack vm))
+            (arg2 (car stack))
+            (arg1 (second stack))
+            (new-stack (cddr stack)))
+       ,(if is-required-primitive
+            '(finish-calling-required-binary-primitive
+              primitive arg1 arg2 save-return-address
+              new-stack vm)
+            '(finish-calling-user-defined-primitive
+              primitive (list arg1 arg2)
+              (vm-program-counter vm) callable
+              save-return-address new-stack vm)))))
+
+(defun handle-prim0-binary-arity (vm callable num-args save-return-address)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type callable callable)
+           (type fixnum num-args))
+  (handle-binary-arity t))
+
+(defun handle-prim-binary-arity (vm callable num-args save-return-address)
+  (declare (optimize speed (safety 0))
+           (type vm vm)
+           (type callable callable)
+           (type fixnum num-args))
+    (handle-binary-arity nil))
+
+(declaim (inline call-primitive))
 (defun call-primitive (callable vm num-args save-return-address)
   (declare (optimize speed (safety 0))
            (type vm vm)
@@ -927,62 +995,24 @@ A 'valid value' (with Common Lisp as the host language) is:
                       (find-required-primitive vm prim0))
                     (alexandria:if-let (prim (callable-prim callable))
                       (find-user-primitive vm prim))))))
-  (labels ((handle-generic-arity (vm callable num-args)
-             (declare (optimize speed)
-                      (type vm vm)
-                      (type callable callable)
-                      (type fixnum num-args))
-             (multiple-value-bind (arg-values new-stack)
-                 (reversed-prefix (vm-stack vm) num-args)
-               (let* ((primitive-record (callable-cached-prim callable))
-                      (primitive (second primitive-record))
-                      (is-required-primitive (callable-prim0 callable))
-                      (primitive-arity (third primitive-record))
-                      (current-program-counter (vm-program-counter vm)))
-                 (declare (type (or fixnum null) num-args primitive-arity))
-                 (when (and primitive-arity (/= primitive-arity num-args))
-                   (arity-error vm primitive-arity num-args))
-                 (if is-required-primitive
-                     (finish-calling-required-primitive
-                      primitive arg-values save-return-address
-                      new-stack vm)
-                     (finish-calling-user-defined-primitive
-                      primitive arg-values
-                      current-program-counter callable
-                      save-return-address new-stack vm)))))
-           (handle-binary-arity (vm callable num-args)
-             (declare (optimize speed)
-                      (type vm vm)
-                      (type callable callable)
-                      (type fixnum num-args))
-             (when (/= 2 num-args)
-               (arity-error vm 2 num-args))
-             (let* ((primitive-record (callable-cached-prim callable))
-                    (primitive (second primitive-record))
-                    (stack (vm-stack vm))
-                    (arg2 (car stack))
-                    (arg1 (second stack))
-                    (new-stack (cddr stack))
-                    (is-required-primitive (callable-prim0 callable)))
-               (if is-required-primitive
-                   (finish-calling-required-binary-primitive
-                    primitive arg1 arg2 save-return-address
-                    new-stack vm)
-                   (finish-calling-user-defined-primitive
-                    primitive (list arg1 arg2)
-                    (vm-program-counter vm) callable
-                    save-return-address new-stack vm)))))
-    (let* ((cache (callable-cached-prim callable))
-           (arity (third cache)))
-      (declare (type (or null fixnum) arity))
-      (unless (car cache)
-        (setf (car cache)
-              (cond ((and arity (= 2 arity)) #'handle-binary-arity)
-                    (t #'handle-generic-arity))))
-      (funcall (the (function (vm callable fixnum) t)
-                 (car cache))
-               vm callable num-args))))
+  (let* ((cache (callable-cached-prim callable))
+         (arity (third cache))
+         (is-required-primitive (callable-prim0 callable)))
+    (declare (type (or null fixnum) arity))
+    (unless (car cache)
+      (setf (car cache)
+            (if is-required-primitive
+                (if (and arity (= 2 arity))
+                    #'handle-prim0-binary-arity
+                    #'handle-prim0-generic-arity)
+                (if (and arity (= 2 arity))
+                    #'handle-prim-binary-arity
+                    #'handle-prim-generic-arity))))
+    (funcall (the (function (vm callable fixnum t) t)
+               (car cache))
+             vm callable num-args save-return-address)))
 
+(declaim (inline set-in-top-frame))
 (defun set-in-top-frame (environment var-index value)
   (declare (optimize speed (safety 0)))
   (let ((frame (car environment)))
@@ -991,6 +1021,7 @@ A 'valid value' (with Common Lisp as the host language) is:
       (declare (type (simple-array t *) vars))
       (setf (aref vars var-index) value))))
 
+(declaim (inline set-in-environment))
 (defun set-in-environment (environment frame-number var-index value)
   (declare (optimize speed (safety 0))
            (type fixnum frame-number var-index))
@@ -1011,6 +1042,7 @@ A 'valid value' (with Common Lisp as the host language) is:
       (declare (type (simple-array t *) frame-vars))
       (aref frame-vars var-index))))
 
+(declaim (inline get-from-environment))
 (defun get-from-environment (environment frame-number var-index)
   (declare (optimize speed (safety 0))
            (type fixnum frame-number var-index)
