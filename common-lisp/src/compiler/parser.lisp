@@ -43,7 +43,7 @@
   (declare (optimize speed (safety 0)))
   (let ((token (current-token)))
     (when token
-      (locally 
+      (locally
           (declare (type token token))
         (let ((type (token-type token))
               (content (token-content token)))
@@ -331,13 +331,12 @@ parser. Macroish implementation of short-circuiting logical 'or'."
   (when (and (parse-state-source *parse-state*)
              (parse-state-file-name *parse-state*))
     (alexandria:when-let*
-        ((source-file (shovel-utils:find-source
-                       (parse-state-source *parse-state*)
-                       (parse-state-file-name *parse-state*)))
+        ((source-file (find-source (parse-state-source *parse-state*)
+                                   (parse-state-file-name *parse-state*)))
          (content (shovel:source-file-contents source-file)))
-      (shovel-utils:find-position (parse-state-file-name *parse-state*)
-                                  content
-                                  char-position))))
+      (find-position (parse-state-file-name *parse-state*)
+                     content
+                     char-position))))
 
 (defun raise-error (message)
   (let* ((token (current-token))

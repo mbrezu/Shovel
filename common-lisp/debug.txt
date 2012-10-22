@@ -1,4 +1,4 @@
--*- markdown -*-
+<!-- -*- markdown -*- -->
 
     (proclaim '(optimize debug))
     (ql:quickload :shovel)
@@ -41,7 +41,7 @@ Some functions to test serialization:
         ;;                  'list)))
         ))
         
-Profiler incantations:
+Profiler incantations (for the compiler):
     
     (require 'sb-sprof)
 
@@ -105,7 +105,7 @@ the same effect):
       (print (shovel-vm::serializer-state-array ss))
       (values))
 
-Profiler invocation:
+Profiler invocation (for the VM):
 
     (sb-sprof:with-profiling (:max-samples 10000
                                                     :report :flat

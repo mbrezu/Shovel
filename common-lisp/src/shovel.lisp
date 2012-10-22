@@ -143,14 +143,14 @@ var stdlib = {
 
 (defun get-bytecode (sources)
   "Compiles and assembles SOURCES into bytecode that can be passed to RUN-VM."
-  (let* ((result (shovel-compiler:assemble-instructions
-                  (shovel-compiler:compile-sources-to-instructions sources))))
+  (let* ((result (assemble-instructions
+                  (compile-sources-to-instructions sources))))
     (dotimes (i (length result))
       (let ((instruction (aref result i)))
         (when (eq :vm-bytecode-md5
-                  (shovel-types:instruction-opcode instruction))
-          (setf (shovel-types:instruction-arguments instruction)
-                (shovel-compiler:compute-instructions-md5 result)))))
+                  (instruction-opcode instruction))
+          (setf (instruction-arguments instruction)
+                (compute-instructions-md5 result)))))
     result))
 
 (defun naked-run-code (sources &key user-primitives)
@@ -159,9 +159,9 @@ by USER-PRIMITIVES (see the documentation for RUN-VM for a description
 of the format for USER-PRIMITIVES). Returns the first value returned
 by RUN-VM."
   (nth-value 0
-             (shovel-vm:run-vm (get-bytecode sources)
-                               :sources sources
-                               :user-primitives user-primitives)))
+             (run-vm (get-bytecode sources)
+                     :sources sources
+                     :user-primitives user-primitives)))
 
 (defun run-code (sources &key user-primitives debug)
   "Runs NAKED-RUN-CODE and prints the result (or the exception thrown)."
@@ -172,9 +172,8 @@ by RUN-VM."
   "Compiles SOURCES and prints the resulting bytecode to *STANDARD-OUTPUT*."
   (let ((*print-circle* t))
     (handle-errors
-      (shovel-compiler:show-instructions
-       sources
-       (shovel-compiler:compile-sources-to-instructions sources)))))
+      (show-instructions sources
+                         (compile-sources-to-instructions sources)))))
 
 (defmacro get-serialization-code (symbol)
   (case symbol
@@ -208,27 +207,27 @@ by RUN-VM."
 an array of bytes."
   (let ((transformed-bytecode
          (mapcar (lambda (instruction)
-                   (list (shovel-types:instruction-opcode instruction)
+                   (list (instruction-opcode instruction)
                          (encode-arguments
-                          (shovel-types:instruction-arguments instruction))
-                         (shovel-types:instruction-start-pos instruction)
-                         (shovel-types:instruction-end-pos instruction)
-                         (shovel-types:instruction-comments instruction)
-                         (shovel-types:instruction-opcode-num instruction)))
+                          (instruction-arguments instruction))
+                         (instruction-start-pos instruction)
+                         (instruction-end-pos instruction)
+                         (instruction-comments instruction)
+                         (instruction-opcode-num instruction)))
                  (coerce bytecode 'list))))
-    (shovel-utils:messagepack-encode-with-md5-checksum transformed-bytecode)))
+    (messagepack-encode-with-md5-checksum transformed-bytecode)))
 
 (defun deserialize-bytecode (bytes)
   "Deserializes an array of bytes into a vector of instructions."
   (let ((messagepack:*decoder-prefers-lists* t))
     (let* ((bytecode-list
-            (shovel-utils:check-md5-checksum-and-messagepack-decode bytes))
+            (check-md5-checksum-and-messagepack-decode bytes))
            (result (make-array (length bytecode-list))))
       (loop
          for bytecode in bytecode-list
          for i from 0
          do (setf (aref result i)
-                  (shovel-types:make-instruction
+                  (make-instruction
                    :opcode (find-symbol (string-upcase (first bytecode)) :keyword)
                    :arguments (decode-arguments (second bytecode))
                    :start-pos (third bytecode)
@@ -237,75 +236,7 @@ an array of bytes."
                    :opcode-num (sixth bytecode))))
       result)))
 
-(defun serialize-vm-state (vm)
-  "Serializes the state of this VM to an array of bytes."
-  (shovel-vm:serialize-vm-state vm))
 
-(defun run-vm (bytecode &key
-                          sources user-primitives state vm
-                          cells-quota total-ticks-quota until-next-nap-ticks-quota)
-  "Runs a Shovel VM made from BYTECODE or supplied as VM. Optionally,
-the sources for the VM are supplied as SOURCES. User-defined
-primitives are provided via USER-PRIMITIVES (a list containing a list
-of name, CL callable, number of arguments for each primitive). If you
-are resuming a serialized VM, provide the serialized state as STATE.
-
-If you want to limit the CPU and memory usage of the Shovel process,
-you can use the *-QUOTA parameters:
-
- * CELLS-QUOTA limits the total number of cons cells the process can
-   use; this is not a hard limit, but the VM will be stopped with a
-   SHOVEL-QUOTA-EXCEPTION if its memory usage is near this limit;
-
- * TOTAL-TICKS-QUOTA limits the total number of Shovel VM instructions
-   this process can run;
-
- * UNTIL-NEXT-NAP-TICKS-QUOTA limits the number of ticks (executed
-   Shovel VM instructions) until RUN-VM returns and sets the VM state
-   to 'napping'. Use WAKE-UP-VM to revive a VM and rerun RUN-VM if you
-   want to resume the VM.
-
-Example of passing PRINT and PRIN1 as user-defined primitives:
-
-    (run-vm bytecode
-            :sources sources
-            :user-primitives '((\"print\" #'print 1)
-                               (\"prin1\" #'prin1 1)))
-
-Finishes when the VM finishes or goes to sleep.
-
-Returns two values: the top of the VM stack and the VM itself."
-  (shovel-vm:run-vm bytecode
-                    :sources sources
-                    :user-primitives user-primitives
-                    :state state
-                    :vm vm
-                    :cells-quota cells-quota
-                    :total-ticks-quota total-ticks-quota
-                    :until-next-nap-ticks-quota until-next-nap-ticks-quota))
-
-(defun get-vm-stack (vm)
-  "Returns a string representation of the current stack for VM."
-  (shovel-vm:get-vm-stack vm))
-
-(defun get-vm-environment (vm)
-  "Returns a string representation of the current environment for VM."
-  (shovel-vm:get-vm-environment vm))
-
-(defun wake-up-vm (vm)
-  "If VM went to sleep and you want to resume it without rebuilding
-it, you have to call this function before calling RUN-VM."
-  (shovel-vm:wake-up-vm vm))
-
-(defun get-vm-user-defined-primitive-error (vm)
-  "Returns the unhandled condition thrown from a user-defined
-primitive, or NIL if none."
-  (shovel-vm:get-vm-user-defined-primitive-error vm))
-
-(defun get-vm-programming-error (vm)
-  "Returns the programming error thrown while running VM, or NIL if
-none."
-  (shovel-vm:get-vm-programming-error vm))
 
 (defun increment-ticks (ticks)
   "To be called from user-defined primitives. Increments the number of
@@ -315,8 +246,8 @@ This function can be used by user-defined primitives that want to
 model their CPU cost (i.e. any primitive call uses 1 tick, but a CPU
 intensive primitive can model the fact that it is expensive by calling
 INCREMENT-TICKS with a wisely chosen number of ticks)."
-  (when shovel-vm:*ticks-incrementer*
-    (funcall shovel-vm:*ticks-incrementer* ticks)))
+  (when *ticks-incrementer*
+    (funcall *ticks-incrementer* ticks)))
 
 (defun increment-cells (cells)
   "To be called from user-defined primitives. Increments the number of
@@ -325,32 +256,26 @@ allocated cells for the executing VM by CELLS.
 This function can be used by user-defined primitives that want to
 model their memory usage (i.e. tell the VM that they allocated memory
 which they made available to the VM via their return value)."
-  (when shovel-vm:*cells-incrementer*
-    (funcall shovel-vm:*cells-incrementer* cells)))
-
-(defun vm-used-ticks (vm)
-  "The number of ticks used by VM so far."
-  (shovel-vm:vm-used-ticks vm))
+  (when *cells-incrementer*
+    (funcall *cells-incrementer* cells)))
 
 (defun vm-used-cells (vm)
   "The number of cells currently used by the VM."
-  (shovel-vm:vm-really-used-cells vm))
+  (vm-really-used-cells vm))
 
 (defun vm-version (vm)
   "This function returns the version encoded in this particular VM's
 bytecode (meaning you need an interpreter with at least this version
 to resume this VM)."
-  (shovel-vm:get-vm-version vm))
+  (get-vm-version vm))
 
 (defun vm-bytecode-md5 (vm)
   "Returns the MD5 hash for the bytecode for this VM."
-  (shovel-vm:get-vm-bytecode-md5 vm))
+  (get-vm-bytecode-md5 vm))
 
 (defun vm-sources-md5 (vm)
   "Returns the MD5 hash for the sources used to compile the bytecode
   for this VM."
-  (shovel-vm:get-vm-sources-md5 vm))
+  (get-vm-sources-md5 vm))
 
-(defun vm-execution-complete (vm)
-  "T if the VM finished execution (not asleep, actually finished)."
-  (shovel-vm:vm-execution-complete vm))
+

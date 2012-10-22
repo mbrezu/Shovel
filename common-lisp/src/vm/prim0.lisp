@@ -4,7 +4,7 @@
 ;; Arithmetic operators:
 
 (defun vm-error (message)
-  (funcall shovel-vm:*error-raiser* message))
+  (funcall shovel-vm::*error-raiser* message))
 
 (defmacro both-numbers-or-strings-or-arrays (op-numbers op-strings op-arrays)
   `(cond ((and (numberp t1) (numberp t2))
@@ -122,7 +122,7 @@
 (defun hash-constructor (&rest args)
   (when (/= 0 (mod (length args) 2))
     (vm-error "Must provide an even number of arguments."))
-  (funcall shovel-vm:*cells-increment-herald* (+ 1 (* 2 (length args))))
+  (funcall shovel-vm::*cells-increment-herald* (+ 1 (* 2 (length args))))
   (let ((result (make-hash-table :test #'equal)))
     (loop
        while args
@@ -132,12 +132,12 @@
               (vm-error "Keys must be strings"))
             (setf (gethash key result) value)
             (setf args (cddr args))))
-    (funcall shovel-vm:*cells-incrementer* (+ 1 (* 2 (length args))))
+    (funcall shovel-vm::*cells-incrementer* (+ 1 (* 2 (length args))))
     result))
 
 ;; Array constructor:
 (defun array-constructor (&rest args)
-  (funcall shovel-vm:*cells-increment-herald* (+ 1 (length args)))
+  (funcall shovel-vm::*cells-increment-herald* (+ 1 (length args)))
   (let* ((vectorized-args (coerce args 'vector))
          (n (length vectorized-args))
          (result (make-array n
@@ -145,7 +145,7 @@
                              :adjustable t
                              :fill-pointer n)))
     (replace result vectorized-args)
-    (funcall shovel-vm:*cells-incrementer* (+ 1 (length args)))
+    (funcall shovel-vm::*cells-incrementer* (+ 1 (length args)))
     result))
 
 (defun check-vector (array)
@@ -154,7 +154,7 @@
 
 (defun array-push (array new-element)
   (check-vector array)
-  (funcall shovel-vm:*cells-incrementer* 1)
+  (funcall shovel-vm::*cells-incrementer* 1)
   (vector-push-extend new-element array))
 
 (defun array-pop (array)
@@ -169,8 +169,8 @@
 (defun array-constructor-n (n)
   (unless (integerp n)
     (vm-error "Argument must be an integer."))
-  (funcall shovel-vm:*cells-increment-herald* (+ 1 n))
-  (funcall shovel-vm:*cells-incrementer* (+ 1 n))
+  (funcall shovel-vm::*cells-increment-herald* (+ 1 n))
+  (funcall shovel-vm::*cells-incrementer* (+ 1 n))
   (make-array n :initial-element :null :adjustable t :fill-pointer n))
 
 (defun validate-index-access (array index)
@@ -226,7 +226,7 @@
              (let ((hash-grows (not (gethash index array-or-hash))))
                (when hash-grows
                  ;; 1 for the key, 1 for the value
-                 (funcall shovel-vm:*cells-incrementer* 2))
+                 (funcall shovel-vm::*cells-incrementer* 2))
                (setf (gethash index array-or-hash) value))
              (vm-error
               "Getting a hash table value requires a key that is a string.")))))
@@ -242,12 +242,12 @@
 
 (defun string-upper (string)
   (check-string string)
-  (funcall shovel-vm:*cells-incrementer* (length string))
+  (funcall shovel-vm::*cells-incrementer* (length string))
   (string-upcase string))
 
 (defun string-lower (string)
   (check-string string)
-  (funcall shovel-vm:*cells-incrementer* (length string))
+  (funcall shovel-vm::*cells-incrementer* (length string))
   (string-downcase string))
 
 ;; Keys of a hash as an array:
@@ -256,7 +256,7 @@
   (if (hash-table-p hash-table)
       (let (result)
         (maphash (lambda (k v) (declare (ignore v)) (push k result)) hash-table)
-        (funcall shovel-vm:*cells-incrementer* (1+ (length result)))
+        (funcall shovel-vm::*cells-incrementer* (1+ (length result)))
         (coerce (reverse result) 'vector))
       (vm-error "Argument must be a hash table.")))
 
@@ -302,7 +302,7 @@
                real-end length)))
     ;; add 1 for the new sequence, add 1 because the length of the new
     ;; sequence is REAL-END - REAL-START + 1
-    (funcall shovel-vm:*cells-incrementer* (+ 2 (- real-end real-start)))
+    (funcall shovel-vm::*cells-incrementer* (+ 2 (- real-end real-start)))
     (subseq array-or-string real-start real-end)))
 
 ;; Current date/time:
@@ -370,7 +370,7 @@
                       ((is-bool var) (string-downcase (symbol-name var)))
                       ((eq :null var) "null")
                       (t (unknown-type-error)))))
-    (funcall shovel-vm:*cells-incrementer* (+ 1 (length result)))
+    (funcall shovel-vm::*cells-incrementer* (+ 1 (length result)))
     result))
 
 (defun shovel-string-representation (var &optional (visited (make-hash-table :test #'eq) visited-p))
@@ -417,7 +417,7 @@
                       (shovel-string var))
                      (t (unknown-type-error)))))))
     (unless visited-p
-      (funcall shovel-vm:*cells-incrementer* (+ 1 (length result))))
+      (funcall shovel-vm::*cells-incrementer* (+ 1 (length result))))
     result))
 
 ;; Parsing numbers:

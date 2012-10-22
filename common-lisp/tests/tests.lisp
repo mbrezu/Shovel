@@ -272,13 +272,13 @@ NIL
                         program))
          (bytecode (shovel:get-bytecode sources)))
     (multiple-value-bind (first-run vm)
-        (shovel-vm:run-vm
+        (run-vm
          bytecode
          :sources sources
          :user-primitives user-primitives)
       (declare (ignore first-run))
-      (let* ((bytes (shovel-vm:serialize-vm-state vm))
-             (second-run (shovel-vm:run-vm
+      (let* ((bytes (serialize-vm-state vm))
+             (second-run (run-vm
                           bytecode
                           :sources sources
                           :user-primitives user-primitives
@@ -625,15 +625,15 @@ a = \"test\"
                (bytecode-1 (shovel:get-bytecode sources-1))
                (bytecode-2 (shovel:get-bytecode sources-2)))
           (multiple-value-bind (first-run vm)
-              (shovel-vm:run-vm
+              (run-vm
                bytecode-1
                :sources sources-1
                :user-primitives user-primitives)
             (declare (ignore first-run))
             (multiple-value-bind (value error)
                 (ignore-errors
-                  (let* ((bytes (shovel-vm:serialize-vm-state vm))
-                         (second-run (shovel-vm:run-vm
+                  (let* ((bytes (serialize-vm-state vm))
+                         (second-run (run-vm
                                       bytecode-2
                                       :sources sources-2
                                       :user-primitives user-primitives
@@ -661,7 +661,7 @@ a = \"test\"
 (test bytecode-serializer-version-failure
   (let* ((instructions (shovel:get-bytecode (list (shovel:stdlib))))
          (serialized-instructions
-          (let ((shovel-vm:*version* (1+ shovel-vm:*version*)))
+          (let ((*version* (1+ *version*)))
             (shovel:serialize-bytecode instructions))))
     (signals shovel:shovel-version-too-large
       (shovel:deserialize-bytecode serialized-instructions))))
@@ -678,12 +678,12 @@ a = \"test\"
         (let* ((sources (list (shovel:stdlib) my-program))
                (bytecode (shovel:get-bytecode sources)))
           (multiple-value-bind (first-run vm)
-              (shovel-vm:run-vm
+              (run-vm
                bytecode
                :sources sources
                :user-primitives user-primitives)
             (declare (ignore first-run))
-            (let ((bytes (shovel-vm:serialize-vm-state vm)))
+            (let ((bytes (serialize-vm-state vm)))
               (mess-with bytes)
               (signals shovel:shovel-broken-checksum
                 (shovel-vm::deserialize-vm-state vm bytes)))))))))
@@ -700,13 +700,13 @@ a = \"test\"
         (let* ((sources (list (shovel:stdlib) my-program))
                (bytecode (shovel:get-bytecode sources)))
           (multiple-value-bind (first-run vm)
-              (shovel-vm:run-vm
+              (run-vm
                bytecode
                :sources sources
                :user-primitives user-primitives)
             (declare (ignore first-run))
-            (let ((bytes (let ((shovel-vm:*version* (1+ shovel-vm:*version*)))
-                           (shovel-vm:serialize-vm-state vm))))
+            (let ((bytes (let ((*version* (1+ *version*)))
+                           (serialize-vm-state vm))))
               (signals shovel:shovel-version-too-large
                 (shovel-vm::deserialize-vm-state vm bytes)))))))))
 
@@ -1052,7 +1052,7 @@ stdlib.repeat(1000, fn() {
                            :cells-quota 100
                            :user-primitives (list (list "udp1" #'udp1 1)))
           (declare (ignore result))
-          (shovel-vm::vm-used-cells vm))))))
+          (shovel:vm-used-cells vm))))))
 
 (test vm-cells-quota-herald-cell-increment
   (signals shovel:shovel-cell-quota-exceeded
@@ -1063,7 +1063,7 @@ stdlib.repeat(1000, fn() {
                          :sources sources
                          :cells-quota 100)
         (declare (ignore result))
-        (shovel-vm::vm-used-cells vm)))))
+        (shovel:vm-used-cells vm)))))
 
 (test vm-statistics
   (let* ((sources (list (shovel:stdlib)
@@ -1083,6 +1083,45 @@ stdlib.repeat(1000, fn() {
       (declare (ignore result))
       (is (= 31171 (shovel:vm-used-ticks vm)))
       (is (= 328 (shovel:vm-used-cells vm))))))
+
+(test vm-serializer-with-env-frames
+  (let* ((sources (list "var name = @readLine() name + 1
+"))
+         (udps (list (list "readLine" (let ((attempt 0))
+                                        (lambda ()
+                                          (incf attempt)
+                                          (if (= 1 attempt)
+                                              (values :null :nap-and-retry-on-wake-up)
+                                              "John"))))))
+         (bytecode (shovel:get-bytecode sources)))
+    (multiple-value-bind (result vm)
+        (shovel:run-vm bytecode :sources sources :user-primitives udps)
+      (declare (ignore result))
+      (let ((state (shovel:serialize-vm-state vm)))
+        (multiple-value-bind (result error)
+            (ignore-errors (shovel:run-vm bytecode
+                                          :sources sources
+                                          :state state
+                                          :user-primitives udps))
+          (declare (ignore result))
+          (is (string= (with-output-to-string (str)
+                            (print-object error str))
+                       "Shovel error in file '<unspecified-1>' at line 1, column 24: Arguments must have the same type (numbers or strings or arrays).
+
+Current stack trace:
+file '<unspecified-1>' line 1: var name = @readLine() name + 1
+file '<unspecified-1>' line 1:                        ^^^^^^^^
+
+Current environment:
+
+Frame starts at:
+file '<unspecified-1>' line 1: var name = @readLine() name + 1
+file '<unspecified-1>' line 1: ^^^^^^^^^^^^^^^^^^^^^^
+Frame variables are:
+name = \"John\"
+
+
+")))))))
 
 (defun run-tests ()
   (let ((*print-circle* t))

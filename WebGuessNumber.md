@@ -16,9 +16,9 @@ programs.
 First, a local, non-interruptible version of the number guessing game.
 
 The computer picks a number between 1 and 100 and asks the user to
-guess what number it picked. For each user guess, it replies with 'too
-small', 'too large' or 'you guessed it'. When the user guesses the
-number, they are congratulated and offered another game.
+guess what number it picked. For each user guess, the program replies
+with 'too small', 'too large' or 'you guessed it'. When the user
+guesses the number, they are congratulated and offered another game.
 
 Load Shovel: `(ql:quickload :shovel)`.
 
@@ -125,17 +125,17 @@ UDPs:
       (setf *page-content*
             (with-output-to-string (str)
               (write-string *page-content* str)
-              (write-string "<pre>" str)
+              (write-string "<span>" str)
               (write-string (hunchentoot:escape-for-html content) str)
-              (write-string "</pre>" str))))
+              (write-string "</span>" str))))
 
     (defun web-print-ln (content)
       (setf *page-content*
             (with-output-to-string (str)
               (write-string *page-content* str)
-              (write-string "<pre>" str)
+              (write-string "<span>" str)
               (write-string (hunchentoot:escape-for-html content) str)
-              (write-string "</pre><br/>" str))))
+              (write-string "</span><br/>" str))))
 
 A global variable to remember what to ask the user:
 
@@ -248,9 +248,9 @@ doesn't handle page reloads correctly. Time for version 2.
 
 ## Web Version of the Game - Version 2
 
-As the project grows larger, working at the SLIME REPL is getting
-unproductive. Time to create a CL system to hold our work (you can get
-the code for this section from
+As the project grows larger, working at the SLIME REPL without saving
+code is getting unproductive. Time to create a CL system to hold our
+work (you can get the code for this section from
 [Github](http://github.com/mbrezu/shovel-guess)). First, load
 [Quickproject](http://www.xach.com/lisp/quickproject/):
 
@@ -328,8 +328,8 @@ with one table:
 
 Fields description:
 
- * we have one session per user with identifier `Id`; every request
-   without a session ID generates a new session;
+ * the session's ID is stored in field `Id`; every request without a
+   session ID generates a new session;
  * we store a `LastAccessTime` in seconds since the CL Epoch so we can
    delete sessions which were not used for a long time;
  * we store the bytecode and the state for a sleeping VM in `VmState`
@@ -368,17 +368,17 @@ instead of the old variables:
       (setf (session-page-content *session*)
             (with-output-to-string (str)
               (write-string (session-page-content *session*) str)
-              (write-string "<pre>" str)
+              (write-string "<span>" str)
               (write-string (hunchentoot:escape-for-html content) str)
-              (write-string "</pre>" str))))
+              (write-string "</span>" str))))
 
     (defun web-print-ln (content)
       (setf (session-page-content *session*)
             (with-output-to-string (str)
               (write-string (session-page-content *session*) str)
-              (write-string "<pre>" str)
+              (write-string "<span>" str)
               (write-string (hunchentoot:escape-for-html content) str)
-              (write-string "</pre><br/>" str))))
+              (write-string "</span><br/>" str))))
 
 Similar changes for `web-read-char` and `web-read-int`:
 
@@ -585,14 +585,14 @@ and it doesn't really solve all the associated problems, like the back
 button and cloned pages.
 
 The back button almost works (it returns to the previous page, but the
-state of the session doesn't 'go back'). It could be argued that
-entering a different input after using the back button should branch
-the game (create a different 'future' - the guesses made in the pages
-we backed up from are one branch - 'future' - of the game, by entering
-other inputs we create a new branch/future). This is important, we can
-now cheat the game: guess the number, then use the back button as much
-as we like (maybe up to the first guess?) and then enter the secret
-number directly.
+state of the session doesn't 'go back'). Furthermore, it could be
+argued that entering a different input after using the back button
+should branch the game (create a different 'future' - the guesses made
+in the pages we backed up from are one branch - 'future' - of the
+game, by entering other inputs we create a new branch/future). This is
+important, we can now cheat the game: guess the number, then use the
+back button as much as we like (maybe up to the first guess?) and then
+enter the secret number directly.
 
 Cloned pages are a similar problem: imagine that the user copies the
 URL for one of the attempt pages, then pastes that address into
@@ -606,11 +606,11 @@ every time the session is saved. This way, we get persistent sessions,
 for the other meaning of the 'persistent' (see for instance
 [Wikipedia's *Persistent data structure* article](https://en.wikipedia.org/wiki/Persistent_data_structure)). These
 are versioned sessions (mmm... time travel). In real applications we
-have to account for state outside the sessions (emails sent, products
-bought etc.) - so versioning will probably break down for 'outside
-state' and there's a need to compesate (show the user a list of
-recently bought products so they don't buy something twice something
-by mistake), but this still looks like a nice approach.
+have to account for state outside the sessions (launched missiles,
+sent emails, purchased products etc.) - so versioning will probably
+break down for 'outside state' and there's a need to compesate (show
+the user a list of recently bought products so they don't buy
+something twice by mistake).
 
 Of course more sessions mean more disk space. For our toy application
 this doesn't really matter - in a real application we'd have to delete
@@ -831,6 +831,30 @@ It works! (try the Github code, branch `turn-tables`, if it doesn't
 work for you - either I messed up when copying code into this document
 or you mistyped/mispasted something)
 
+What about this slightly broken program?
+
+    @print('What is your name? ')
+    var name = @readLine()
+    name + 1
+    
+After you enter your name (let's assume it's "John"), you will get an
+error message:
+
+    Shovel error in file 'your-program' at line 3, column 1: 
+    Arguments must have the same type (numbers or strings or arrays).
+
+    Current stack trace:
+    file 'your-program' line 3: name + 1
+    file 'your-program' line 3: ^^^^^^^^
+
+    Current environment:
+
+    Frame starts at:
+    file 'your-program' line 2: var name = @readLine()
+    file 'your-program' line 2: ^^^^^^^^^^^^^^^^^^^^^^
+    Frame variables are:
+    name = "John"
+
 Try it again, with the number guessing game:
 
     var game = fn () {
@@ -865,7 +889,7 @@ Fun, isn't it?
 We just exposed our server to the whims of remote users. What happens
 if someone writes (by mistake or malice) a program with an infinite
 loop or a program that allocates a lot of memory (or both)? We should
-harden our program against such problems.
+teach our programs to cope with such problems.
 
 ### Adding CPU and RAM Quotas
 

@@ -9,8 +9,6 @@
 
 (defvar *cells-increment-herald* nil)
 
-(defvar *version* 1)
-
 (defstruct vm
   bytecode
   (program-counter 0 :type fixnum)
@@ -31,9 +29,13 @@
   (until-next-nap-ticks-quota nil :type (or null integer)))
 
 (defun get-vm-user-defined-primitive-error (vm)
+  "Returns the unhandled condition thrown from a user-defined
+primitive, or NIL if none."
   (vm-user-defined-primitive-error vm))
 
 (defun get-vm-programming-error (vm)
+  "Returns the programming error thrown while running VM, or NIL if
+none."
   (vm-program-counter vm))
 
 (defstruct return-address
@@ -59,94 +61,94 @@
   (let ((prim0-alist
          (list
           ;; Arithmetic operators:
-          (def-prim0 + shovel-vm-prim0:add)
-          (def-prim0 - shovel-vm-prim0:subtract)
-          (def-prim0 "unary-minus" shovel-vm-prim0:unary-minus 1)
-          (def-prim0 * shovel-vm-prim0:multiply)
-          (def-prim0 / shovel-vm-prim0:divide)
-          (def-prim0 << shovel-vm-prim0:shift-left)
-          (def-prim0 >> shovel-vm-prim0:shift-right)
-          (def-prim0 % shovel-vm-prim0:modulo)
-          (def-prim0 "pow" shovel-vm-prim0:pow)
+          (def-prim0 + shovel-vm-prim0::add)
+          (def-prim0 - shovel-vm-prim0::subtract)
+          (def-prim0 "unary-minus" shovel-vm-prim0::unary-minus 1)
+          (def-prim0 * shovel-vm-prim0::multiply)
+          (def-prim0 / shovel-vm-prim0::divide)
+          (def-prim0 << shovel-vm-prim0::shift-left)
+          (def-prim0 >> shovel-vm-prim0::shift-right)
+          (def-prim0 % shovel-vm-prim0::modulo)
+          (def-prim0 "pow" shovel-vm-prim0::pow)
           (def-prim0 "floor" floor 1)
 
           ;; Relational operators:
-          (def-prim0 < shovel-vm-prim0:less-than)
-          (def-prim0 <= shovel-vm-prim0:less-than-or-equal)
-          (def-prim0 > shovel-vm-prim0:greater-than)
-          (def-prim0 >= shovel-vm-prim0:greater-than-or-equal)
-          (def-prim0 == shovel-vm-prim0:are-equal)
-          (def-prim0 != shovel-vm-prim0:are-not-equal)
+          (def-prim0 < shovel-vm-prim0::less-than)
+          (def-prim0 <= shovel-vm-prim0::less-than-or-equal)
+          (def-prim0 > shovel-vm-prim0::greater-than)
+          (def-prim0 >= shovel-vm-prim0::greater-than-or-equal)
+          (def-prim0 == shovel-vm-prim0::are-equal)
+          (def-prim0 != shovel-vm-prim0::are-not-equal)
 
           ;; Logic operators:
-          (def-prim0 && shovel-vm-prim0:logical-and)
-          (def-prim0 "||" shovel-vm-prim0:logical-or)
-          (def-prim0 ! shovel-vm-prim0:logical-not 1)
+          (def-prim0 && shovel-vm-prim0::logical-and)
+          (def-prim0 "||" shovel-vm-prim0::logical-or)
+          (def-prim0 ! shovel-vm-prim0::logical-not 1)
 
           ;; Bitwise operators:
-          (def-prim0 "&" shovel-vm-prim0:bitwise-and)
-          (def-prim0 "|" shovel-vm-prim0:bitwise-or)
-          (def-prim0 "^" shovel-vm-prim0:bitwise-xor)
+          (def-prim0 "&" shovel-vm-prim0::bitwise-and)
+          (def-prim0 "|" shovel-vm-prim0::bitwise-or)
+          (def-prim0 "^" shovel-vm-prim0::bitwise-xor)
 
           ;; Hash constructor:
-          (def-prim0 "hash" shovel-vm-prim0:hash-constructor nil)
+          (def-prim0 "hash" shovel-vm-prim0::hash-constructor nil)
 
           ;; Hash table has key?
-          (def-prim0 "hasKey" shovel-vm-prim0:has-key 2)
+          (def-prim0 "hasKey" shovel-vm-prim0::has-key 2)
 
           ;; Keys for hash table
-          (def-prim0 "keys" shovel-vm-prim0:get-hash-table-keys 1)
+          (def-prim0 "keys" shovel-vm-prim0::get-hash-table-keys 1)
 
           ;; Array constructors:
-          (def-prim0 "array" shovel-vm-prim0:array-constructor nil)
-          (def-prim0 "arrayN" shovel-vm-prim0:array-constructor-n 1)
+          (def-prim0 "array" shovel-vm-prim0::array-constructor nil)
+          (def-prim0 "arrayN" shovel-vm-prim0::array-constructor-n 1)
 
           ;; Array push and pop:
-          (def-prim0 "push" shovel-vm-prim0:array-push)
-          (def-prim0 "pop" shovel-vm-prim0:array-pop 1)
+          (def-prim0 "push" shovel-vm-prim0::array-push)
+          (def-prim0 "pop" shovel-vm-prim0::array-pop 1)
 
           ;; Array and hash set and get:
-          (def-prim0 "svm_gref" shovel-vm-prim0:array-or-hash-get)
-          (def-prim0 "svm_gref_dot" shovel-vm-prim0:hash-get-dot)
-          (def-prim0 "svm_set_indexed" shovel-vm-prim0:array-or-hash-set 3)
+          (def-prim0 "svm_gref" shovel-vm-prim0::array-or-hash-get)
+          (def-prim0 "svm_gref_dot" shovel-vm-prim0::hash-get-dot)
+          (def-prim0 "svm_set_indexed" shovel-vm-prim0::array-or-hash-set 3)
 
           ;; String or array length:
-          (def-prim0 "length" shovel-vm-prim0:get-length 1)
+          (def-prim0 "length" shovel-vm-prim0::get-length 1)
 
           ;; String or array slice:
-          (def-prim0 "slice" shovel-vm-prim0:get-slice 3)
+          (def-prim0 "slice" shovel-vm-prim0::get-slice 3)
 
           ;; String 'upper' and 'lower':
-          (def-prim0 "upper" shovel-vm-prim0:string-upper 1)
-          (def-prim0 "lower" shovel-vm-prim0:string-lower 1)
+          (def-prim0 "upper" shovel-vm-prim0::string-upper 1)
+          (def-prim0 "lower" shovel-vm-prim0::string-lower 1)
 
           ;; Current date/time:
           (def-prim0 "utcSecondsSinceUnixEpoch"
-              shovel-vm-prim0:utc-seconds-since-unix-epoch 0)
+              shovel-vm-prim0::utc-seconds-since-unix-epoch 0)
 
           ;; Date/time construction/deconstruction:
-          (def-prim0 "decodeTime" shovel-vm-prim0:decode-time 1)
-          (def-prim0 "encodeTime" shovel-vm-prim0:encode-time 1)
+          (def-prim0 "decodeTime" shovel-vm-prim0::decode-time 1)
+          (def-prim0 "encodeTime" shovel-vm-prim0::encode-time 1)
 
           ;; Object types:
-          (def-prim0 "isString" shovel-vm-prim0:shovel-is-string 1)
-          (def-prim0 "isHash" shovel-vm-prim0:shovel-is-hash 1)
-          (def-prim0 "isBool" shovel-vm-prim0:shovel-is-bool 1)
-          (def-prim0 "isArray" shovel-vm-prim0:shovel-is-array 1)
-          (def-prim0 "isNumber" shovel-vm-prim0:shovel-is-number 1)
-          (def-prim0 "isCallable" shovel-vm-prim0:shovel-is-callable 1)
+          (def-prim0 "isString" shovel-vm-prim0::shovel-is-string 1)
+          (def-prim0 "isHash" shovel-vm-prim0::shovel-is-hash 1)
+          (def-prim0 "isBool" shovel-vm-prim0::shovel-is-bool 1)
+          (def-prim0 "isArray" shovel-vm-prim0::shovel-is-array 1)
+          (def-prim0 "isNumber" shovel-vm-prim0::shovel-is-number 1)
+          (def-prim0 "isCallable" shovel-vm-prim0::shovel-is-callable 1)
 
           ;; Stringification:
-          (def-prim0 "string" shovel-vm-prim0:shovel-string 1)
+          (def-prim0 "string" shovel-vm-prim0::shovel-string 1)
           (def-prim0 "stringRepresentation"
-              shovel-vm-prim0:shovel-string-representation 1)
+              shovel-vm-prim0::shovel-string-representation 1)
 
           ;; Parsing numbers:
-          (def-prim0 "parseInt" shovel-vm-prim0:parse-int 1)
-          (def-prim0 "parseFloat" shovel-vm-prim0:parse-float 1)
+          (def-prim0 "parseInt" shovel-vm-prim0::parse-int 1)
+          (def-prim0 "parseFloat" shovel-vm-prim0::parse-float 1)
 
           ;; Exception throwing:
-          (def-prim0 "panic" shovel-vm-prim0:panic 1)
+          (def-prim0 "panic" shovel-vm-prim0::panic 1)
           )))
     (alexandria:alist-hash-table prim0-alist :test #'equal)))
 
@@ -167,7 +169,7 @@
                   (var (elt (env-frame-var-names frame) i)))
               (format stream "~a = ~a~%"
                       var
-                      (shovel-vm-prim0:shovel-string-representation val))))
+                      (shovel-vm-prim0::shovel-string-representation val))))
       (terpri stream))
     (write-environment (cdr env) vm stream)))
 
@@ -208,6 +210,8 @@
       (terpri stream))))
 
 (defun wake-up-vm (vm)
+  "If VM went to sleep and you want to resume it without rebuilding
+it, you have to call this function before calling RUN-VM."
   (setf (vm-should-take-a-nap vm) nil))
 
 (defun write-stack-trace (vm stream &optional stack-dump)
@@ -221,7 +225,7 @@
                                          (instruction-end-pos call-site)))
                        (if stack-dump
                            (format stream "~a~%"
-                                   (shovel-vm-prim0:shovel-string-representation
+                                   (shovel-vm-prim0::shovel-string-representation
                                     (car stack)))))
                    (iter (cdr stack)))))
     (unless stack-dump
@@ -267,6 +271,37 @@
 (defun run-vm (bytecode &key
                           sources user-primitives state vm
                           cells-quota total-ticks-quota until-next-nap-ticks-quota)
+  "Runs a Shovel VM made from BYTECODE or supplied as VM. Optionally,
+the sources for the VM are supplied as SOURCES. User-defined
+primitives are provided via USER-PRIMITIVES (a list containing a list
+of name, CL callable, number of arguments for each primitive). If you
+are resuming a serialized VM, provide the serialized state as STATE.
+
+If you want to limit the CPU and memory usage of the Shovel process,
+you can use the *-QUOTA parameters:
+
+ * CELLS-QUOTA limits the total number of cons cells the process can
+   use; this is not a hard limit, but the VM will be stopped with a
+   SHOVEL-QUOTA-EXCEPTION if its memory usage is near this limit;
+
+ * TOTAL-TICKS-QUOTA limits the total number of Shovel VM instructions
+   this process can run;
+
+ * UNTIL-NEXT-NAP-TICKS-QUOTA limits the number of ticks (executed
+   Shovel VM instructions) until RUN-VM returns and sets the VM state
+   to 'napping'. Use WAKE-UP-VM to revive a VM and rerun RUN-VM if you
+   want to resume the VM.
+
+Example of passing PRINT and PRIN1 as user-defined primitives:
+
+    (run-vm bytecode
+            :sources sources
+            :user-primitives '((\"print\" #'print 1)
+                               (\"prin1\" #'prin1 1)))
+
+Finishes when the VM finishes or goes to sleep.
+
+Returns two values: the top of the VM stack and the VM itself."
   (unless vm
     (setf vm (make-vm :bytecode bytecode
                       :program-counter 0
@@ -288,14 +323,14 @@
   (setf (vm-executed-ticks-since-last-nap vm) 0)
   (handler-bind ((error (lambda (condition)
                           (setf (vm-programming-error vm) condition))))
-    (let ((shovel-vm:*error-raiser* (lambda (message)
-                                      (raise-shovel-error vm message)))
-          (shovel-vm:*ticks-incrementer* (lambda (ticks)
-                                           (incf (vm-executed-ticks vm) ticks)
-                                           (incf (vm-executed-ticks-since-last-nap vm) ticks)))
-          (shovel-vm:*cells-incrementer* (lambda (cells)
-                                           (increment-cells-quota vm cells)))
-          (shovel-vm:*cells-increment-herald*
+    (let ((*error-raiser* (lambda (message)
+                            (raise-shovel-error vm message)))
+          (*ticks-incrementer* (lambda (ticks)
+                                 (incf (vm-executed-ticks vm) ticks)
+                                 (incf (vm-executed-ticks-since-last-nap vm) ticks)))
+          (*cells-incrementer* (lambda (cells)
+                                 (increment-cells-quota vm cells)))
+          (*cells-increment-herald*
            (lambda (cells)
              (when (and (vm-cells-quota vm)
                         (> cells (vm-cells-quota vm)))
@@ -306,10 +341,12 @@
       (values (car (vm-stack vm)) vm))))
 
 (defun get-vm-stack (vm)
+  "Returns a string representation of the current stack for VM."
   (with-output-to-string (str)
     (write-stack-trace vm str)))
 
 (defun get-vm-environment (vm)
+  "Returns a string representation of the current environment for VM."
   (with-output-to-string (str)
     (write-environment (vm-current-environment vm) vm str)))
 
@@ -324,6 +361,7 @@
 
 (declaim (inline vm-execution-complete))
 (defun vm-execution-complete (vm)
+  "T if the VM finished execution (not asleep, actually finished)."
   (declare (optimize speed (safety 0))
            (type vm vm))
   (= (vm-program-counter vm)
@@ -333,7 +371,7 @@
 (defun check-bool (vm)
   (declare (optimize speed (safety 0))
            (type vm vm))
-  (unless (shovel-vm-prim0:is-bool (car (vm-stack vm)))
+  (unless (shovel-vm-prim0::is-bool (car (vm-stack vm)))
     (raise-shovel-error vm "Argument must be a boolean.")))
 
 (declaim (inline check-vm-without-error))
@@ -499,7 +537,7 @@
            (type instruction instruction))
   (let ((args (instruction-arguments instruction)))
     (check-bool vm)
-    (jump-if (shovel-vm-prim0:logical-not (pop (vm-stack vm))) vm args)))
+    (jump-if (shovel-vm-prim0::logical-not (pop (vm-stack vm))) vm args)))
 
 (defun handle-lset (vm instruction)
   (declare (optimize speed (safety 0))
@@ -776,7 +814,7 @@
 (defun jump-if (value vm jump-address)
   (declare (optimize speed (safety 0))
            (type vm vm))
-  (if (shovel-vm-prim0:is-true value)
+  (if (shovel-vm-prim0::is-true value)
       (setf (vm-program-counter vm) jump-address)
       (incf (vm-program-counter vm))))
 
@@ -794,7 +832,7 @@
   (let ((callable (pop (vm-stack vm))))
     (unless (callable-p callable)
       (raise-shovel-error vm (format nil "Object [~a] is not callable."
-                                     (shovel-vm-prim0:shovel-string-representation
+                                     (shovel-vm-prim0::shovel-string-representation
                                       callable))))
     (locally (declare (type callable callable))
       (if (or (callable-prim callable) (callable-prim0 callable))
@@ -980,7 +1018,7 @@ A 'valid value' (with Common Lisp as the host language) is:
            (type vm vm)
            (type callable callable)
            (type fixnum num-args))
-    (handle-binary-arity nil))
+  (handle-binary-arity nil))
 
 (declaim (inline call-primitive))
 (defun call-primitive (callable vm num-args save-return-address)
@@ -1150,13 +1188,14 @@ A 'valid value' (with Common Lisp as the host language) is:
                      (serialize (return-address-environment object) ss))
                result))
             ((env-frame-p object)
-             (let* ((result-array (make-array 3))
+             (let* ((result-array (make-array 4))
                     (result (store-one result-array :store-as object)))
                (setf (aref result-array 0) (get-serialization-code :env-frame))
                (setf (aref result-array 1)
                      (serialize (env-frame-introduced-at-program-counter object)
                                 ss))
-               (setf (aref result-array 2) (serialize (env-frame-vars object) ss))
+               (setf (aref result-array 2) (serialize (env-frame-var-names object) ss))
+               (setf (aref result-array 3) (serialize (env-frame-vars object) ss))
                result))
             ((named-block-p object)
              (let* ((result-array (make-array 4))
@@ -1259,8 +1298,10 @@ A 'valid value' (with Common Lisp as the host language) is:
                           (setf object-ref result)
                           (setf (env-frame-introduced-at-program-counter result)
                                 (deserialize (aref serialized-object 1) ds))
-                          (setf (env-frame-vars result)
+                          (setf (env-frame-var-names result)
                                 (deserialize (aref serialized-object 2) ds))
+                          (setf (env-frame-vars result)
+                                (deserialize (aref serialized-object 3) ds))
                           result))
                        ((= code (get-serialization-code :named-block))
                         (let ((result (make-named-block
@@ -1300,6 +1341,7 @@ A 'valid value' (with Common Lisp as the host language) is:
   (get-vm-arguments-for-opcode vm :vm-sources-md5))
 
 (defun serialize-vm-state (vm)
+  "Serializes the state of this VM to an array of bytes."
   (check-vm-without-error vm)
   (let ((ss (make-serializer-state))
         stack current-environment program-counter)
@@ -1344,6 +1386,7 @@ A 'valid value' (with Common Lisp as the host language) is:
     (setf (vm-program-counter vm) (deserialize program-counter-index ds))))
 
 (defun vm-used-ticks (vm)
+  "The number of ticks used by VM so far."
   (vm-executed-ticks vm))
 
 (defun vm-really-used-cells (vm)

@@ -2,31 +2,17 @@
 (in-package #:shovel-compiler)
 
 (defun compile-sources-to-instructions (sources)
-  (setf sources (shovel-utils:prepare-sources sources))
+  (setf sources (prepare-sources sources))
   (let* ((all-tokens (mapcar (lambda (source-file)
-                               (shovel-compiler-tokenizer:tokenize-source-file
-                                source-file))
+                               (tokenize-source-file source-file))
                              sources))
          (parse-tree (mapcan (lambda (file-tokens)
-                               (shovel-compiler-parser:parse-tokens
-                                file-tokens :source sources))
+                               (parse-tokens file-tokens :source sources))
                              all-tokens))
          (instructions
           (shovel-compiler-code-generator:generate-instructions
            parse-tree :source sources)))
     instructions))
-
-(defun produce-digest-as-string (digester)
-  (format nil "~{~2,'0x~}"
-          (coerce (ironclad:produce-digest digester) 'list)))
-
-(defun compute-sources-md5 (sources)
-  (let ((digester (ironclad:make-digest :md5)))
-    (dolist (source (prepare-sources sources))
-      (ironclad:update-digest digester
-                              (babel:string-to-octets
-                               (shovel:source-file-contents source))))
-    (produce-digest-as-string digester)))
 
 (defun compute-instructions-md5 (instructions)
   (let ((digester (ironclad:make-digest :md5)))
@@ -117,7 +103,7 @@ don't know how to compute MD5 hash.")))))
     (:vm-bytecode-md5 20)))
 
 (defun show-instructions (sources instructions)
-  (setf sources (shovel-utils:prepare-sources sources))
+  (setf sources (prepare-sources sources))
   (include-relevant-source-as-comments sources instructions)
   (dolist (instruction instructions)
     (let ((opcode (instruction-opcode instruction))
@@ -143,7 +129,7 @@ don't know how to compute MD5 hash.")))))
           (when (or (not last-file-name) (string/= last-file-name file-name))
             (setf last-file-name file-name
                   source (shovel:source-file-contents
-                          (shovel-utils:find-source sources last-file-name))
+                          (find-source sources last-file-name))
                   source-lines (split-sequence:split-sequence
                                 #\newline
                                 source)))))

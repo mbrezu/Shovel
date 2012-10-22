@@ -219,11 +219,19 @@ SVM_SET_INDEXED required primitive."
 
 (defun empty-env () (list (make-env-frame)))
 
+(defun compute-sources-md5 (sources)
+  (let ((digester (ironclad:make-digest :md5)))
+    (dolist (source (prepare-sources sources))
+      (ironclad:update-digest digester
+                              (babel:string-to-octets
+                               (shovel:source-file-contents source))))
+    (produce-digest-as-string digester)))
+
 (defun generate-instructions (ast &key source)
   (let ((*generator-state* (make-generator-state :label-counter 0
                                                  :source source)))
-    (gen :vm-version :arguments shovel-vm:*version*)
-    (gen :vm-sources-md5 :arguments (shovel-compiler:compute-sources-md5 source))
+    (gen :vm-version :arguments shovel:*version*)
+    (gen :vm-sources-md5 :arguments (compute-sources-md5 source))
     (gen :vm-bytecode-md5 :arguments "?")
     (when (and (first ast) (eq :file-name (parse-tree-label (first ast))))
       (compile-ast (first ast) (empty-env) t t)

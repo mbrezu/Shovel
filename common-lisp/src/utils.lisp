@@ -22,7 +22,7 @@
             sources)))
 
 (defun find-source (sources file-name)
-  (setf sources (shovel-utils:prepare-sources sources))
+  (setf sources (prepare-sources sources))
   (dolist (source sources)
     (when (string= file-name (shovel:source-file-name source))
       (return-from find-source source)))
@@ -55,7 +55,7 @@
                                   (line-prefix "")
                                   source-lines)
   (unless source-lines
-    (let* ((file-name (shovel-types:pos-file-name start-pos))
+    (let* ((file-name (pos-file-name start-pos))
            (source (find-source source-files file-name)))
       (setf source-lines
             (split-sequence:split-sequence
@@ -210,7 +210,7 @@
   (let ((sequence (flexi-streams:with-output-to-sequence (stream)
                     (write-sequence (16-zeroes) stream)
                     (write-sequence (encode-32-bit-integer-to-4-bytes
-                                     shovel-vm:*version*) stream)
+                                     shovel:*version*) stream)
                     (messagepack:encode-stream data stream))))
     (let ((checksum (get-md5-checksum sequence)))
       (replace sequence checksum :start1 0 :start2 0)
@@ -224,7 +224,11 @@
     (replace data stored-checksum)
     (let ((stored-version (decode-4-bytes-to-32-bit-integer
                            (subseq data 16 20))))
-      (unless (<= stored-version shovel-vm:*version*)
+      (unless (<= stored-version shovel:*version*)
         (error (make-condition 'shovel:shovel-version-too-large)))
       (flexi-streams:with-input-from-sequence (stream data :start 20)
         (messagepack:decode-stream stream)))))
+
+(defun produce-digest-as-string (digester)
+  (format nil "~{~2,'0x~}"
+          (coerce (ironclad:produce-digest digester) 'list)))

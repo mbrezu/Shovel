@@ -1,174 +1,163 @@
 ;;;; package.lisp
 
 (defpackage #:shovel-types
-  (:use #:cl)
-  (:export
+  (:use #:cl))
 
-   :instruction
-   :make-instruction
-   :instruction-p
-   :instruction-opcode
-   :instruction-arguments
-   :instruction-start-pos
-   :instruction-end-pos
-   :instruction-comments
-   :instruction-cache
-   :instruction-opcode-num
+(defmacro privately-export (package-name &body symbols)
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (defun ,(alexandria:format-symbol *package*
+                                       "IMPORT-FROM-~a"
+                                       (symbol-name package-name)) ()
+       (list :import-from
+             ,package-name
+             ,@(mapcar (lambda (to-intern)
+                         `',(intern (symbol-name to-intern) package-name))
+                       symbols)))))
 
-   :pos
-   :make-pos
-   :pos-p
-   :clone-pos
-   :pos-line
-   :pos-column
-   :pos-file-name))
+(privately-export :shovel-types
+  :instruction
+  :make-instruction
+  :instruction-p
+  :instruction-opcode
+  :instruction-arguments
+  :instruction-start-pos
+  :instruction-end-pos
+  :instruction-comments
+  :instruction-cache
+  :instruction-opcode-num
+
+  :pos
+  :make-pos
+  :pos-p
+  :clone-pos
+  :pos-line
+  :pos-column
+  :pos-file-name)
 
 (defpackage #:shovel-utils
-  (:use #:cl #:shovel-types)
-  (:export
-   :first-non-blank
-   :underline
-   :extract-relevant-source
-   :when-one-of-strings
-   :defbits
-   :prepare-sources
-   :find-source
-   :find-position
-   :messagepack-encode-with-md5-checksum
-   :check-md5-checksum-and-messagepack-decode))
+  (:use #:cl)
+  #. (import-from-shovel-types))
+
+(privately-export :shovel-utils
+  :first-non-blank
+  :underline
+  :extract-relevant-source
+  :when-one-of-strings
+  :defbits
+  :prepare-sources
+  :find-source
+  :find-position
+  :messagepack-encode-with-md5-checksum
+  :check-md5-checksum-and-messagepack-decode
+  :produce-digest-as-string)
 
 (defpackage #:shovel-compiler-types
-  (:use #:cl #:shovel-types)
-  (:export
+  (:use #:cl)
+  #. (import-from-shovel-types)
+  #. (import-from-shovel-utils))
 
-   :token
-   :make-token
-   :token-p
-   :token-type
-   :token-content
-   :token-start-pos
-   :token-end-pos
-   :token-is-relational-op
-   :token-is-adder-op
-   :token-is-multiplier-op
-   :token-is-logical-and-op
-   :token-is-logical-or-op
-   :token-is-required-primitive
-   :token-bits
+(privately-export :shovel-compiler-types
+  :token
+  :make-token
+  :token-p
+  :token-type
+  :token-content
+  :token-start-pos
+  :token-end-pos
+  :token-is-relational-op
+  :token-is-adder-op
+  :token-is-multiplier-op
+  :token-is-logical-and-op
+  :token-is-logical-or-op
+  :token-is-required-primitive
+  :token-bits
 
-   :parse-tree
-   :make-parse-tree
-   :parse-tree-p
-   :parse-tree-label
-   :parse-tree-start-pos
-   :parse-tree-end-pos
-   :parse-tree-children))
+  :parse-tree
+  :make-parse-tree
+  :parse-tree-p
+  :parse-tree-label
+  :parse-tree-start-pos
+  :parse-tree-end-pos
+  :parse-tree-children)
 
 (defpackage #:shovel-compiler-tokenizer
-  (:use #:cl #:shovel-compiler-types #:shovel-types)
-  (:export
-   :tokenize-source-file))
+  (:use #:cl)
+  #. (import-from-shovel-types)
+  #. (import-from-shovel-utils)
+  #. (import-from-shovel-compiler-types))
+
+(privately-export :shovel-compiler-tokenizer
+  :tokenize-source-file)
 
 (defpackage #:shovel-compiler-parser
-  (:use #:cl #:shovel-compiler-types #:shovel-types #:shovel-utils)
-  (:export :parse-tokens))
+  (:use #:cl #:shovel-compiler-types)
+  #. (import-from-shovel-types)
+  #. (import-from-shovel-utils)
+  #. (import-from-shovel-compiler-types))
+
+(privately-export :shovel-compiler-parser
+  :parse-tokens)
 
 (defpackage #:shovel-compiler-code-generator
-  (:use #:cl #:shovel-compiler-types #:shovel-types #:shovel-utils)
+  (:use #:cl #:shovel-compiler-types )
+  #. (import-from-shovel-types)
+  #. (import-from-shovel-utils)
+  #. (import-from-shovel-compiler-types)
   (:export :generate-instructions))
 
 (defpackage #:shovel-compiler
-  (:use #:cl #:shovel-compiler-types #:shovel-types #:shovel-utils)
-  (:export
-   :assemble-instructions
-   :show-instructions
-   :compile-sources-to-instructions
-   :compute-instructions-md5
-   :compute-sources-md5))
+  (:use #:cl #:shovel-compiler-types)
+  #. (import-from-shovel-types)
+  #. (import-from-shovel-utils)
+  #. (import-from-shovel-compiler-tokenizer)
+  #. (import-from-shovel-compiler-parser))
+
+(privately-export :shovel-compiler
+  :assemble-instructions
+  :show-instructions
+  :compile-sources-to-instructions
+  :compute-instructions-md5
+  :compute-sources-md5)
 
 (defpackage #:shovel-vm-prim0
-  (:use #:cl #:shovel-types)
-  (:export
-   :add
-   :subtract
-   :multiply
-   :divide
-   :shift-left
-   :shift-right
-   :less-than
-   :greater-than
-   :less-than-or-equal
-   :greater-than-or-equal
-   :unary-minus
-   :bitwise-and
-   :bitwise-or
-   :are-equal
-   :are-not-equal
-   :logical-and
-   :logical-or
-   :logical-not
-   :is-true
-   :is-bool
-   :hash-constructor
-   :array-constructor
-   :array-or-hash-get
-   :array-or-hash-set
-   :get-length
-   :get-hash-table-keys
-   :array-constructor-n
-   :for-each
-   :for-each-with-index
-   :get-slice
-   :utc-seconds-since-unix-epoch
-   :decode-time
-   :encode-time
-   :shovel-is-string
-   :shovel-is-hash
-   :shovel-is-bool
-   :shovel-is-array
-   :shovel-is-number
-   :shovel-is-callable
-   :shovel-string
-   :shovel-string-representation
-   :parse-int
-   :parse-float
-   :modulo
-   :bitwise-xor
-   :pow
-   :has-key
-   :hash-get-dot
-   :panic
-   :array-pop
-   :array-push
-   :string-upper
-   :string-lower))
+  (:use #:cl)
+  #. (import-from-shovel-types))
+
+(privately-export :shovel-vm-prim0
+  :add :subtract :multiply :divide
+  :shift-left :shift-right :less-than :greater-than
+  :less-than-or-equal :greater-than-or-equal :unary-minus
+  :bitwise-and :bitwise-or :are-equal :are-not-equal :logical-and
+  :logical-or :logical-not :is-true :is-bool :hash-constructor
+  :array-constructor :array-or-hash-get :array-or-hash-set
+  :get-length :get-hash-table-keys :array-constructor-n :for-each
+  :for-each-with-index :get-slice :utc-seconds-since-unix-epoch :decode-time
+  :encode-time :shovel-is-string :shovel-is-hash :shovel-is-bool
+  :shovel-is-array :shovel-is-number :shovel-is-callable :shovel-string
+  :shovel-string-representation :parse-int :parse-float :modulo
+  :bitwise-xor :pow :has-key :hash-get-dot :panic :array-pop
+  :array-push :string-upper :string-lower)
 
 (defpackage #:shovel-vm
-  (:use #:cl #:shovel-types #:shovel-utils)
-  (:export
-   :run-vm
-   :step-vm
-   :serialize-vm-state
-   :*error-raiser*
-   :*version*
-   :vm-user-primitive-error
-   :wake-up-vm
-   :get-vm-stack
-   :get-vm-environment
-   :get-vm-programming-error
-   :get-vm-user-defined-primitive-error
-   :*ticks-incrementer*
-   :*cells-incrementer*
-   :*cells-increment-herald*
-   :vm-used-ticks
-   :vm-really-used-cells
-   :get-vm-bytecode-md5
-   :get-vm-version
-   :get-vm-sources-md5
-   :vm-execution-complete))
+  (:use #:cl )
+  #. (import-from-shovel-types)
+  #. (import-from-shovel-utils))
+
+(privately-export :shovel-vm
+  :run-vm :step-vm :serialize-vm-state
+  :*error-raiser* :*version* :vm-user-primitive-error
+  :wake-up-vm :get-vm-stack :get-vm-environment
+  :get-vm-programming-error :get-vm-user-defined-primitive-error
+  :*ticks-incrementer* :*cells-incrementer* :*cells-increment-herald*
+  :vm-used-ticks :vm-really-used-cells :get-vm-bytecode-md5
+  :get-vm-version :get-vm-sources-md5 :vm-execution-complete)
 
 (defpackage #:shovel
   (:use #:cl)
+  #. (import-from-shovel-types)
+  #. (import-from-shovel-utils)
+  #. (import-from-shovel-compiler)
+  #. (import-from-shovel-vm)
   (:export
    :print-code
    :run-code
@@ -207,4 +196,8 @@
    :vm-bytecode-md5
    :vm-sources-md5
    :serialize-vm-state
-   :vm-execution-complete))
+   :vm-execution-complete
+   :*version*))
+
+(defvar shovel:*version* 1)
+

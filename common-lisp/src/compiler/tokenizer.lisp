@@ -32,10 +32,6 @@
        (current-char)
     (decf (tokenizer-state-current-char *tokenizer-state*))))
 
-(defun test ()
-  (declare (optimize speed))
-  (aref (the (simple-array character (*)) (shovel:stdlib)) 0))
-
 (declaim (inline next-char))
 (defun next-char ()
   (declare (optimize (safety 0)))
@@ -127,7 +123,7 @@
       (when (char= (aref content 0) #\@)
         (setf (token-type result) :prim
               (token-content result) (subseq content 1)))
-      (shovel-utils:when-one-of-strings (token-content result)
+      (when-one-of-strings (token-content result)
         (("pow"
           "array" "arrayN" "length" "slice" "push" "pop"
           "lower" "upper"
@@ -208,7 +204,7 @@
                 (source-lines (split-sequence:split-sequence
                                #\newline
                                (tokenizer-state-source *tokenizer-state*)))
-                (lines (shovel-utils:extract-relevant-source
+                (lines (extract-relevant-source
                         nil pos pos
                         :source-lines source-lines)))
            (setf message (format nil "~a~%~a~%~a" message
@@ -221,7 +217,7 @@
                    :column (pos-column pos))))))))
 
 (defun get-current-pos ()
-  (shovel-utils:find-position (tokenizer-state-file-name *tokenizer-state*)
+  (find-position (tokenizer-state-file-name *tokenizer-state*)
                               (tokenizer-state-source *tokenizer-state*)
                               (tokenizer-state-current-char *tokenizer-state*)))
 
