@@ -2,7 +2,7 @@
 
 # Description of the Shovel API
 
-You should only use symbols exported from package `shovel`, symbols are exported
+You should only use symbols exported from package `shovel`.
 
 # STUB Warning!
 

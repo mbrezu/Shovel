@@ -177,17 +177,17 @@
 * DONE ClGettingStarted.md uses shovel-vm:serialize-vm-state
   All public APIs should are moved to package 'shovel'. Update the
   document.
-* TODO test the documentation by reading it and pasting the code
-** TODO the getting started guide
-** TODO the number guessing tutorial
+* DONE test the documentation by reading it and pasting the code
+** DONE the getting started guide
+** DONE the number guessing tutorial
 * TODO API documentation
+** DONE the documentation should mention that primitives
+   can't call a closure (it breaks interruptability)
 ** TODO document the fact that user primitives should handle their exceptions;
    When they don't, the error is stored in the 'user-primitive-error'
    field of the virtual machine and the virtual machine goes to sleep
    as if :nap-and-retry-on-wake-up had been returned by the primitive
    as a second value.
-** TODO the documentation should mention that primitives
-     can't call a closure (it breaks interruptability)
 * TODO tests for all the required primitives
 * TODO add license information to files (see CL-MESSAGEPACK)
 * TODO document VM serialization format in the VM SPEC

@@ -1,6 +1,6 @@
 <!-- -*- markdown -*- -->
 
-# Shovel
+# Shovel - a bytecode virtual machine that is embeddable, secure and interruptible
 
 ## WHAT?
 
@@ -67,6 +67,13 @@ than nothing. Once I get another implementation running (or questions
 about what is unspecified) I will be able to improve them.
 
 Beyond these, the source code is the real source of information :-)
+
+## License
+
+Shovel implementations and the associated documentation are
+distributed under the
+[2-clause](https://en.wikipedia.org/wiki/BSD_licenses#2-clause_license_.28.22Simplified_BSD_License.22_or_.22FreeBSD_License.22.29)
+BSD license (see the [license.txt](license.txt) file).
 
 ## THANKS!
 
