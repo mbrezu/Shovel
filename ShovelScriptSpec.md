@@ -68,7 +68,7 @@ Syntax:
     <variable-name> = <new-value>
 
 Where `<variable-name>` is an expression identifying a memory location
-and <new-value> is the value to be stored in the memory location.
+and `<new-value>` is the value to be stored in the memory location.
 
 `<variable-name>` can be an identifier naming a variable, an element
 of an array or string (e.g. `array[index]` or
@@ -76,7 +76,7 @@ of an array or string (e.g. `array[index]` or
 (e.g. `f(x).address.street`) or a combination of all of the above
 (e.g. `a.b(x)[i][j].k.l`).
 
-The value of this statement is `<expression>`.
+The value of this statement is `<new-value>`.
 
 An assignment to an undeclared variable is an error.
 
@@ -93,38 +93,39 @@ An expression can be:
 
 Syntax:
 
-    fn <argument-name> <expression>
+    fn <argument-name> <statement>
 
 or
 
-    fn (<argument-name>) <expression>
+    fn (<argument-name>) <statement>
 
 or
 
-    fn (<arg-1>, <arg-2>) <expression>
+    fn (<arg-1>, <arg-2>, ... <arg-n>) <statement>
 
 Where `<argument-name>`, `<arg-1>` etc. are identifiers and
-`<expression>` is an expression that is used to calculate the return
-value for a function invocation.
+`<statement>` is a statement that is used to calculate the return
+value for a function invocation (the value of the statement is the
+returned value).
 
-`<expression>` can get or set any of the variables that are accessible
+`<statement>` can get or set any of the variables that are accessible
 where the closure is defined (lexical scoping, indefinite extent).
 
 ### Alternative Expressions
 
 Syntax:
 
-    if <condition> <then-expression>
+    if <condition> <then-statement>
 
 or
 
-    if <condition> <then-expression> else <else-expression>
+    if <condition> <then-statement>> else <else-statement>
 
 `<condition>` is an expression that is evaluated. If it is the boolean
 value `true`, the value of the alternative is the value of
-`<then-expression>`, otherwise if `<condition>` evaluates to the
+`<then-statement>`, otherwise if `<condition>` evaluates to the
 boolean `false`, the value of the alternative is the value of
-`<else-expression>` (if the `<else-expression>` is missing, the
+`<else-statement>>` (if the `<else-statement>` is missing, the
 alternative expression has the void value `null`). If `<condition>`
 evaluates to a non-boolean the program's execution stops with an
 error.
@@ -139,9 +140,11 @@ Where `<block-name>` is an expression evaluating to a string which
 names the block. `<statement>` is a regular statement. If a `return`
 statement is executing while evaluating `<statement>` and the block
 name specified for `return` is equal to `<block-name>`, the block
-exits. The value of the block is either the value of `<statement>` or
-the return value from a `return` statement that caused a non-local
-exit from the block.
+exits immediately (regardless of how many function calls are on the
+stack between the `block` declaration and the `return` statement). The
+value of the block is either the value of `<statement>` or the return
+value from a `return` statement that caused a non-local exit from the
+block.
 
 ### 'Simple Expressions'
 
@@ -149,7 +152,7 @@ These are expressions obtained using operators, according to the
 following precedence table:
 
     ()
-    function call, array access, dot access.
+    function call, array access, dot access
     unary -, unary !
     * / % ^ &
     + - |
@@ -161,9 +164,9 @@ following precedence table:
 
 `!` is logical *not*.
 
-`*` is multiplication `/` is division (truncating if both operands
-integers), `%` is modulo (valid only if both operands are integers),
-`^` is bitwise *xor*, `&` is bitwise *and*.
+`*` is multiplication, `/` is division (truncating if both operands
+are integers), `%` is modulo (valid only if both operands are
+integers), `^` is bitwise *xor*, `&` is bitwise *and*.
 
 
 `+` and `-` are addition and subtraction. Subtraction is only valid
@@ -199,14 +202,17 @@ An expression can also be an unnamed block, which is a sequence of
 statements enclosed by `{` and `}`. The value of the unnamed block is
 the value of the last statement inside the block. An unnamed block
 introduces a fresh scope for variables (variables defined in it are
-only visible inside the block - including closures defined inside the
+only visible inside the block and inside closures defined inside the
 block).
 
-An expression can also be an identifier, an expression followed by `.`
-and another identifier (hash access), an expression followed by `(`, a
-possibly empty comma separated list of expressions and `)` (a function
-call), an expression followed by `[`, an expression and `]` (array or
-hash access).
+An expression can also be 
+
+ * an identifier, 
+ * an expression followed by `.` and another identifier (hash access), 
+ * an expression followed by `(`, a possibly empty comma separated
+   list of expressions and `)` (a function call),
+ * an expression followed by `[`, an expression and `]` (array or hash
+   access).
 
 It is an error to access a hash value in the form `h.k` if there is no
 key named `k` in hash `h`. An assignment to `h.k` is valid even if
@@ -217,6 +223,11 @@ itself, but the value of variable `k`).
 Hash accesses can be done either via `[]` (e.g. `address['street']`)
 or via `.` (e.g. `address.street`). Array accesses use only `[]`
 (e.g. `vertex[1]`).
+
+An expression can also be simply `context`, which evaluates to a hash
+with two keys, `stack` and `environment`, containing string
+representation of the stack trace and current environment at the
+moment the `context` expression is evaluated.
 
 ## Types
 
@@ -256,7 +267,7 @@ It is illegal to name a variable the same as a required primitive.
 Arguments: `base`, `exponent`
 
 Description: Raises `base` to power `exponent` and returns the
-result. Both arguments must be numbers.If one of the arguments is a
+result. Both arguments must be numbers. If one of the arguments is a
 double float, the result is a double float, otherwise it is an
 integer.
 
@@ -383,8 +394,8 @@ converting scalars to strings.
 Arguments: `expr`
 
 Description: Returns a string representing the ShovelScript code that
-would create a data structure like `expr`. Unlike `string` walks
-arrays and hashes.
+would create a data structure like `expr`. Unlike `string`, it walks
+arrays and hashes and calls itself recursively to print their content.
 
 It prints `[...callable...]` for callables and `[...loop...]` for
 items that make `expr` a circular data structure.
@@ -399,7 +410,7 @@ returns:
 
     array(1, [...loop...], 3)
 
-    ### `parseInt`
+### `parseInt`
 
 Arguments: `string-expr`
 
@@ -429,8 +440,14 @@ Description: Finishes program execution with message `message`.
 ## User-Defined Primitives
 
 A function name that starts with an 'at sign' denotes a user-defined
-primitive. These are functions that are made available to the
+primitive (UDP). These are functions that are made available to the
 ShovelScript by the process hosting Shovel. For instance,
 `@getUserName(userId)` is a call to such a user-defined primitive and
 `var fun = @udp` assigns a user-defined primitive to a variable.
 
+UDPs need to handle their own host-language exceptions (there are no
+exceptions in ShovelScript) and encode the encountered exceptional
+situations in the value that they return.
+
+UDPs cannot call ShovelScript functions (that would make break the
+'interruptible' property of ShovelScript functions).

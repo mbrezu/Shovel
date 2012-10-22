@@ -6,7 +6,8 @@
 
 Clone Shovel from `http://github.com/mbrezu/shovel` into the
 [`local-projects`](http://blog.quicklisp.org/2011/11/november-quicklisp-updates.html)
-directory of your [Quicklisp](http://www.quicklisp.org/) installation.
+directory of your [Quicklisp](http://www.quicklisp.org/)
+installation. Install Quicklisp now if you haven't done so already.
 
 At your REPL (preferably a SLIME REPL) you can now type `(ql:quickload
 :shovel)` to load Shovel into your Lisp image. Run
@@ -34,7 +35,7 @@ classic:
 ShovelScript is a variation on the 'infix Scheme' theme. It is simpler
 than JavaScript, and a description can be found in
 [ShovelScriptSpec.md](ShovelScriptSpec.md). A reader of the present
-document would be greatly served by some Scheme or JavaScript
+document would be greatly helped by some Scheme or JavaScript
 knowledge. The factorial script above is JavaScript-like, but:
 
  * `function` is shortened to `fn`;
@@ -128,10 +129,12 @@ suppose we want to print values:
     4
     5 NULL
 
-(the final `NULL` is the result from `forEach`, a user-defined
-primitive is defined by providing a name, a CL function object and the
-number of arguments - NIL if we want to use functions which accept a
-variable number of arguments).
+Notes:
+
+ * the final `NULL` is the result from `forEach`;
+ * a user-defined primitive is defined by providing a name, a CL
+   function object and the number of arguments - NIL if we want to use
+   functions which accept a variable number of arguments.
 
 User-defined primitives should handle their own conditions/exceptions
 and return values appropriate for the exceptional situation
@@ -159,13 +162,17 @@ A simple example with two user-defined primitives:
 
 The definition of `printLn` returns `:null` - this is the
 representation of ShovelScript's `null` in Common Lisp. User-defined
-primitives are supposed to return ShovelScript values and it is an
-error if they don't. See the ShovelScript specification for the list
-of types. `:true` and `:false` are the ShovelScript booleans
-represented in CL, CL arrays and hashes (with comparison via
-`#'equal`) are ShovelScript arrays and hashes and CL strings, integers
-and double precision floats are ShovelScript's strings, integers and
-floats.
+primitives are supposed to return values of ShovelScript types and it
+is an error if they don't. See the
+[ShovelScript specification](ShovelScriptSpec.md) for the list of
+available types. A crash-course about ShovelScript values:
+
+ * `:true` and `:false` are the ShovelScript booleans represented in
+    CL,
+ * CL arrays and hashes (with comparison via `#'equal`) are
+   ShovelScript arrays and hashes and
+ * CL strings, integers and double precision floats are ShovelScript's
+   strings, integers and floats.
 
 Let's make our user-defined primitives easier to use:
 
@@ -196,16 +203,21 @@ objects:
                      :user-primitives *udps*)
     A Person: name = John, age = 40
     40
-    representation for "john": hash("age", 40, "getDescription", [...callable...], "name", "John")
+    representation for "john": hash("age", 40, "getDescription",
+    [...callable...], "name", "John")
     NULL
 
-Notes: `result` is an expression used as the the last statement in
-`Person` to make it the result of `Person`. `stringRepresentation`
-tries to provide as much information about its argument, with the
-exception of callable objects (callables are displayed as
-`[...callable...]`) and circular structures (back-pointers are
-displayed as `[...loop...`]). `string` is used in `Person` to convert
-`age` to a string - it is an error to `+` numbers and strings.
+Notes:
+
+ * `result` is the last statement used in `Person` to make `Person`
+   return it (the value of a sequence of statements enclosed in `{`
+   and `}` is the value of the last statement);
+ * `stringRepresentation` tries to provide as much information about
+   its argument, with the exception of callable objects (callables are
+   displayed as `[...callable...]`) and circular structures
+   (back-pointers are displayed as `[...loop...`]). `string` is used
+   in `Person` to convert `age` to a string - it is an error to `+`
+   numbers and strings.
 
 ## Where were we? ... interruptible programs
 
@@ -230,7 +242,8 @@ Shovel VM, provide it with user-defined primitives (UDPs) to access
 arguments for the calls on the client and with an UDP to 'transfer to
 the server' (say `goToServer`). The server would also accept a
 serialized Shovel VM, resume it and provide it with UDPs for the
-functions we wanted to expose in the first place, plus `goToClient`.
+functions we wanted to expose in the first place, plus `goToClient` to
+go back to the client.
 
 Then the generic scenario would go like this:
 
@@ -240,7 +253,8 @@ Then the generic scenario would go like this:
    and sent to the server;
  * the server starts a transaction and resumes the VM received from
    the client;
- * once the VM finished its job, it calls `goToClient`;
+ * once the ShovelScript finishes its job on the server, it calls
+   `goToClient`;
  * the server commits the transaction, serializes the VM and state and
    sends them back to the client;
  * the client resumes the VM (providing UDPs to handle the results on the
@@ -259,7 +273,8 @@ for public access, the ShovelScript can only harm the server by
 entering an infinite loop or by allocating large amounts of memory (or
 both). Shovel VMs can be assigned soft CPU and RAM quotas to prevent
 this (see section 'Quotas' in [ShovelVmSpec.md](ShovelVmSpec.md)). I
-will also show how to use these quotas.
+will show how to use these quotas in
+[WebGuessNumber.md](WebGuessNumber.md).
 
 We'll use updating bank accounts as an example of an operation
 requiring transactions (lots of people use this example, it must be
@@ -317,9 +332,9 @@ the 'client' side and reading them on the 'server' side. The server to
 client reply is simulated by setting these variables on the 'server'
 side and reading them on the 'client'.
 
-The code to make the call from the client:
+Let's place the source in a global variable too:
 
-    (let* ((sources (list "
+    (defvar *sources* (list "
     // Setting up the call on the client.
     var sourceAccountNo = @getSourceAccountNo()
     var destinationAccountNo = @getDestinationAccountNo()
@@ -328,10 +343,12 @@ The code to make the call from the client:
     // Go to the server.
     @goToServer()
 
-    // Run the code on the server.
+    // Run the code on the server (the code on the server will wrap
+    // the code between 'goToServer' and 'goToClient' in a transaction) .
+
     @subtractFromAccount(sourceAccountNo, amount)
-    @addToAccount(destinationAccountNo, amount)
-    var transactionDeadline = @getTransactionDeadline()
+    @addToAccount(destinationAccountNo, amount) var
+    transactionDeadline = @getTransactionDeadline()
 
     // Go back to the client.
     @goToClient()
@@ -339,16 +356,22 @@ The code to make the call from the client:
     // Handle the results on the client.
     @setTransactionDeadline(transactionDeadline)
     "))
-           (user-primitives (list (list "getSourceAccountNo"
-                                        #'get-source-account-no 0)
-                                  (list "getDestinationAccountNo"
-                                        #'get-destination-account-no 0)
-                                  (list "getAmount" #'get-amount 0)
-                                  (list "goToServer" #'go-to-server 0)))
-           (bytecode (shovel:get-bytecode sources)))
+
+and the UDPs in another:
+
+    (defvar *udps* (list (list "getSourceAccountNo"
+                               #'get-source-account-no 0)
+                         (list "getDestinationAccountNo"
+                               #'get-destination-account-no 0)
+                         (list "getAmount" #'get-amount 0)
+                         (list "goToServer" #'go-to-server 0)))
+
+The code to make the call from the client:
+
+    (let* ((bytecode (shovel:get-bytecode *sources*)))
       (multiple-value-bind (result vm)
-          (shovel:run-vm bytecode :sources sources
-                         :user-primitives user-primitives)
+          (shovel:run-vm bytecode :sources *sources*
+                         :user-primitives *udps*)
         (declare (ignore result))
         (let ((serialized-bytecode (shovel:serialize-bytecode bytecode))
               (serialized-state (shovel:serialize-vm-state vm)))
@@ -393,6 +416,10 @@ We are now ready to resume the ShovelVM on the server:
           (setf *sent-bytecode* serialized-bytecode)
           (setf *sent-state* serialized-state))))
 
+Note: to execute the program transactionally, the server code would
+have to wrap the `shovel:run-vm` call into some kind of
+`with-transaction-...` construct.
+
 The server replied by updating the `*sent-*` variables. We need one
 more UDP on the client:
 
@@ -412,10 +439,11 @@ Now we can run the final part of the ShovelVM code on the client:
                          :state vm-state)
         (declare (ignore result vm))))
     The bank promised to do it by Judgment Day.
-    
+
 We're done with our RPC call, and the bank promised to transfer the
 money soon. In fact, that final message makes me feel so good I want
-to see it again (we can resume a VM more than once):
+to see it again (we can resume a VM more than once, let's run the last
+code snippet again):
 
     (let ((bytecode (shovel:deserialize-bytecode *sent-bytecode*))
           (vm-state *sent-state*)
@@ -427,7 +455,7 @@ to see it again (we can resume a VM more than once):
                          :state vm-state)
         (declare (ignore result vm))))
     The bank promised to do it by Judgment Day.
-    
+
 Note that the user-defined primitives supplied to the VM varied in
 each case - as various stages needed different UDPs. It would of
 course be an error to try to call a client UDP on the server or a
@@ -443,4 +471,3 @@ sending the bytecode every time etc.). Some of the tasks that require
 more information about Shovel are documented in the description of an
 example which is slightly closer to real programming tasks:
 [WebGuessNumber.md](WebGuessNumber.md).
-

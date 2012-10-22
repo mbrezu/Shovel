@@ -1,6 +1,6 @@
 <!-- -*- markdown -*- -->
 
-# A Web Guessing Number with Shovel and Common Lisp
+# A Guess-the-Number Game with Shovel and Common Lisp
 
 ## Introduction
 
@@ -137,7 +137,7 @@ UDPs:
               (write-string (hunchentoot:escape-for-html content) str)
               (write-string "</span><br/>" str))))
 
-A global variable to remember what to ask the user:
+A global variable to remember what we asked the user:
 
     (defvar *user-read* nil)
 
@@ -194,8 +194,12 @@ A Hunchentoot easy handler to put it all together:
                                           input
                                           "<br/>")))
       (run-guess-number-vm))
+      
+If there's a GET parameter named `input`, we add it to the content
+accumulated in `*page-content*` (this is a simple emulation of echoing
+the input back when reading from standard input at the console).
 
-... and its helper functions:
+The helper functions for the easy handler:
 
     (defun run-guess-number-vm ()
       (multiple-value-bind (result vm)
@@ -224,10 +228,8 @@ A Hunchentoot easy handler to put it all together:
           document.getElementById('shovel-input').focus()</script>"
           str)))
 
-Go to [`http://localhost:4242/guess`](http://localhost:4242/guess) and play the game.
-
-The easy handler adds the `input` GET parameter to the content for
-future pages, then calls `run-guess-number-vm`.
+Go to [`http://localhost:4242/guess`](http://localhost:4242/guess) and
+play the game.
 
 `run-guess-number-vm` runs the VM with the saved state (`nil` if we
 start a fresh VM). If the VM went to sleep, its state is serialized
@@ -285,9 +287,9 @@ We'll use `hunchentoot` for the web server (as before) and add
 
     (ql:quickload :shovel-guess)
 
-Now copy the code from the previous section in the `shovel-guess.lisp`
-file (wrap the `hunchentoot:start` call into a parameterless
-`start-server` function).
+Now copy the `defun`s, `defvar`s and `defparameter`s from the previous
+section in the `shovel-guess.lisp` file (wrap the `hunchentoot:start`
+call into a parameterless `start-server` function).
 
 Load `:shovel-guess` again to load the new code in `shovel-guess.lisp`
 and switch to the `shovel-guess` package:
@@ -336,8 +338,8 @@ Fields description:
    and `VmBytecode`; we store the bytecode to make it easy to change
    our Shovel program without breaking older serialized VMs (which
    have state matching older versions of the program); to get correct
-   error messages in case of multiple programs, we also store the
-   sources in `VmSources`;
+   error messages in case of multiple versions of the program, we also
+   store the sources in `VmSources`;
  * because we store the page contents outside the VM, we need to also
    remember the current page contents in `PageContent`;
  * `UserRead` serves the same purpose as `*user-read*` in the previous
@@ -569,6 +571,9 @@ Finally, `generate-page` is now:
 
 Note the extra `input` element used to hold the session ID.
 
+You can now [try the game](http://localhost:4242/guess) again. Start
+it in two browser windows and notice that they don't share state.
+
 ### Page Reloads, the Back Button, Cloned Pages
 
 There is still a big problem: reloading the page does not work
@@ -588,8 +593,8 @@ The back button almost works (it returns to the previous page, but the
 state of the session doesn't 'go back'). Furthermore, it could be
 argued that entering a different input after using the back button
 should branch the game (create a different 'future' - the guesses made
-in the pages we backed up from are one branch - 'future' - of the
-game, by entering other inputs we create a new branch/future). This is
+in the pages we backed up from are one branch (or 'future') of the
+game; by entering other inputs we create a new branch/future). This is
 important, we can now cheat the game: guess the number, then use the
 back button as much as we like (maybe up to the first guess?) and then
 enter the secret number directly.
@@ -603,14 +608,16 @@ should be mirrored by cloned sessions in our application).
 The solution is obviously not HTTP redirects. One way to simulate this
 branching is actually branching the VM states: create a new session
 every time the session is saved. This way, we get persistent sessions,
-for the other meaning of the 'persistent' (see for instance
+for another value of 'persistent' (see for instance
 [Wikipedia's *Persistent data structure* article](https://en.wikipedia.org/wiki/Persistent_data_structure)). These
 are versioned sessions (mmm... time travel). In real applications we
 have to account for state outside the sessions (launched missiles,
 sent emails, purchased products etc.) - so versioning will probably
 break down for 'outside state' and there's a need to compesate (show
 the user a list of recently bought products so they don't buy
-something twice by mistake).
+something twice by mistake). Anyway, our sessions are now 'values',
+which turns out to be
+[a very good thing](http://www.infoq.com/presentations/Value-Values).
 
 Of course more sessions mean more disk space. For our toy application
 this doesn't really matter - in a real application we'd have to delete
@@ -648,7 +655,8 @@ code shorter:
 (change `save-session` in your code or switch to Git branch
 `back-button` if you're using the code from Github).
 
-Try it! See if you can guess the secret number in one attempt!
+[Try it](http://localhost:4242/guess)! See if you can guess the secret
+number in one attempt!
 
 A short aside about storage: our storage arrangements are a bit
 wasteful - for each session we store not only the VM state, but also
@@ -829,7 +837,7 @@ Let's [try it out](http://localhost:4242/whatever) with the following program:
     
 It works! (try the Github code, branch `turn-tables`, if it doesn't
 work for you - either I messed up when copying code into this document
-or you mistyped/mispasted something)
+or you missed/mistyped/mispasted something)
 
 What about this slightly broken program?
 

@@ -33,9 +33,11 @@ More generally, have you ever needed to associate a 'program' with a
 'program' to be actually running for only a small fraction of its
 lifetime and to spend the rest of the time tucked away in a database
 somewhere (thus freeing memory and threads for more urgent needs)?
-Document management, bug tracking, task tracking etc. software may use
-such an approach - and the 'programs' mentioned may become real
-programs by using Shovel.
+Software for document management, bug tracking, task tracking
+etc. needs such an approach - and the 'programs' mentioned may become
+real programs by using Shovel (instead of being hopelessly
+[complected](http://www.infoq.com/presentations/Simple-Made-Easy) with
+the rest of the application).
 
 ## HOW?
 

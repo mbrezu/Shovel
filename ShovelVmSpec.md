@@ -40,11 +40,18 @@ The stack can hold the following kinds of elements:
 
 Variables are stored in environments (in the
 [SICP](http://mitpress.mit.edu/sicp/full-text/book/book-Z-H-21.html#%_sec_3.2)
-sense) this gives easy closures.
+sense) - this gives easy closures.
 
-An environment is a stack of 'frames' (the environment stack). Frames
-are arrays of (name, value) pairs. The names are only needed to offer
-more helpful debugging information.
+An environment is a stack of 'frames' (the environment stack). A frame
+is a tuple containing:
+
+ * the program-counter at which it was created,
+ * the list of variables in the frame and
+ * an array of values.
+
+The names and the program counter are only needed to offer more
+helpful debugging information. During normal exectution only the array
+of values is used.
 
 A variable is identified as a pair of integers (frame address,
 variable index in frame). See [PAIP](http://www.norvig.com/paip.html),
@@ -52,7 +59,7 @@ Chapter 23. The 'frame address' is the distance of the frame from the
 top of environment stack (i.e., frame address 0 means the frame on the
 top of the environment stack, frame address 1 means the one below it
 and so on). Once the frame is identified, the 'variable index' is the
-index of the variable in the frame.
+index of the variable in the frame's array of values.
 
 ## State
 
@@ -68,8 +75,8 @@ The Shovel implementation must provide means to serialize and
 deserialize the state of the VM, and to stop and start the VM.
 
 Since serialization of stopped Shovel processes involves serialization
-of state and VM bytecode and the serialized VM bytecode is often
-larger than the serialized state, it makes sense to store the two in
+of state and VM bytecode and the serialized VM bytecode is common for
+many serialized processes, it makes sense to store the two in
 different locations. To help with matching the state with the correct
 bytecode, the state is also serialized with three additional elements:
 
@@ -85,8 +92,8 @@ VM with the state of another VM.
 
 ### Serialization
 
-The serialization stores circular data-structures correctly by keeping
-a record of the pointers already 'visited'.
+The serialization algorithm stores circular data-structures correctly
+by keeping a record of the pointers already 'visited'.
 
 Right now the serialization details are in the Common Lisp
 code. [MessagePack](http://msgpack.org/) is used to encode the data.
@@ -190,7 +197,7 @@ Arguments: none;
 Stack effect: ( `return-address` `return-value` -- `return-value` );
 
 Description: Set the current environment and program counter to the
-ones stored in `return-address`. See the section 'The Stack' above.
+ones stored in `return-address`.
 
 ### `CALLJ`
 
@@ -208,22 +215,31 @@ elements are popped from the stack and used to call the primitive.
 Arguments: `argument-count`;
 
 Stack effect:
-( [ ... `arguments` ... ] `callable` --  `return-address` [ ... `arguments` ... ]);
+( [ ... `arguments` ... ] `callable` --  [ ... `arguments` ... ] `return-address`);
 
-Description: save a return address on the stack 'under' the arguments;
-the return address is the pair (current environment, program counter
-pointing to the instruction after the call); THEN do what CALLJ does.
+Description: save a return address on the stack; the return address is
+the pair (current environment, program counter pointing to the
+instruction after the call); THEN do what CALLJ does.
 
 ### `ARGS`
 
 Arguments: `argument-count`;
 
-Stack effect: ( [ ... `arguments` ... ] -- );
+Stack effect: ( [ ... `arguments` ... ] `return-address` -- `return-address`);
 
-Description: the instruction pops `argument-count` values from the
-stack, and stores them in the topmost frame of the current environment
-in the first slots (e.g. for `argument-count = 2` the top of the
-stack will be stored at position 1 in the frame and the next-top-of-stack at
+or ( [ ... `arguments` ... ] -- ) if the top of the stack is not a
+'return address'.
+
+Description: 
+
+Case 1: if the top of the stack is a 'return-address', it is popped
+and saved, the instruction is handled as described in Case 2 below,
+then the return address is pushed back on the stack.
+
+Case 2: the instruction pops `argument-count` values from the stack,
+and stores them in the topmost frame of the current environment in the
+first slots (e.g. for `argument-count = 2` the top of the stack will
+be stored at position 1 in the frame and the next-top-of-stack at
 position 0).
 
 ### `FN`
@@ -264,7 +280,9 @@ Stack effect: ( -- );
 
 Description: extends the current environment by adding a new frame
 containing `count` slots (the number of arguments). All the new
-variables are initialized to `null`.
+variables are initialized to `null`. Also saves the list of variable
+names and the current program counter in the frame (this information
+is useful for debugging).
 
 ### `DROP-FRAME`
 

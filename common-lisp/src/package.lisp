@@ -159,23 +159,20 @@
   #. (import-from-shovel-compiler)
   #. (import-from-shovel-vm)
   (:export
-   :print-code
-   :run-code
+   
+   :print-code :run-code :naked-run-code
    :stdlib
-   :naked-run-code
-   :serialize-bytecode
-   :deserialize-bytecode
-   :get-bytecode
-   :run-vm
-   :get-vm-stack
-   :get-vm-environment
-   :wake-up-vm
+   
+   :get-bytecode :serialize-bytecode :deserialize-bytecode
+   
+   :run-vm :get-vm-stack :get-vm-environment :wake-up-vm
+
    :get-vm-programming-error
    :get-vm-user-defined-primitive-error
-   :increment-ticks
-   :increment-cells
-   :vm-used-cells
-   :vm-used-ticks
+   
+   :increment-ticks :increment-cells
+   
+   :vm-used-cells :vm-used-ticks
 
    :source-file
    :make-source-file
@@ -187,16 +184,19 @@
    :error-line
    :error-column
    :error-message
+   
    :shovel-vm-match-error
    :shovel-broken-checksum
    :shovel-version-too-large
    :shovel-total-ticks-quota-exceeded
    :shovel-cell-quota-exceeded
+   
    :vm-version
    :vm-bytecode-md5
    :vm-sources-md5
-   :serialize-vm-state
-   :vm-execution-complete
+   
+   :serialize-vm-state :vm-execution-complete
+   
    :*version*))
 
 (defvar shovel:*version* 1)
