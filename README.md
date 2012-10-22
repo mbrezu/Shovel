@@ -49,17 +49,21 @@ with implementations in C#, JavaScript and Java planned). The Shovel
 language is named ShovelScript.
 
 A Shovel quick start guide for Common Lisp:
-[ClGettingStarted.md](shovel/ClGettingStarted.md).
+[ClGettingStarted.md](shovel/blob/master/ClGettingStarted.md).
 
-A simple number guessing demo: [WebGuessNumber.md](shovel/WebGuessNumber.md).
+A simple number guessing demo:
+[WebGuessNumber.md](shovel/blob/master/WebGuessNumber.md).
 
-The description of the API: [ShovelApi.md](shovel/ShovelApi.md).
+The description of the API:
+[ShovelApi.md](shovel/blob/master/ShovelApi.md).
 
 If you want more information: The language specification (for small
-values of 'specification'): [ShovelScriptSpec.md](shovel/ShovelScriptSpec.md).
+values of 'specification'):
+[ShovelScriptSpec.md](shovel/blob/master/ShovelScriptSpec.md).
 
 If you want even more information: The VM specification (also for
-small values of 'specification'): [ShovelVmSpec.md](shovel/ShovelVmSpec.md).
+small values of 'specification'):
+[ShovelVmSpec.md](shovel/blob/master/ShovelVmSpec.md).
 
 The two 'specifications' above are probably very low quality (they
 specify little) but I include them here hoping that they are better
@@ -73,7 +77,8 @@ Beyond these, the source code is the real source of information :-)
 Shovel implementations and the associated documentation are
 distributed under the
 [2-clause](https://en.wikipedia.org/wiki/BSD_licenses#2-clause_license_.28.22Simplified_BSD_License.22_or_.22FreeBSD_License.22.29)
-BSD license (see the [license.txt](shovel/license.txt) file).
+BSD license (see the [license.txt](shovel/blob/master/license.txt)
+file).
 
 ## THANKS!
 
