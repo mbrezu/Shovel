@@ -137,8 +137,8 @@ Notes:
    functions which accept a variable number of arguments.
 
 User-defined primitives should handle their own conditions/exceptions
-and return values appropriate for the exceptional situation
-- ShovelScript doesn't have exception handling.
+and return values appropriate for the exceptional situation;
+ShovelScript doesn't have exception handling.
 
 A simple example with two user-defined primitives:
 
