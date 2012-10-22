@@ -84,7 +84,7 @@ file).
 
 The code generator and Shovel VM are modeled after the Scheme compiler
 from Peter Norvig's *Paradigms of Artificial Intelligence Programming*
-book (chapter 23). Thank you, Peter Norvig! (I hope I haven't broke
+book (chapter 23). Thank you, Peter Norvig! (I hope I haven't broken
 your code beyond recognition, any bugs in the Shovel code generator
 and VM are obviously my bugs and my fault)
 
