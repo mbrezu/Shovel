@@ -39,8 +39,6 @@
   (used-cells 0 :type fixnum)
   (executed-ticks 0 :type integer)
   (executed-ticks-since-last-nap 0 :type integer)
-  (last-start-pos nil)
-  (last-end-pos nil)
   (sources nil)
   (should-take-a-nap nil)
   (user-defined-primitive-error nil)
@@ -235,25 +233,38 @@ none."
 it, you have to call this function before calling RUN-VM."
   (setf (vm-should-take-a-nap vm) nil))
 
+(defun find-start-end-pos (vm)
+  (labels ((find-em (pc)
+             (if (< pc 0)
+                 (values nil nil)
+                 (let* ((bytecode (vm-bytecode vm))
+                        (instruction (aref bytecode pc)))
+                   (alexandria:if-let ((start-pos (instruction-start-pos instruction))
+                                       (end-pos (instruction-end-pos instruction)))
+                     (values start-pos end-pos)
+                     (find-em (1- pc)))))))
+    (find-em (vm-program-counter vm))))
+
 (defun write-stack-trace (vm stream &optional stack-dump)
   (labels ((iter (stack)
-                 (when stack
-                   (if (return-address-p (car stack))
-                       (let* ((pc (return-address-program-counter (car stack)))
-                              (call-site (elt (vm-bytecode vm) (1- pc))))
-                         (print-line-for vm stream pc
-                                         (instruction-start-pos call-site)
-                                         (instruction-end-pos call-site)))
-                       (if stack-dump
-                           (format stream "~a~%"
-                                   (shovel-vm-prim0::shovel-string-representation
-                                    (car stack)))))
-                   (iter (cdr stack)))))
+             (when stack
+               (if (return-address-p (car stack))
+                   (let* ((pc (return-address-program-counter (car stack)))
+                          (call-site (elt (vm-bytecode vm) (1- pc))))
+                     (print-line-for vm stream pc
+                                     (instruction-start-pos call-site)
+                                     (instruction-end-pos call-site)))
+                   (if stack-dump
+                       (format stream "~a~%"
+                               (shovel-vm-prim0::shovel-string-representation
+                                (car stack)))))
+               (iter (cdr stack)))))
     (unless stack-dump
-      (print-line-for vm stream
-                      (vm-program-counter vm)
-                      (vm-last-start-pos vm)
-                      (vm-last-end-pos vm)))
+      (multiple-value-bind (start-pos end-pos)
+          (find-start-end-pos vm)
+        (print-line-for vm stream
+                        (vm-program-counter vm)
+                        start-pos end-pos)))
     (iter (vm-stack vm))))
 
 (defun raise-shovel-error (vm message)
@@ -270,18 +281,18 @@ it, you have to call this function before calling RUN-VM."
     (when (and file-name (vm-sources vm))
       (alexandria:when-let* ((source-file (find-source (vm-sources vm) file-name))
                              (content (shovel:source-file-contents source-file)))
-        (setf pos (find-position file-name content (vm-last-start-pos vm)))
+        (setf pos (find-position file-name content (find-start-end-pos vm)))
         (when pos
           (setf line (pos-line pos))
           (setf column (pos-column pos)))))
     (error
-     (alexandria:if-let (pos (vm-last-start-pos vm))
-       (make-condition 'shovel:shovel-error
-                       :message message
-                       :file file-name
-                       :line line
-                       :column column)
-       (make-condition 'shovel:shovel-error :message message)))))
+     (if (and file-name line column)
+         (make-condition 'shovel:shovel-error
+                         :message message
+                         :file file-name
+                         :line line
+                         :column column)
+         (make-condition 'shovel:shovel-error :message message)))))
 
 (defun find-required-primitive (vm name)
   (let ((primitive (gethash name *primitives*)))
@@ -797,10 +808,6 @@ Returns two values: the top of the VM stack and the VM itself."
     (let ((instruction (aref (the (simple-array instruction *) (vm-bytecode vm))
                              (vm-program-counter vm))))
       (declare (type instruction instruction))
-      (alexandria:when-let ((start-pos (instruction-start-pos instruction))
-                            (end-pos (instruction-end-pos instruction)))
-        (setf (vm-last-start-pos vm) start-pos
-              (vm-last-end-pos vm) end-pos))
       (let ((opcode-num (instruction-opcode-num instruction)))
         (declare (type fixnum opcode-num)
                  (type (simple-array (function (vm instruction) t)) *instruction-handlers*))
@@ -906,7 +913,7 @@ Returns two values: the top of the VM stack and the VM itself."
   (declare (optimize speed (safety 0))
            (type fixnum n))
   (if (= n 0) (values acc list)
-      (reversed-prefix (rest list) (1- n) (cons (car list) acc))))
+      (reversed-prefix (rest list) (the fixnum (1- n)) (cons (car list) acc))))
 
 (defun finish-calling-required-primitive (primitive arg-values
                                           save-return-address new-stack

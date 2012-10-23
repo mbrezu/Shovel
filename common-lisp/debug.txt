@@ -126,3 +126,122 @@ Profiler invocation (for the VM):
                    (declare (ignore result))
                    (print (shovel:vm-used-ticks vm))
                    (print (shovel:vm-used-cells vm)))))
+
+Comparison script (python)
+
+    def reduceLeft(arr, init, fn):
+        result = init
+        for a in arr:
+            result = fn(result, a)
+        return result
+
+    result = 15
+
+    import time
+
+    t1 = time.time()
+
+    acc = []
+
+    for x in xrange(150000):
+        a = [1, 2, 3, 4, 5]
+        result = reduceLeft(a, 0, lambda acc, el: acc + el)
+        acc.append(result)
+
+    t2 = time.time()
+
+    print t2 - t1
+
+    print len(acc)
+
+Test code (generation of numbers for MasterMind):
+
+    (setf *src* (list "
+    var breakNumber = fn (n) {
+      array((n / 1000) % 10,
+            (n / 100) % 10,
+            (n / 10) % 10,
+            n % 10)
+    }
+    var allDifferent2 = {
+      var map = array(0, 0, 0, 0, 0, 0,
+                      0, 0, 0, 0, 0, 0)
+      fn (bn) {
+        var iter = fn (idx) {
+          if idx < 4 { 
+            if map[bn[idx]] == 0 {
+              map[bn[idx]] = 1
+              var result = iter(idx + 1)
+              map[bn[idx]] = 0
+              result
+            } else false
+          } else true
+        }
+        iter(0)
+        //0
+      }
+    }
+    var allDifferent = fn (bn) {
+      var iter = fn (num, idx) {
+        if idx == 4 false
+        else num == bn[idx] || iter(num, idx + 1)
+      }
+      !(iter(bn[0], 1) || iter(bn[1], 2) || iter(bn[2], 3))
+    }
+    var allDifferent3 = fn (bn) {
+      bn[0] != bn[1] && bn[0] != bn[2] && bn[0] != bn[3]
+      && bn[1] != bn[2] && bn[1] != bn[3]
+      && bn[2] != bn[3]
+    }
+    var generateOptions = fn () {
+      var result = array()
+      var iter = fn (n) {
+        if n < 10000 {
+          var bn = breakNumber(n)
+          if allDifferent(bn) push(result, bn)
+          iter(n + 1)
+        }
+      }
+      iter(0)
+      result
+    }
+    //length(generateOptions())
+    slice(generateOptions(), 0, 10)
+    "))
+
+Equivalentish Python code:
+
+    def breakNumber(n):
+        return [(n / 1000) % 10,
+                (n / 100) % 10,
+                (n / 10) % 10,
+                n % 10]
+
+    def allDifferent(bn):
+        def iter(num, idx):
+            if idx == 4: return False
+            else: return num == bn[idx] or iter(num, idx + 1)
+        return not (iter(bn[0], 1) or iter(bn[1], 2) or iter(bn[2], 3))
+
+    def allDifferent2(bn):
+        return bn[0] != bn[1] and bn[0] != bn[2] and bn[0] != bn[3] \
+            and bn[1] != bn[2] and bn[1] != bn[3] \
+            and bn[2] != bn[3]
+
+    def generateOptions():
+        result = []
+        for n in xrange(10000):
+            bn = breakNumber(n)
+            if allDifferent(bn): result.append(bn)
+        return result
+
+    import time
+
+    t1 = time.time()
+
+    print generateOptions()[:10]
+
+    t2 = time.time()
+
+    print t2 - t1
+
