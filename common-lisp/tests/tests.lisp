@@ -1006,7 +1006,7 @@ result
       (multiple-value-bind (result2 ticks2 vm)
           (run-with-until-nap-ticks-quota 1000 vm)
         (declare (ignore result2 vm))
-        (is (= 2006 ticks2))))))
+        (is (= 2000 ticks2))))))
 
 (test vm-user-defined-primitive-ticks-quota
   (labels ((udp (ticks)
