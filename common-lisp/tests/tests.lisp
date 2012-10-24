@@ -977,7 +977,7 @@ result
       (is (= 15 result))
       (is (= 3594 ticks)))
     (signals shovel:shovel-total-ticks-quota-exceeded
-      (run-with-total-ticks-quota 3593))))
+      (run-with-total-ticks-quota 3580))))
 
 (test vm-nap-quota
   (labels ((run-with-until-nap-ticks-quota (quota &optional vm)
@@ -1006,7 +1006,7 @@ result
       (multiple-value-bind (result2 ticks2 vm)
           (run-with-until-nap-ticks-quota 1000 vm)
         (declare (ignore result2 vm))
-        (is (= 2000 ticks2))))))
+        (is (= 2006 ticks2))))))
 
 (test vm-user-defined-primitive-ticks-quota
   (labels ((udp (ticks)
@@ -1042,7 +1042,7 @@ stdlib.repeat(1000, fn() {
                        :sources sources
                        :cells-quota 900)
       (declare (ignore result))
-      (is (= 373 (shovel-vm::vm-used-cells vm))))
+      (is (= 898 (shovel-vm::vm-used-cells vm))))
     (signals shovel:shovel-cell-quota-exceeded
       (shovel:run-vm bytecode
                      :sources sources

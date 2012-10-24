@@ -439,15 +439,15 @@ UDPs can model their memory allocation by incrementing this counter by
 a value of their choice (hopefully representative of the amount of
 memory they allocated).
 
-Before executing each instruction, the VM checks if this cell counter
-went over the cell quota. If it did, it walks the active objects in
-the VM (i.e. the objects reachable from the stack and the current
-environment) and adds up their cell usage. The cell counter is then
-set to this (more accurate) cell usage. If the cell counter is still
-over the cell quota, the VM throws a cell-quota-exceeded exception.
+The VM regularly checks if this cell counter went over the cell
+quota. If it did, it walks the active objects in the VM (i.e. the
+objects reachable from the stack and the current environment) and adds
+up their cell usage. The cell counter is then set to this (more
+accurate) cell usage. If the cell counter is still over the cell
+quota, the VM throws a cell-quota-exceeded exception.
 
 The ever-incrementing cell counter is a means of avoiding to count all
-the live objects before every instruction.
+the live objects every time the quota check is made.
 
 The cells quota is soft because:
  
@@ -469,14 +469,13 @@ particular VM execute before it is interrupted and asked to go to
 sleep).
 
 There are two corresponding tick counters which are incremented by one
-after executing any Shovel VM instruction. The user-defined primitives
+after executing a few Shovel VM instructions. The user-defined primitives
 can model their CPU cost by incrementing these counters by values
 representative of their CPU usage.
 
-Before each instruction the tick quotas are checked. If the total
-ticks quota is exceeded, the VM throws a total-ticks-quota-exceeded
-exception. If the ticks-until-next-nap quota is exceeded, the VM goes
-to sleep.
+The tick quotas are regularly checked. If the total ticks quota is
+exceeded, the VM throws a total-ticks-quota-exceeded exception. If the
+ticks-until-next-nap quota is exceeded, the VM goes to sleep.
 
 These CPU quotas are soft because:
 
