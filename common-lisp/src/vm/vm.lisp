@@ -529,12 +529,8 @@ Returns two values: the top of the VM stack and the VM itself."
   (let ((args (instruction-arguments instruction)))
     (push args (vm-stack vm))
     (inc-pc vm)
-    (if (stringp args)
-        ;; 1 for the string, the rest for the contents
-        (increment-cells-quota vm (1+ (length args)))
-
-        ;; for the pushed value
-        (increment-cells-quota vm 1))))
+    ;; for the pushed value
+    (increment-cells-quota vm 1)))
 
 (defun handle-prim0 (vm instruction)
   (declare (optimize speed (safety 0))
@@ -833,7 +829,7 @@ Returns two values: the top of the VM stack and the VM itself."
       (labels ((calculate-vars (vm)
                  (declare (optimize speed (safety 0))
                           (type vm vm))
-                  ;; (print "calculating vars")
+                 ;; (print "calculating vars")
                  (let ((env (vm-current-environment vm)))
                    (dolist (lget lgets)
                      (let ((frame-number (car lget))

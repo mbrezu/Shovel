@@ -1042,7 +1042,7 @@ stdlib.repeat(1000, fn() {
                        :sources sources
                        :cells-quota 900)
       (declare (ignore result))
-      (is (= 898 (shovel-vm::vm-used-cells vm))))
+      (is (= 765 (shovel-vm::vm-used-cells vm))))
     (signals shovel:shovel-cell-quota-exceeded
       (shovel:run-vm bytecode
                      :sources sources
