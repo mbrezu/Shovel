@@ -58,31 +58,34 @@ namespace Shovel
 
         static string Underline (int start, int end)
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder ();
             for (var i = 0; i < start - 1; i++) {
                 sb.Append (' ');
             }
             for (var i = 0; i <= end - start; i++) {
                 sb.Append ('^');
             }
-            return sb.ToString();
+            return sb.ToString ();
         }
 
         static int FirstNonBlank (string line)
         {
             int result = 1;
-            while(true) {
+            while (true) {
                 if (result > line.Length) {
                     return 1;
                 }
-                if (line[result - 1] != ' ' && line[result - 1] != '\t') {
+                if (line [result - 1] != ' ' && line [result - 1] != '\t') {
                     return result;
                 }
                 result ++;
             }
         }
 
-
+        public static void Panic ()
+        {
+            throw new InvalidOperationException ("Shovel internal WTF.");
+        }
     }
 }
 
