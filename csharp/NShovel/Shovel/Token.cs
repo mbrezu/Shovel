@@ -58,10 +58,10 @@ namespace Shovel
         public override string ToString ()
         {
             return string.Format (
-                "[Token: Type={0}, StartPos={1}, EndPos={2}, Content='{3}'", 
+                "[Token: Type={0}, StartPos={1}, EndPos={2}, Content='{3}']", 
                 Type, StartPos, EndPos, Content);
         }
-		
+
     }
 }
 

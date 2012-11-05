@@ -20,6 +20,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
+using System.Text;
 
 namespace ConsoleTest
 {
@@ -27,14 +28,23 @@ namespace ConsoleTest
     {
         public static void Main (string[] args)
         {
-            var text = "var a = 20";
+
+            var text = "var a = $";
             var source = new Shovel.SourceFile () {
                 FileName = "test.sho",
                 Content = text
             };
             var tokenizer = new Shovel.Compiler.Tokenizer (source);
-            foreach (var token in tokenizer.Tokens) {
-                Console.WriteLine(token);
+            try {
+                foreach (var token in tokenizer.Tokens) {
+                    Console.WriteLine (token);
+                }
+            } catch (Shovel.ShovelException ex) {
+                Console.WriteLine (ex.Message);
+                Console.WriteLine (ex.FileName);
+                Console.WriteLine (ex.Line);
+                Console.WriteLine (ex.Column);
+                Console.WriteLine (ex.AtEof);
             }
         }
     }
