@@ -23,7 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Shovel
+namespace Shovel.Compiler
 {
 	public class Parser
 	{
@@ -172,15 +172,89 @@ namespace Shovel
 				}
 				);
 			} else {
-				// FIXME: need to add the postprocessor here.
-				return this.LeftAssoc (this.ParseOrTerm, token => token.IsLogicalOrOp);
+				return this.LeftAssoc (
+					this.ParseOrTerm, 
+					token => token.IsLogicalOrOp,
+					this.PostProcessLogicalOr);
 			}
+		}
+
+		static ParseTree trueParseTree;
+		static ParseTree GetTrueParseTree ()
+		{
+			if (Parser.trueParseTree == null) {
+				Parser.trueParseTree = new ParseTree () {
+					Label = ParseTree.Labels.Bool,
+					Content = "true"
+				};
+			}
+			return Parser.trueParseTree;
+		}
+
+		static ParseTree falseParseTree;
+		static ParseTree GetFalseParseTree ()
+		{
+			if (Parser.falseParseTree == null) {
+				Parser.falseParseTree = new ParseTree () {
+					Label = ParseTree.Labels.Bool,
+					Content = "false"
+				};
+			}
+			return Parser.falseParseTree;
+		}
+
+		ParseTree MaybeRewriteAsIfExpression (
+			ParseTree parseTree, 
+			string opName, 
+			Func<ParseTree, ParseTree, IEnumerable<ParseTree>> ifChildren)
+		{
+			if (this.IsRequiredPrimitiveCall(parseTree, opName)) {
+				var operands = parseTree.Children.ToArray();
+				var op = operands[0];
+				var t1 = operands[1];
+				var t2 = operands[2];
+				return new ParseTree() {
+					Label = ParseTree.Labels.If,
+					StartPos = op.StartPos,
+					EndPos = op.EndPos,
+					Children = ifChildren(t1, t2)
+				};
+			} else {
+				return parseTree;
+			}
+		}
+
+		bool IsRequiredPrimitiveCall (ParseTree parseTree, string opName)
+		{
+			if (parseTree.Label == ParseTree.Labels.Call) {
+				var op = parseTree.Children.First ();
+				if (op.Label == ParseTree.Labels.Prim0 && op.Content == opName) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		ParseTree PostProcessLogicalOr (ParseTree arg)
+		{
+			return this.MaybeRewriteAsIfExpression (
+				arg, "||", 
+				(t1, t2) => new ParseTree[] { t1, Parser.GetTrueParseTree (), t2 });
+		}
+
+		ParseTree PostProcessLogicalAnd (ParseTree arg)
+		{
+			return this.MaybeRewriteAsIfExpression (
+				arg, "&&", 
+				(t1, t2) => new ParseTree[] { t1, t2, Parser.GetFalseParseTree () });
 		}
 
 		ParseTree ParseOrTerm ()
 		{
-			// FIXME: need to add the postprocessor here.
-			return LeftAssoc (this.ParseAndTerm, token => token.IsLogicalAndOp);
+			return LeftAssoc (
+				this.ParseAndTerm, 
+				token => token.IsLogicalAndOp,
+				this.PostProcessLogicalAnd);
 		}
 
 		ParseTree ParseAndTerm ()
@@ -473,26 +547,28 @@ namespace Shovel
 
 		ParseTree ParseLambda ()
 		{
-			return this.WithNewParseTree(ParseTree.Labels.Fn, pt => {
-				var args = this.ParseLambdaArgs();
-				var body = this.ParseStatement();
+			return this.WithNewParseTree (ParseTree.Labels.Fn, pt => {
+				var args = this.ParseLambdaArgs ();
+				var body = this.ParseStatement ();
 				pt.Children = new ParseTree[] { args, body };
-			});
+			}
+			);
 		}
 
 		ParseTree ParseLambdaArgs ()
 		{
-			return this.WithNewParseTree(ParseTree.Labels.List, pt => {
+			return this.WithNewParseTree (ParseTree.Labels.List, pt => {
 				if (this.TokenIs (Token.Types.Punctuation, "(")) {
 					pt.Children = this.ParseList (
-						() => this.ParseName(false),
+						() => this.ParseName (false),
 						Parser.OpenParenthesis,
 						Parser.Comma,
 						Parser.CloseParenthesis);
 				} else {
 					pt.Children = new ParseTree[] { this.ParseName (false) };
 				}
-			});
+			}
+			);
 		}
 
 		ParseTree WithNewParseTree (ParseTree.Labels label, Action<ParseTree> action)

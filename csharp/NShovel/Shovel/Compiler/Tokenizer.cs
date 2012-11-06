@@ -22,7 +22,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Shovel
+namespace Shovel.Compiler
 {
     public class Tokenizer
     {

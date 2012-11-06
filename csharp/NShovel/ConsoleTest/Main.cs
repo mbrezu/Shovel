@@ -32,7 +32,7 @@ namespace ConsoleTest
                 FileName = "test.sho",
                 Content = text
             };
-            var tokenizer = new Shovel.Tokenizer (source);
+            var tokenizer = new Shovel.Compiler.Tokenizer (source);
             foreach (var token in tokenizer.Tokens) {
                 Console.WriteLine(token);
             }
