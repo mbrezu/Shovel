@@ -217,7 +217,8 @@
              (vm-error "Getting an array element requires an integer index.")))
         ((hash-table-p array-or-hash)
          (if (stringp index)
-             (gethash index array-or-hash)
+             (or (gethash index array-or-hash)
+                 :null)
              (vm-error
               "Getting a hash table value requires a key that is a string.")))))
 

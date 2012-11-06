@@ -1144,6 +1144,9 @@ name = \"John\"
 
 ")))))))
 
+(test key-not-found
+  (is (eq :true (shovel:naked-run-code (list "var a = hash() a['a'] == null")))))
+
 (defun run-tests ()
   (let ((*print-circle* t))
     (fiveam:run! :shovel-tests)))
