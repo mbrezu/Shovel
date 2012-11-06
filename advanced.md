@@ -49,7 +49,7 @@ Let's start with some example code:
     var pid1 = @allocatePid()
     var pid2 = @allocatePid()
     var pid3 = @allocatePid()
-    var pid = @fork(pid1, pid2, pid3)
+    var pid = @fork([pid1, pid2, pid3])
     if pid == pid1 {
       // ... the action on branch 1 ...
       @finish(state1)
@@ -60,7 +60,7 @@ Let's start with some example code:
       // ... the action on branch 3 ...
       @finish(null)
     }
-    var stateDict = @wait(pid1, pid2, pid3)
+    var stateDict = @wait([pid1, pid2, pid3])
     
 Each document has an associated pool of Shovel VMs; each active Shovel
 VM has an associated 'process id' (PID). Each document can have at
@@ -69,24 +69,27 @@ pids for each document are managed by the host language framework
 (implement the set of used pids as a bit map?).
 
 `@allocatePid` allocates a PID from the pool of free PIDs for the
-current document and returns it.
+current document and returns it as a string (the PID is returned as a
+string because it is later used as a hash table key, and hash keys in
+ShovelScript have to be strings).
 
-`@fork` stops the current computation, serializes it and creates a new
-Shovel process/VM for each argument, each associated with the PID
-given as argument. The current process is thrown away BUT its PID is
-NOT FREED; only the child processes remain. Since these processes are
+`@fork` takes an array of strings representing PIDs as argument; it
+stops the current computation, serializes it and creates a new Shovel
+process/VM for each PID in the array provided. The current process is
+thrown away BUT ITS PID IS NOT FREED. Since the child processes are
 run in separate Shovel VMs, they do not share any state - except via
 UDPs.
 
-The PID of the parent process is recorded with the list of children in
-a list of 'fork records'. A 'fork record' contains:
+`@fork` creates a 'fork record' which contains:
 
  * the PID of the parent process and
  * a set containing the child PIDs passed to `@fork`.
+ 
+The 'fork record' is added to a list of 'active fork records'.
 
-In each branch process, `@fork` returns the pid of the current
-process, so the code can branch on this value and execute branch
-specific code. 
+In each branch process, `@fork` returns the PID of the current
+process, so branch specific code can be executed using this value (see
+the if/else ladder in the example). The PID is returned as a string.
 
 To signal branch completion, a branch process has to call `@finish`.
 If the process means to send state to the process that will continue
@@ -98,24 +101,25 @@ finished. Calling `@finish` multiple times on the same branch is an
 error.
 
 The first process to finish will reach the `@wait` statement. `@wait`
-takes PIDs as arguments and returns only when all the processes
-associated with the PIDs have called `@finish`. It returns a hash
-containing (PID, finish-argument) pairs representing the results from
-the branches. When `@wait` returns, only the process in which `@wait`
-returned is still active, the others have been discarded and their
-PIDs marked as free.
+is called with an array of PIDs and returns only when all the
+processes associated with the PIDs have called `@finish`. It returns a
+hash containing (PID, finish-argument) pairs representing the results
+from the branches. When `@wait` returns, only the process in which
+`@wait` returned is still active, the others have been discarded and
+their PIDs marked as free.
 
 `@wait` creates a set out of the PIDs passed as arguments and checks
-if there is a 'fork record' (see above) containing the same set of
-child PIDs. If there is none, an error is thrown. If there is, that
-'fork record' is thrown away and the PID of the current process is
-changed to the parent PID recorded in the 'fork record'. The former
-PID of the current process is freed. Matching child PID sets for
-`@fork` and `@wait` pairs these calls thus preventing accidental
-branch joins. Patching the current PID makes nested forks work (if the
-parent branch is a child in another `@fork` call, it needs to have the
-PID assigned by that `@fork` call when it calls `@finish` in order to
-be marked as finished).
+if there is a 'fork record' in the list of 'active fork records' (see
+above) containing the same set of child PIDs. If there is none, an
+error is thrown. If there is, that 'fork record' is thrown away and
+the PID of the current process is changed to the parent PID recorded
+in the 'fork record'. The former PID of the current process is
+freed. Matching child PID sets for `@fork` and `@wait` in this way
+pairs these calls thus preventing accidental branch joins. Patching
+the current PID makes nested forks work (if the parent branch is a
+child in another `@fork` call, it needs to have the PID assigned by
+that `@fork` call when it calls `@finish` in order to be marked as
+finished).
 
 Patching the current PID means that one should not rely on the PIDs
 being constant. This should not be a problem, as from the ShovelScript
@@ -142,9 +146,8 @@ calling `@finish`).
 Parallel processes provide an interesting but probably expensive (in
 Shovel) way of doing exception handling: spawn a process to perform an
 operation with potential exceptions, look at the value returned by
-`@wait` to determine if the operation performed normally or somehow
-failed. An aproximation of the 'Erlang way'.
-
+`@wait` to determine if the operation performed normally or failed. An
+aproximation of the 'Erlang way'.
 
 ### Implementing Parallel-Or
 
@@ -155,7 +158,7 @@ Parallel-Or:
     var pid1 = @allocatePid()
     var pid2 = @allocatePid()
     var pid3 = @allocatePid()
-    var pid = @fork(pid1, pid2, pid3)
+    var pid = @fork([pid1, pid2, pid3])
     if pid == pid1 {
       // ... the action on branch 1 ...
       @finish(state1)
@@ -166,7 +169,7 @@ Parallel-Or:
       // ... the action on branch 3 ...
       @finish(null)
     }
-    var stateDict = @discard(pid1, pid2, pid3)
+    var stateDict = @discard([pid1, pid2, pid3])
     
 `@discard` doesn't wait for other branches to finish (i.e. call
 `@finish`). The current branch is guaranteed to have finished, or else
@@ -204,31 +207,51 @@ program needs to be careful about calling `@finish` and not messing up
 the variables holding the PIDs. So there's plenty of room for
 programmer error.
 
-Programmer error can be controlled somehow by writing functions like
-`ParallelAnd3` (below) which take 3 closures representing the branches
-and one closure taking a list of results from branches. Since
-ShovelScript doesn't yet have `apply`, we need a separate function for
-each number of branches (we would need `apply` to call `@fork` and
-`@wait` with a variable number of arguments, assuming that the
-branches are passed as an array) - so we'll need `ParallelAnd2`,
-`ParallelAnd3`, `ParallelAnd4` and so on.
+Programmer error can be controlled by writing functions like
+`ParallelAnd` and `ParallelOr` (below) which take as arguments an
+array of closures representing the branches and one closure which does
+post-processing on the results.
 
-Example implementation:
+Example implementation for `ParallelAnd`:
 
-    var ParallelAnd3 = fn(branch1, branch2, branch3, after) {
-      var pid1 = @allocatePid()
-      var pid2 = @allocatePid()
-      var pid3 = @allocatePid()
-      var pid = @fork(pid1, pid2, pid3)
-      if pid == pid1 {
-        @finish(branch1())
-      } else if pid == pid2 {
-        @finish(branch2())
-      } else if pid == pid3 {
-        @finish(branch3())
+    var ParallelAnd = fn (branches, after) {
+      var pids = array()
+      var getPids = fn n {
+        if n > 0 {
+          push(pids, @allocatePid())
+          getPids(n - 1)
+        }
       }
-      var results = @wait(pid1, pid2, pid3)
-      after(results[string(pid1)], results[string(pid2)], results[string(pid3)])
+      getPids(length(branches))
+      
+      var pid = @fork(pids)
+      
+      var executeBranch = fn n {
+        if n < length(branches) {
+          if pids[n] == pid {
+            @finish(branches[n])
+          } else {
+            executeBranch(n + 1)
+          }
+        }
+      }
+      
+      executeBranch(0)
+      
+      var results = @wait(pids)
+      
+      var arrayResults = array()
+      
+      var resultsInArray = fn n {
+        if n < length(pids) {
+          push(arrayResults, results[pids[n]])
+          resultsInArray(n + 1)
+        }
+      }
+      
+      resultsInArray(0)
+      
+      after(resultsInArray)
     }
     
 Example usage:
@@ -247,16 +270,67 @@ Example usage:
       var result = @doSomethingEntirelyDifferent()
       result[7]
     }
-    ParallelAnd3(branch1, branch2, branch3, fn results {
+    ParallelAnd([branch1, branch2, branch3], fn results {
       @useResults(results[0], results[1], results[2])
     })
     
+Implementation for `ParallelOr`:
+
+    var ParallelOr = fn (branches, after) {
+      var pids = array()
+      var getPids = fn n {
+        if n > 0 {
+          push(pids, @allocatePid())
+          getPids(n - 1)
+        }
+      }
+      getPids(length(branches))
+      
+      var pid = @fork(pids)
+      
+      var executeBranch = fn n {
+        if n < length(branches) {
+          if pids[n] == pid {
+            @finish(branches[n])
+          } else { 
+            executeBranch(n + 1)
+          }
+        }
+      }
+      
+      executeBranch(0)
+      
+      var results = @discard(pids)
+      
+      after(results[pid])     
+    }
+    
+Example for `ParallelOr`:
+ 
+    var branch1 = fn () {
+      @doSomething()
+      var result = @waitForSomething()
+      result[0]
+    }
+    var branch2 = fn () {
+      @doSomethingElse()
+      var result = @waitForSomethingElse()
+      result[1]
+    }
+    var branch3 = fn() {
+      var result = @doSomethingEntirelyDifferent()
+      result[7]
+    }
+    ParallelOr([branch1, branch2, branch3], fn result {
+      @useResult(result)
+    })
+    
 So using branches can be abstracted by ShovelScript functions - the
-programmer only needs to know about `@ParallelAnd3` and friends.
+programmer only needs to know about `@ParallelAnd` and `@ParallelOr`.
 
 ## Transactions
 
-We have two problems to solve: 
+We have two problems to solve:
 
  * long-running transactions (e.g. just providing `@beginTransaction`,
    `@commit` and `@rollback` primitives mapped to corresponding
@@ -272,7 +346,7 @@ We have two problems to solve:
 
 The solutions use the current Shovel implementation without changes.
 
-## Long-Running Transactions
+### Long-Running Transactions
 
 Instead of actually performing an action, UDPs called between
 `@beginTransaction` and `@commit`/`@rollback` simply record the action
@@ -290,7 +364,7 @@ Open question: what happens when a `@commit` fails? Possible answer:
 information for each (e.g. a log of executed operations for success or
 an explanation for the failure).
 
-## Transactions with Compensating Actions
+### Transactions with Compensating Actions
 
 Use the same TODO list idea, but keep an additional 'compensating'
 TODO list (COTODO list :-) ). On `@rollback` run the actions in the
@@ -308,9 +382,9 @@ two parameters: the email to send and the compensating email. The
 action of sending the compensating email is placed in the
 COTODO list.
 
-# Thanks
+## Thanks
 
 The current document resulted from a discussion with Cristian Ionita -
-he suggested most of the use cases, and together we came up with some
-ideas about handling the use cases. All mistakes and omissions in the
-current document are my own.
+he suggested most of the use cases, and together we came up with ideas
+about handling them. All mistakes and omissions in the current
+document are my own.
