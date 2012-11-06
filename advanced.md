@@ -307,3 +307,10 @@ the email immediately without waiting for the `@commit` call, but take
 two parameters: the email to send and the compensating email. The
 action of sending the compensating email is placed in the
 COTODO list.
+
+# Thanks
+
+The current document resulted from a discussion with Cristian Ionita -
+he suggested most of the use cases, and together we came up with some
+ideas about handling the use cases. All mistakes and omissions in the
+current document are my own.
