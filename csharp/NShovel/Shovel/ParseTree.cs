@@ -34,7 +34,17 @@ namespace Shovel
             Prim0,
             Name,
             Block,
-            Call
+            Call,
+			BlockReturn,
+			Void,
+			Bool,
+			String,
+			Number,
+			List,
+			UserDefinedPrimitive,
+			Context,
+			If,
+			Fn
         }
 
         public Labels Label { get; set; }
