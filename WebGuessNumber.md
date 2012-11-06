@@ -37,8 +37,8 @@ First, let's define some user-defined primitives (UDPs):
                                      0)
                                (list "random" (lambda () (random 1.0d0)) 0)))
 
-(for the sake of simplicity, error checking has been carefully avoided
-- feel free to make `readInt` handle parsing errors better)
+(for the sake of simplicity, error checking has been carefully
+avoided; feel free to make `readInt` handle parsing errors better)
 
 Now the game program:
 
@@ -76,7 +76,7 @@ Play the game:
     (shovel:run-code *sources* :user-primitives *udps*)
 
 Iteration-via-recursion will please some people (hello, Scheme fans!)
-- the others are allowed to be somewhat disgusted (maybe your disgust
+; the others are allowed to be somewhat disgusted (maybe your disgust
 will diminish if I tell you that the ShovelScript compiler optimizes
 tail calls - hello again, Scheme fans!).
 
