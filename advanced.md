@@ -36,7 +36,7 @@ the framework in the host language:
    * signalling that siblings out to be thrown away and that
      processing should continue with the current process (to implement
      Parallel-Or modelling).
-     
+
 Parallel in this case means that we have multiple processes 'active'
 at the same time (either running or waiting for an event). It doesn't
 mean that the processes are executed in parallel - it is guaranteed
@@ -61,7 +61,7 @@ Let's start with some example code:
       @finish(null)
     }
     var stateDict = @wait([pid1, pid2, pid3])
-    
+
 Each document has an associated pool of Shovel VMs; each active Shovel
 VM has an associated 'process id' (PID). Each document can have at
 most N (say 1024) processes running simultaneously; the used and free
@@ -75,16 +75,16 @@ ShovelScript have to be strings).
 
 `@fork` takes an array of strings representing PIDs as argument; it
 stops the current computation, serializes it and creates a new Shovel
-process/VM for each PID in the array provided. The current process is
-thrown away BUT ITS PID IS NOT FREED. Since the child processes are
-run in separate Shovel VMs, they do not share any state - except via
-UDPs.
+process/VM for each PID in the array provided (and makes the provided
+PID the PID of the new process). The current process is thrown away
+BUT ITS PID IS NOT FREED. Since the child processes are run in
+separate Shovel VMs, they do not share any state - except via UDPs.
 
 `@fork` creates a 'fork record' which contains:
 
  * the PID of the parent process and
  * a set containing the child PIDs passed to `@fork`.
- 
+
 The 'fork record' is added to a list of 'active fork records'.
 
 In each branch process, `@fork` returns the PID of the current
@@ -170,7 +170,7 @@ Parallel-Or:
       @finish(null)
     }
     var stateDict = @discard([pid1, pid2, pid3])
-    
+
 `@discard` doesn't wait for other branches to finish (i.e. call
 `@finish`). The current branch is guaranteed to have finished, or else
 it would not have reached the `@discard` call. Other branches may have
@@ -183,12 +183,12 @@ Other than not waiting, `@discard` behaves exactly like `@wait`:
  * it throws an error if the current process isn't passed to `@discard`;
  * it throws an error if it can't find the set of PIDs passed to it in
    any 'fork record';
+ * it frees the PID of the current process;
  * it deletes the 'fork record' and patches the PID of the current
    process to be the parent PID from the 'fork record';
- * it frees the PID of the current process;
  * it throws away the processes listed which are not the current
    process and frees the PIDs.
-   
+
 ### Conclusion
 
 Parallel active processes (active meaning running or serialized and
@@ -201,7 +201,7 @@ following five UDPs and the associated ecosystem in the host language:
  * `@finish`
  * `@wait`
  * `@discard`
- 
+
 The biggest issue with this approach is that the writer of the Shovel
 program needs to be careful about calling `@finish` and not messing up
 the variables holding the PIDs. So there's plenty of room for
@@ -214,46 +214,39 @@ post-processing on the results.
 
 Example implementation for `ParallelAnd`:
 
+    var foreach = fn (arr, fun) {
+      var iter = fn n {
+        if n < length(arr) {
+          fun(n)
+          iter(n + 1)
+        }
+      }
+      iter(0)
+    }
+
     var ParallelAnd = fn (branches, after) {
       var pids = array()
-      var getPids = fn n {
-        if n > 0 {
-          push(pids, @allocatePid())
-          getPids(n - 1)
-        }
-      }
-      getPids(length(branches))
-      
+      foreach(branches, fn idx push(pids, @allocatePid()))
+
       var pid = @fork(pids)
-      
-      var executeBranch = fn n {
-        if n < length(branches) {
-          if pids[n] == pid {
-            @finish(branches[n])
-          } else {
-            executeBranch(n + 1)
-          }
+
+      foreach(branches, fn idx {
+        if pids[idx] == pid {
+          @finish(branches[idx])
         }
-      }
-      
-      executeBranch(0)
-      
+      })
+
       var results = @wait(pids)
-      
+
       var arrayResults = array()
-      
-      var resultsInArray = fn n {
-        if n < length(pids) {
-          push(arrayResults, results[pids[n]])
-          resultsInArray(n + 1)
-        }
-      }
-      
-      resultsInArray(0)
-      
+
+      foreach(pids, fn idx {
+        push(arrayResults, results[pids[idx]])
+      })
+
       after(resultsInArray)
     }
-    
+
 Example usage:
 
     var branch1 = fn () {
@@ -273,40 +266,28 @@ Example usage:
     ParallelAnd([branch1, branch2, branch3], fn results {
       @useResults(results[0], results[1], results[2])
     })
-    
+
 Implementation for `ParallelOr`:
 
     var ParallelOr = fn (branches, after) {
       var pids = array()
-      var getPids = fn n {
-        if n > 0 {
-          push(pids, @allocatePid())
-          getPids(n - 1)
-        }
-      }
-      getPids(length(branches))
-      
+      foreach(branches, fn idx push(pids, @allocatePid()))
+
       var pid = @fork(pids)
-      
-      var executeBranch = fn n {
-        if n < length(branches) {
-          if pids[n] == pid {
-            @finish(branches[n])
-          } else { 
-            executeBranch(n + 1)
-          }
+
+      foreach(branches, fn idx {
+        if pids[idx] == pid {
+          @finish(branches[idx])
         }
-      }
-      
-      executeBranch(0)
-      
+      })
+
       var results = @discard(pids)
-      
-      after(results[pid])     
+
+      after(results[pid])
     }
-    
+
 Example for `ParallelOr`:
- 
+
     var branch1 = fn () {
       @doSomething()
       var result = @waitForSomething()
@@ -324,7 +305,7 @@ Example for `ParallelOr`:
     ParallelOr([branch1, branch2, branch3], fn result {
       @useResult(result)
     })
-    
+
 So using branches can be abstracted by ShovelScript functions - the
 programmer only needs to know about `@ParallelAnd` and `@ParallelOr`.
 
