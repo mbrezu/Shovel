@@ -52,8 +52,8 @@ namespace Shovel.Compiler
                 Content = this.source.FileName }
             );
             this.pos = 0;
+            this.EatWhiteSpace ();
             while (!this.Finished()) {
-                this.EatWhiteSpace ();
                 var ch = this.CurrentChar ();
                 if (Char.IsLetter (ch) || ch == '_' || ch == '@') {
                     result.Add (this.TokenizeIdentifier ());
@@ -66,6 +66,7 @@ namespace Shovel.Compiler
                 } else {
                     result.Add (this.TokenizePunctuation ());
                 }
+				this.EatWhiteSpace();
             }
             return result;
         }

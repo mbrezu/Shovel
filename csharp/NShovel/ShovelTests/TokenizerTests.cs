@@ -66,7 +66,7 @@ namespace ShovelTests
                 FileName = "test.sho",
                 Content = text
             };
-            ExpectException<Shovel.ShovelException> (() => {
+            Utils.ExpectException<Shovel.ShovelException> (() => {
                 Assert.IsNotNull (new Shovel.Compiler.Tokenizer (source).Tokens);
             },
             (ex) => {
@@ -78,17 +78,6 @@ namespace ShovelTests
             );
         }
 
-        static void ExpectException<T> (Action action, Action<T> check)
-            where T: class
-        {
-            try {
-                action ();
-                Assert.Fail ();
-            } catch (Exception ex) {
-                check (ex as T);
-            }
-        }
-
         [Test]
         public void TestUnknownCharacter ()
         {
@@ -97,7 +86,7 @@ namespace ShovelTests
                 FileName = "test.sho",
                 Content = text
             };
-            ExpectException<Shovel.ShovelException> (() => {
+            Utils.ExpectException<Shovel.ShovelException> (() => {
                 Assert.IsNotNull (new Shovel.Compiler.Tokenizer (source).Tokens);
             },
             (ex) => {

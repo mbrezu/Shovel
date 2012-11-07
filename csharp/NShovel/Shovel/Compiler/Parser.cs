@@ -180,6 +180,7 @@ namespace Shovel.Compiler
 		}
 
 		static ParseTree trueParseTree;
+
 		static ParseTree GetTrueParseTree ()
 		{
 			if (Parser.trueParseTree == null) {
@@ -192,6 +193,7 @@ namespace Shovel.Compiler
 		}
 
 		static ParseTree falseParseTree;
+
 		static ParseTree GetFalseParseTree ()
 		{
 			if (Parser.falseParseTree == null) {
@@ -208,12 +210,12 @@ namespace Shovel.Compiler
 			string opName, 
 			Func<ParseTree, ParseTree, IEnumerable<ParseTree>> ifChildren)
 		{
-			if (this.IsRequiredPrimitiveCall(parseTree, opName)) {
-				var operands = parseTree.Children.ToArray();
-				var op = operands[0];
-				var t1 = operands[1];
-				var t2 = operands[2];
-				return new ParseTree() {
+			if (this.IsRequiredPrimitiveCall (parseTree, opName)) {
+				var operands = parseTree.Children.ToArray ();
+				var op = operands [0];
+				var t1 = operands [1];
+				var t2 = operands [2];
+				return new ParseTree () {
 					Label = ParseTree.Labels.If,
 					StartPos = op.StartPos,
 					EndPos = op.EndPos,
@@ -548,6 +550,7 @@ namespace Shovel.Compiler
 		ParseTree ParseLambda ()
 		{
 			return this.WithNewParseTree (ParseTree.Labels.Fn, pt => {
+				this.ConsumeToken(Token.Types.Keyword, "fn");
 				var args = this.ParseLambdaArgs ();
 				var body = this.ParseStatement ();
 				pt.Children = new ParseTree[] { args, body };
@@ -575,6 +578,7 @@ namespace Shovel.Compiler
 		{
 			ParseTree result = new ParseTree ();
 			result.StartPos = this.CurrentToken ().StartPos;
+			result.Label = label;
 			action (result);
 			result.EndPos = this.LastToken ().EndPos;
 			return result;

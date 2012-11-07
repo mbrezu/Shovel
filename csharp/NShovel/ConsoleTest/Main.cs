@@ -21,31 +21,54 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Text;
+using System.Collections.Generic;
 
 namespace ConsoleTest
 {
-    class MainClass
-    {
-        public static void Main (string[] args)
-        {
+	class MainClass
+	{
+		public static void Main (string[] args)
+		{
+			ParserErrorMessageHelper (@"
+var a = fn [x] 1
+",
+			                         ex => {
+				Console.WriteLine (ex.Message);
+				Console.WriteLine (ex.FileName);
+				Console.WriteLine (ex.Line);
+				Console.WriteLine (ex.Column);
+				Console.WriteLine (ex.AtEof);
+			}
+			);
 
-            var text = "var a = $";
-            var source = new Shovel.SourceFile () {
-                FileName = "test.sho",
-                Content = text
-            };
-            var tokenizer = new Shovel.Compiler.Tokenizer (source);
-            try {
-                foreach (var token in tokenizer.Tokens) {
-                    Console.WriteLine (token);
-                }
-            } catch (Shovel.ShovelException ex) {
-                Console.WriteLine (ex.Message);
-                Console.WriteLine (ex.FileName);
-                Console.WriteLine (ex.Line);
-                Console.WriteLine (ex.Column);
-                Console.WriteLine (ex.AtEof);
-            }
-        }
-    }
+		}
+
+		static void ParserErrorMessageHelper (string source, Action<Shovel.ShovelException> exceptionTest)
+		{
+			var sources = MakeSources ("test.sho", source);
+			var tokenizer = new Shovel.Compiler.Tokenizer (sources [0]);
+			var parser = new Shovel.Compiler.Parser (tokenizer.Tokens, sources);
+			try {
+				foreach (var pt in parser.ParseTrees) {
+					Console.WriteLine (pt);
+				}
+			} catch (Shovel.ShovelException ex) {
+				exceptionTest (ex);
+			}
+		}
+
+		public static List<Shovel.SourceFile> MakeSources (params string[] namesAndContents)
+		{
+			List<Shovel.SourceFile> result = new List<Shovel.SourceFile> ();
+			for (var i = 0; i < namesAndContents.Length; i+=2) {
+				result.Add (new Shovel.SourceFile () {
+					FileName = namesAndContents[i],
+					Content = namesAndContents[i+1]
+				}
+				);
+			}
+			return result;
+		}
+
+	}
 }
