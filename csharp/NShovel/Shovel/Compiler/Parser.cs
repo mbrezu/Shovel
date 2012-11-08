@@ -588,6 +588,7 @@ namespace Shovel.Compiler
 		{
 			ParseTree result = new ParseTree ();
 			result.StartPos = startPos;
+			result.Label = label;
 			action (result);
 			result.EndPos = this.LastToken ().EndPos;
 			return result;

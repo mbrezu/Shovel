@@ -21,6 +21,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using NUnit.Framework;
+using System.Text;
 
 namespace ShovelTests
 {
@@ -81,6 +82,11 @@ file 'test.sho' line 2:     ^^", ex.Message);
 				Assert.AreEqual (5, ex.Column);
 			}
 			);
+		}
+
+		[Test]
+		public void ParserErrorRequiredPrimitive()
+		{
 			ParserErrorMessageHelper (@"
 var slice = 1",
 			ex => {
@@ -92,6 +98,43 @@ file 'test.sho' line 2:     ^^^^^", ex.Message);
 				Assert.AreEqual (5, ex.Column);
 			}
 			);
+		}
+
+		[Test]
+		public void ParseResult()
+		{
+						var source = @"
+var fact = fn n if n == 0 1 else n * fact(n - 1)
+";
+			var sources = Utils.MakeSources ("test.sho", source);
+			var tokenizer = new Shovel.Compiler.Tokenizer (sources [0]);
+			var parser = new Shovel.Compiler.Parser (tokenizer.Tokens, sources);
+			var sb = new StringBuilder();
+			foreach (var pt in parser.ParseTrees) {
+				sb.Append (pt.ToString());
+			}
+			Assert.AreEqual (@"FileName (0 -- 0) 'test.sho'
+Var (1 -- 48) ''
+  Name (5 -- 8) 'fact'
+  Fn (12 -- 48) ''
+    List (15 -- 15) ''
+      Name (15 -- 15) 'n'
+    If (17 -- 48) ''
+      Call (20 -- 25) ''
+        Prim0 (22 -- 23) '=='
+        Name (20 -- 20) 'n'
+        Number (25 -- 25) '0'
+      Number (27 -- 27) '1'
+      Call (34 -- 48) ''
+        Prim0 (36 -- 36) '*'
+        Name (34 -- 34) 'n'
+        Call (38 -- 48) ''
+          Name (38 -- 41) 'fact'
+          Call (43 -- 47) ''
+            Prim0 (45 -- 45) '-'
+            Name (43 -- 43) 'n'
+            Number (47 -- 47) '1'
+", sb.ToString());
 		}
 	}
 }

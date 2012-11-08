@@ -29,18 +29,27 @@ namespace ConsoleTest
 	{
 		public static void Main (string[] args)
 		{
-			ParserErrorMessageHelper (@"
-var a = fn [x] 1
-",
-			                         ex => {
-				Console.WriteLine (ex.Message);
-				Console.WriteLine (ex.FileName);
-				Console.WriteLine (ex.Line);
-				Console.WriteLine (ex.Column);
-				Console.WriteLine (ex.AtEof);
-			}
-			);
+//			ParserErrorMessageHelper (@"
+//var a = fn [x] 1
+//",
+//			                         ex => {
+//				Console.WriteLine (ex.Message);
+//				Console.WriteLine (ex.FileName);
+//				Console.WriteLine (ex.Line);
+//				Console.WriteLine (ex.Column);
+//				Console.WriteLine (ex.AtEof);
+//			}
+//			);
 
+			var source = @"
+var fact = fn n if n == 0 1 else n * fact(n - 1)
+";
+			var sources = MakeSources ("test.sho", source);
+			var tokenizer = new Shovel.Compiler.Tokenizer (sources [0]);
+			var parser = new Shovel.Compiler.Parser (tokenizer.Tokens, sources);
+			foreach (var pt in parser.ParseTrees) {
+				Console.Write (pt);
+			}
 		}
 
 		static void ParserErrorMessageHelper (string source, Action<Shovel.ShovelException> exceptionTest)
