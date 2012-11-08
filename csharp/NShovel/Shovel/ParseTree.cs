@@ -67,11 +67,12 @@ namespace Shovel
 
 		public void RenderToStringBuilder (StringBuilder sb, int indentation)
 		{
-			sb.AppendFormat ("{4}{0} ({1} -- {2}) '{3}'\n", 
+			var content = String.IsNullOrEmpty(this.Content) ? "" : String.Format (" '{0}'", this.Content);
+			sb.AppendFormat ("{4}{0} ({1} -- {2}){3}\n", 
 			                 this.Label, 
 			                 this.StartPos, this.EndPos,
-			                 this.Content,
-			                 new String(' ', indentation));
+				             content,			                 
+			                 new String (' ', indentation));
 			if (this.Children != null) {
 				foreach (var child in this.Children) {
 					child.RenderToStringBuilder (sb, indentation + 2);

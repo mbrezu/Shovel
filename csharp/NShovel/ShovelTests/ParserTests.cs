@@ -114,23 +114,23 @@ var fact = fn n if n == 0 1 else n * fact(n - 1)
 				sb.Append (pt.ToString());
 			}
 			Assert.AreEqual (@"FileName (0 -- 0) 'test.sho'
-Var (1 -- 48) ''
+Var (1 -- 48)
   Name (5 -- 8) 'fact'
-  Fn (12 -- 48) ''
-    List (15 -- 15) ''
+  Fn (12 -- 48)
+    List (15 -- 15)
       Name (15 -- 15) 'n'
-    If (17 -- 48) ''
-      Call (20 -- 25) ''
+    If (17 -- 48)
+      Call (20 -- 25)
         Prim0 (22 -- 23) '=='
         Name (20 -- 20) 'n'
         Number (25 -- 25) '0'
       Number (27 -- 27) '1'
-      Call (34 -- 48) ''
+      Call (34 -- 48)
         Prim0 (36 -- 36) '*'
         Name (34 -- 34) 'n'
-        Call (38 -- 48) ''
+        Call (38 -- 48)
           Name (38 -- 41) 'fact'
-          Call (43 -- 47) ''
+          Call (43 -- 47)
             Prim0 (45 -- 45) '-'
             Name (43 -- 43) 'n'
             Number (47 -- 47) '1'
