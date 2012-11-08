@@ -21,6 +21,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
+using System.Collections.Generic;
 
 namespace Shovel
 {
@@ -29,6 +30,19 @@ namespace Shovel
 		public string FileName { get; set; }
 
 		public string Content { get; set; }
+
+		public static SourceFile FindSource (List<SourceFile> sources, string fileName)
+		{
+			if (sources == null) {
+				return null;
+			}
+			foreach (SourceFile source in sources) {
+				if (source.FileName == fileName) {
+					return source;
+				}
+			}
+			return null;
+		}
 	}
 }
 

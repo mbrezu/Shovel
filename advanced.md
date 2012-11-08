@@ -98,7 +98,10 @@ representing the 'branch result'. If there is no significant branch
 result, `@finish(null)` will do (see the third branch in the example
 above). `@finish` does not suspend the process, it just marks it as
 finished. Calling `@finish` multiple times on the same branch is an
-error.
+error. Since ShovelScript closures are only valid in the VM they were
+created in, it is an error to call `@finish` with a data structure
+that contains callables. This is enforced by `@finish` by walking the
+data-structure passed as argument and looking for any callables.
 
 The first process to finish will reach the `@wait` statement. `@wait`
 is called with an array of PIDs and returns only when all the

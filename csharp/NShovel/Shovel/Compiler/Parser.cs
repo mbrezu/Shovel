@@ -164,7 +164,7 @@ namespace Shovel.Compiler
 			} else if (this.TokenIs (Token.Types.Keyword, "if")) {
 				return this.ParseIf ();
 			} else if (this.TokenIs (Token.Types.Keyword, "block")) {
-				return this.WithNewParseTree (ParseTree.Labels.Block, pt => {
+				return this.WithNewParseTree (ParseTree.Labels.NamedBlock, pt => {
 					pt.Children = new ParseTree[] {
                         this.ParseExpression (),
                         this.ParseStatement ()
@@ -204,6 +204,18 @@ namespace Shovel.Compiler
 			}
 			return Parser.falseParseTree;
 		}
+
+		static ParseTree nullParseTree;
+		static ParseTree GetNullParseTree ()
+		{
+			if (Parser.nullParseTree == null) {
+				Parser.nullParseTree = new ParseTree() {
+					Label = ParseTree.Labels.Void,
+					Content = "null"
+				};
+			}
+			return Parser.nullParseTree;
+		}		
 
 		ParseTree MaybeRewriteAsIfExpression (
 			ParseTree parseTree, 
@@ -305,6 +317,7 @@ namespace Shovel.Compiler
 		static Tuple<Token.Types, String> Comma = Tuple.Create (Token.Types.Punctuation, ",");
 		static Tuple<Token.Types, String> CloseParenthesis = Tuple.Create (Token.Types.Punctuation, ")");
 
+		// Gref is short for 'generic reference'.
 		ParseTree ParseIdentifierOrCallOrRef (ParseTree forcedStart = null)
 		{
 			var start = forcedStart;
@@ -436,7 +449,7 @@ namespace Shovel.Compiler
 
 		ParseTree ParseBlock ()
 		{
-			return this.WithNewParseTree (ParseTree.Labels.Block, pt => {
+			return this.WithNewParseTree (ParseTree.Labels.Begin, pt => {
 				this.ConsumeToken (Token.Types.Punctuation, "{");
 				var statements = new List<ParseTree> ();
 				while (!this.Finished() && !this.TokenIs (Token.Types.Punctuation, "}")) {
@@ -541,7 +554,7 @@ namespace Shovel.Compiler
 						pred, then, this.ParseStatement ()
 					};
 				} else {
-					pt.Children = new ParseTree[] { pred, then };
+					pt.Children = new ParseTree[] { pred, then, Parser.GetNullParseTree() };
 				}
 			}
 			);

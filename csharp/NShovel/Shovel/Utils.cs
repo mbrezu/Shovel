@@ -22,70 +22,92 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Security.Cryptography;
+using System.IO;
 
 namespace Shovel
 {
-    public static class Utils
-    {
-        public static List<string> ExtractRelevantSource (
+	public static class Utils
+	{
+		public static string ComputeSourcesMd5 (List<SourceFile> sources)
+		{
+			using (MemoryStream ms = new MemoryStream()) {
+				foreach (var sourceFile in sources) {
+					var bytes = Encoding.UTF8.GetBytes (sourceFile.Content);
+					ms.Write (bytes, 0, bytes.Length);
+				}
+				ms.Seek(0, SeekOrigin.Begin);
+				byte[] hash;
+				using (MD5 md5Hash = MD5.Create()) {
+					hash = md5Hash.ComputeHash(ms);
+				}
+				var sb = new StringBuilder();
+				foreach (var b in hash) {
+					sb.AppendFormat("{0:X2}", b);
+				}
+				return sb.ToString();
+			}
+		}
+
+		public static List<string> ExtractRelevantSource (
             string[] sourceLines, Position startPos, Position endPos, string linePrefix = "")
-        {
-            var fileName = startPos.FileName;
-            var startLine = startPos.Line;
-            var endLine = endPos.Line;
-            var addEllipsis = endLine > startLine;
-            var firstLine = sourceLines [startLine - 1];
+		{
+			var fileName = startPos.FileName;
+			var startLine = startPos.Line;
+			var endLine = endPos.Line;
+			var addEllipsis = endLine > startLine;
+			var firstLine = sourceLines [startLine - 1];
 
-            List<string> result = new List<string> ();
+			List<string> result = new List<string> ();
 
-            StringBuilder sb1 = new StringBuilder ();
-            sb1.AppendFormat ("{0}file '{1}' line {2}: {3}", linePrefix, fileName, startLine, firstLine);
-            if (addEllipsis) {
-                sb1.Append (" [...content snipped...]");
-            }
-            result.Add (sb1.ToString ());
+			StringBuilder sb1 = new StringBuilder ();
+			sb1.AppendFormat ("{0}file '{1}' line {2}: {3}", linePrefix, fileName, startLine, firstLine);
+			if (addEllipsis) {
+				sb1.Append (" [...content snipped...]");
+			}
+			result.Add (sb1.ToString ());
 
-            var underline = Utils.Underline (
+			var underline = Utils.Underline (
                 Math.Max (startPos.Column, Utils.FirstNonBlank (firstLine)),
                 Math.Min (firstLine.Length, addEllipsis ? firstLine.Length : endPos.Column)
-            );
-            var underlinedLine = String.Format (
+			);
+			var underlinedLine = String.Format (
                 "{0}file '{1}' line {2}: {3}", linePrefix, fileName, startLine, underline);
-            result.Add (underlinedLine);
+			result.Add (underlinedLine);
 
-            return result;
-        }
+			return result;
+		}
 
-        static string Underline (int start, int end)
-        {
-            StringBuilder sb = new StringBuilder ();
-            for (var i = 0; i < start - 1; i++) {
-                sb.Append (' ');
-            }
-            for (var i = 0; i <= end - start; i++) {
-                sb.Append ('^');
-            }
-            return sb.ToString ();
-        }
+		static string Underline (int start, int end)
+		{
+			StringBuilder sb = new StringBuilder ();
+			for (var i = 0; i < start - 1; i++) {
+				sb.Append (' ');
+			}
+			for (var i = 0; i <= end - start; i++) {
+				sb.Append ('^');
+			}
+			return sb.ToString ();
+		}
 
-        static int FirstNonBlank (string line)
-        {
-            int result = 1;
-            while (true) {
-                if (result > line.Length) {
-                    return 1;
-                }
-                if (line [result - 1] != ' ' && line [result - 1] != '\t') {
-                    return result;
-                }
-                result ++;
-            }
-        }
+		static int FirstNonBlank (string line)
+		{
+			int result = 1;
+			while (true) {
+				if (result > line.Length) {
+					return 1;
+				}
+				if (line [result - 1] != ' ' && line [result - 1] != '\t') {
+					return result;
+				}
+				result ++;
+			}
+		}
 
-        public static void Panic ()
-        {
-            throw new InvalidOperationException ("Shovel internal WTF.");
-        }
-    }
+		public static void Panic ()
+		{
+			throw new InvalidOperationException ("Shovel internal WTF.");
+		}
+	}
 }
 

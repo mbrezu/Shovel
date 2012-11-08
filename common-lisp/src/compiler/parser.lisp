@@ -214,20 +214,20 @@ token positions."
            (type (function () parse-tree) sub-parser)
            (type (or null (function (parse-tree) parse-tree)) post-processor))
   (labels ((iter (start)
-                 (let ((token (current-token)))
-                   (if (and token (funcall operator-pred token))
-                       (iter
-                         (let ((result
-                                (with-new-anchored-parse-tree
-                                    (parse-tree-start-pos start)
-                                    :call
-                                  (list (make-prim0-parse-tree (token-content token))
-                                        start
-                                        (funcall sub-parser)))))
-                           (if post-processor
-                               (funcall post-processor result)
-                               result)))
-                       start))))
+             (let ((token (current-token)))
+               (if (and token (funcall operator-pred token))
+                   (iter
+                    (let ((result
+                           (with-new-anchored-parse-tree
+                               (parse-tree-start-pos start)
+                               :call
+                             (list (make-prim0-parse-tree (token-content token))
+                                   start
+                                   (funcall sub-parser)))))
+                      (if post-processor
+                          (funcall post-processor result)
+                          result)))
+                   start))))
     (iter (funcall sub-parser))))
 
 (defun is-required-primitive-call (parse-tree required-primitive)
@@ -469,6 +469,14 @@ parser. Macroish implementation of short-circuiting logical 'or'."
           (format nil "\"~a\"" (parse-tree-children result)))
     result))
 
+(let ((null-parse-tree (make-parse-tree
+                        :label :void
+                        :children "null"
+                        :start-pos nil
+                        :end-pos nil)))
+  (defun get-null-parse-tree ()
+    null-parse-tree))
+
 (defun parse-if ()
   (with-new-parse-tree :if
     (consume-token :keyword "if")
@@ -478,11 +486,7 @@ parser. Macroish implementation of short-circuiting logical 'or'."
           (progn
             (consume-token :keyword "else")
             (list pred then (parse-statement)))
-          (list pred then (make-parse-tree
-                           :label :void
-                           :children "null"
-                           :start-pos nil
-                           :end-pos nil))))))
+          (list pred then (get-null-parse-tree))))))
 
 (defun simplify-parse-tree (parse-tree)
   (if (parse-tree-p parse-tree)

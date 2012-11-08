@@ -33,9 +33,9 @@ namespace Shovel
 
         public bool AtEof { get; set; }
 
-        public int Line { get; set; }
+        public int? Line { get; set; }
 
-        public int Column { get; set; }
+        public int? Column { get; set; }
     }
 }
 
