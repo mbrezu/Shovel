@@ -45,10 +45,10 @@
     <Compile Include="ParseTree.cs" />
     <Compile Include="Compiler\CodeGenerator.cs" />
     <Compile Include="Instruction.cs" />
-    <Compile Include="Shovel.cs" />
     <Compile Include="EnvFrame.cs" />
     <Compile Include="EnvVar.cs" />
     <Compile Include="Environment.cs" />
+    <Compile Include="Api.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

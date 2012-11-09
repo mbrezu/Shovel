@@ -23,9 +23,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Shovel
+namespace Shovel.Compiler
 {
-	public class CodeGenerator
+	internal class CodeGenerator
 	{
 		int labelCounter = 0;
 		string fileName;
@@ -52,7 +52,7 @@ namespace Shovel
 		void GenerateCode ()
 		{
 			this.bytecode = new List<Instruction> ();
-			this.Gen (Instruction.Opcodes.VmVersion, Shovel.Version);
+			this.Gen (Instruction.Opcodes.VmVersion, Api.Version);
 			this.Gen (Instruction.Opcodes.VmSourcesMd5, Utils.ComputeSourcesMd5 (sources));
 			this.Gen (Instruction.Opcodes.VmBytecodeMd5, "?");
 			if (this.ast.Count > 0 && this.ast [0].Label == ParseTree.Labels.FileName) {
@@ -282,7 +282,7 @@ namespace Shovel
 				var startPos = Position.CalculatePosition (sourceFile, characterStartPos);
 				var endPos = Position.CalculatePosition (sourceFile, characterEndPos);
 				var lines = Utils.ExtractRelevantSource (content.Split ('\n'), startPos, endPos);
-				message = String.Format ("{0}\n{1}\n{3}", message, lines [0], lines [1]);
+				message = String.Format ("{0}\n{1}\n{2}", message, lines [0], lines [1]);
 				line = startPos.Line;
 				column = startPos.Column;
 			}
@@ -452,7 +452,9 @@ namespace Shovel
 
 		void CompileVar (ParseTree ast, Environment env, bool useVal, bool more)
 		{
-			var name = ast.Children.ElementAt (0).Content;
+			var nameAst = ast.Children.ElementAt (0);
+			var name = nameAst.Content;
+			this.ExtendFrame(env, name, nameAst);
 			this.CompileAst (ast.Children.ElementAt (1), env, true, true);
 			this.CompileSetVar (name, env, useVal, more, ast);
 		}

@@ -20,6 +20,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
+using System.Text;
+using System.Collections.Generic;
 
 namespace Shovel
 {
@@ -66,6 +68,34 @@ namespace Shovel
 		public object Cache { get; set; }
 
 		public byte NumericOpcode { get; set; }
+
+		public override string ToString ()
+		{
+			var sb = new StringBuilder();
+			if (this.Comments != null) {
+				sb.Append (this.Comments);
+			}
+			if (this.Opcode == Opcodes.Label) {
+				sb.AppendLine (this.Arguments.ToString().ToUpper() + ":");
+			} else {
+				sb.Append ("    ");
+				sb.Append (this.Opcode.ToString().ToUpper());
+				if (this.Arguments != null) {
+					sb.Append (" ");
+					if (this.Arguments is System.Collections.IEnumerable && !(this.Arguments is String)) {
+						var args = new List<string>();
+						foreach (var arg in (System.Collections.IEnumerable)this.Arguments) {
+							args.Add (arg.ToString());
+						}
+						sb.Append (String.Join (", ", args));
+					} else {
+						sb.Append (this.Arguments.ToString());
+					}
+				}
+				sb.Append (System.Environment.NewLine);
+			}
+			return sb.ToString();
+		}
 	}
 }
 

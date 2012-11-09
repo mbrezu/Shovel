@@ -38,19 +38,6 @@ namespace ShovelTests
 			}
 		}
 
-		public static List<Shovel.SourceFile> MakeSources (params string[] namesAndContents)
-		{
-			List<Shovel.SourceFile> result = new List<Shovel.SourceFile> ();
-			for (var i = 0; i < namesAndContents.Length; i+=2) {
-				result.Add (new Shovel.SourceFile () {
-					FileName = namesAndContents[i],
-					Content = namesAndContents[i+1]
-				}
-				);
-			}
-			return result;
-		}
-
 	}
 }
 

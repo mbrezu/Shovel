@@ -30,7 +30,7 @@ namespace ShovelTests
 	{
 		static void ParserErrorMessageHelper (string source, Action<Shovel.ShovelException> exceptionTest)
 		{
-			var sources = Utils.MakeSources ("test.sho", source);
+			var sources = Shovel.Api.MakeSources ("test.sho", source);
 			var tokenizer = new Shovel.Compiler.Tokenizer (sources [0]);
 			var parser = new Shovel.Compiler.Parser (tokenizer.Tokens, sources);
 			Utils.ExpectException<Shovel.ShovelException> (() => {
@@ -106,7 +106,7 @@ file 'test.sho' line 2:     ^^^^^", ex.Message);
 						var source = @"
 var fact = fn n if n == 0 1 else n * fact(n - 1)
 ";
-			var sources = Utils.MakeSources ("test.sho", source);
+			var sources = Shovel.Api.MakeSources ("test.sho", source);
 			var tokenizer = new Shovel.Compiler.Tokenizer (sources [0]);
 			var parser = new Shovel.Compiler.Parser (tokenizer.Tokens, sources);
 			var sb = new StringBuilder();

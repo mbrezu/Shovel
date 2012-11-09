@@ -29,7 +29,7 @@ namespace Shovel
 {
 	public static class Utils
 	{
-		public static string ComputeSourcesMd5 (List<SourceFile> sources)
+		internal static string ComputeSourcesMd5 (List<SourceFile> sources)
 		{
 			using (MemoryStream ms = new MemoryStream()) {
 				foreach (var sourceFile in sources) {
@@ -49,7 +49,7 @@ namespace Shovel
 			}
 		}
 
-		public static List<string> ExtractRelevantSource (
+		internal static List<string> ExtractRelevantSource (
             string[] sourceLines, Position startPos, Position endPos, string linePrefix = "")
 		{
 			var fileName = startPos.FileName;
@@ -78,7 +78,7 @@ namespace Shovel
 			return result;
 		}
 
-		static string Underline (int start, int end)
+		internal static string Underline (int start, int end)
 		{
 			StringBuilder sb = new StringBuilder ();
 			for (var i = 0; i < start - 1; i++) {
@@ -90,7 +90,7 @@ namespace Shovel
 			return sb.ToString ();
 		}
 
-		static int FirstNonBlank (string line)
+		internal static int FirstNonBlank (string line)
 		{
 			int result = 1;
 			while (true) {
@@ -104,7 +104,7 @@ namespace Shovel
 			}
 		}
 
-		public static void Panic ()
+		internal static void Panic ()
 		{
 			throw new InvalidOperationException ("Shovel internal WTF.");
 		}

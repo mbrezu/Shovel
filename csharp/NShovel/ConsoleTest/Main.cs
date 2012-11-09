@@ -29,54 +29,20 @@ namespace ConsoleTest
 	{
 		public static void Main (string[] args)
 		{
-//			ParserErrorMessageHelper (@"
-//var a = fn [x] 1
-//",
-//			                         ex => {
-//				Console.WriteLine (ex.Message);
-//				Console.WriteLine (ex.FileName);
-//				Console.WriteLine (ex.Line);
-//				Console.WriteLine (ex.Column);
-//				Console.WriteLine (ex.AtEof);
-//			}
-//			);
-
-			var source = @"
-var fact = fn n if n == 0 1 else n * fact(n - 1)
-";
-			var sources = MakeSources ("test.sho", source);
-			var tokenizer = new Shovel.Compiler.Tokenizer (sources [0]);
-			var parser = new Shovel.Compiler.Parser (tokenizer.Tokens, sources);
-			foreach (var pt in parser.ParseTrees) {
-				Console.Write (pt);
-			}
-		}
-
-		static void ParserErrorMessageHelper (string source, Action<Shovel.ShovelException> exceptionTest)
-		{
-			var sources = MakeSources ("test.sho", source);
-			var tokenizer = new Shovel.Compiler.Tokenizer (sources [0]);
-			var parser = new Shovel.Compiler.Parser (tokenizer.Tokens, sources);
 			try {
-				foreach (var pt in parser.ParseTrees) {
-					Console.WriteLine (pt);
-				}
-			} catch (Shovel.ShovelException ex) {
-				exceptionTest (ex);
-			}
-		}
-
-		public static List<Shovel.SourceFile> MakeSources (params string[] namesAndContents)
-		{
-			List<Shovel.SourceFile> result = new List<Shovel.SourceFile> ();
-			for (var i = 0; i < namesAndContents.Length; i+=2) {
-				result.Add (new Shovel.SourceFile () {
-					FileName = namesAndContents[i],
-					Content = namesAndContents[i+1]
-				}
+				var sources = Shovel.Api.MakeSources ("test.sho", @"
+var fact = fn (n) {
+    if n == 0
+    1
+    else n * fact(n - 1)
+}
+fact(10)
+"
 				);
+				Console.WriteLine (Shovel.Api.PrintCode (sources));
+			} catch (Shovel.ShovelException ex) {
+				Console.WriteLine (ex.Message);
 			}
-			return result;
 		}
 
 	}
