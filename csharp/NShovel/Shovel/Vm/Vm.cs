@@ -28,9 +28,9 @@ namespace Shovel.Vm
 	{
 		Instruction[] bytecode = null;
 		int programCounter = 0;
-		Environment currentEnvironment = null;
+		VmEnvironment currentEnvironment = null;
 		List<object> stack = new List<object> ();
-		Dictionary<string, UserDefinedPrimitive> userPrimitives = new Dictionary<string, UserDefinedPrimitive> ();
+		Dictionary<string, Callable> userPrimitives = new Dictionary<string, Callable> ();
 		int usedCells = 0;
 		long executedTicks = 0;
 		long executedTicksSinceLastNap = 0;
@@ -47,7 +47,7 @@ namespace Shovel.Vm
 		public static void RunVm (
 			Instruction[] bytecode, 
 			List<SourceFile> sources = null,
-			List<UserDefinedPrimitive> userPrimitives = null,
+			List<Callable> userPrimitives = null,
 			byte[] state = null,
 			Vm vm = null,
 			int? cellsQuota = null,
@@ -61,7 +61,7 @@ namespace Shovel.Vm
 				vm.currentEnvironment = null;
 				vm.stack = new List<object> ();
 				vm.sources = sources;
-				vm.userPrimitives = new Dictionary<string, UserDefinedPrimitive> ();
+				vm.userPrimitives = new Dictionary<string, Callable> ();
 			}
 			vm.cellsQuota = cellsQuota;
 			vm.totalTicksQuota = totalTicksQuota;
@@ -72,7 +72,7 @@ namespace Shovel.Vm
 			}
 			if (userPrimitives != null) {
 				foreach (var udp in userPrimitives) {
-					vm.userPrimitives [udp.Name] = udp;
+					vm.userPrimitives [udp.UdpName] = udp;
 				}
 			}
 			vm.executedTicksSinceLastNap = 0;
@@ -126,19 +126,54 @@ namespace Shovel.Vm
 			Vm.HandleNop                       // 20
 		};
 
-		static void HandleJump (Vm vm)
+		Instruction CurrentInstruction ()
 		{
-			throw new NotImplementedException ();
+			return this.bytecode [this.programCounter];
+		}
+
+		void Push (object obj)
+		{
+			this.stack.Add (obj);
+		}
+
+		object Pop ()
+		{
+			var result = this.Top ();
+			this.stack.RemoveAt (this.stack.Count - 1);
+			return result;
+		}
+
+		object Top (int n = 1)
+		{
+			return this.stack [this.stack.Count - n];
+		}
+
+		static void HandleJump (Vm vm)
+		{			
+			vm.programCounter = (int)vm.CurrentInstruction ().Arguments;
 		}
 
 		static void HandleConst (Vm vm)
 		{
-			throw new NotImplementedException ();
+			vm.Push (vm.CurrentInstruction ().Arguments);
+			vm.programCounter++;
+			vm.IncrementCells (1);
+		}
+
+		static Dictionary<string, Callable> prim0Hash = null;
+
+		static Dictionary<string, Callable> Prim0Hash {
+			get {
+				if (Vm.prim0Hash == null) {
+					Vm.prim0Hash = Prim0.GetPrim0Hash();
+				}
+				return prim0Hash;
+			}
 		}
 
 		static void HandlePrim0 (Vm obj)
 		{
-			throw new NotImplementedException ();
+
 		}
 
 		static void HandlePrim (Vm obj)
@@ -156,24 +191,82 @@ namespace Shovel.Vm
 			throw new NotImplementedException ();
 		}
 
-		static void HandleFjump (Vm obj)
+		void CheckBool ()
 		{
-			throw new NotImplementedException ();
+			if (!(this.Top () is bool)) {
+				RaiseShovelError ("Argument must be a boolean.");
+			}
 		}
 
-		static void HandleLset (Vm obj)
+		static void HandleFjump (Vm vm)
 		{
-			throw new NotImplementedException ();
+			var args = vm.CurrentInstruction ().Arguments;
+			vm.CheckBool ();
+			// SLOW: the first argument could be optimized to !(bool)vm.Pop().
+			// Not done because I'm not sure of all implications yet (and it doesn't
+			// show up as one of the top time consumers in profiler reports).
+			vm.JumpIf ((bool)Prim0.LogicalNot (vm.api, vm.Pop ()), (int)args);
 		}
 
-		static void HandlePop (Vm obj)
+		static void HandleTjump (Vm vm)
 		{
-			throw new NotImplementedException ();
+			var args = vm.CurrentInstruction ().Arguments;
+			vm.CheckBool ();
+			vm.JumpIf ((bool)vm.Pop (), (int)args);
 		}
 
-		static void HandleLget (Vm obj)
+		void JumpIf (bool shouldJump, int jumpDestination)
 		{
-			throw new NotImplementedException ();
+			if (shouldJump) {
+				this.programCounter = jumpDestination;
+			} else {
+				this.programCounter++;
+			}
+		}
+
+		static void HandleLset (Vm vm)
+		{
+			var instruction = vm.CurrentInstruction ();
+			var args = (int[])instruction.Arguments;
+			SetInEnvironment (vm.currentEnvironment, args [0], args [1], vm.Top ());
+			vm.programCounter++;
+		}
+
+		static void SetInEnvironment (
+			VmEnvironment env, int frameNumber, int varIndex, object value)
+		{
+			FindFrame (env, frameNumber).Values [varIndex] = value;
+		}
+
+		static VmEnvFrame FindFrame (VmEnvironment env, int frameNumber)
+		{
+			while (env != null && frameNumber > 0) {
+				env = env.Next;
+			}
+			if (env == null) {
+				Utils.Panic ();
+			}
+			return env.Frame;
+		}
+
+		static void HandlePop (Vm vm)
+		{
+			vm.Pop ();
+			vm.programCounter++;
+		}
+
+		static void HandleLget (Vm vm)
+		{
+			var instruction = vm.CurrentInstruction ();
+			var args = (int[])instruction.Arguments;
+			vm.Push (GetFromEnvironment (vm.currentEnvironment, args [0], args [1]));
+			vm.IncrementCells (1);
+			vm.programCounter++;
+		}
+
+		static object GetFromEnvironment (VmEnvironment env, int frameNumber, int varIndex)
+		{
+			return FindFrame (env, frameNumber).Values [varIndex];
 		}
 
 		static void HandleFn (Vm obj)
@@ -181,39 +274,121 @@ namespace Shovel.Vm
 			throw new NotImplementedException ();
 		}
 
-		static void HandleNewFrame (Vm obj)
+		static void HandleNewFrame (Vm vm)
 		{
-			throw new NotImplementedException ();
+			var instruction = vm.CurrentInstruction ();
+			var args = (string[])instruction.Arguments;
+			var frame = new VmEnvFrame () {
+				VarNames = args,
+				Values = new object[args.Length]
+			};
+			var newEnv = new VmEnvironment () {
+				Frame = frame,
+				Next = vm.currentEnvironment
+			};
+			vm.currentEnvironment = newEnv;
+			vm.programCounter++;
 		}
 
-		static void HandleDropFrame (Vm obj)
+		static void HandleDropFrame (Vm vm)
 		{
-			throw new NotImplementedException ();
+			vm.currentEnvironment = vm.currentEnvironment.Next;
+			vm.programCounter++;
 		}
 
-		static void HandleArgs (Vm obj)
+		static void HandleArgs (Vm vm)
 		{
-			throw new NotImplementedException ();
+			var instruction = vm.CurrentInstruction ();
+			var argCount = (int)instruction.Arguments;
+			if (argCount > 0) {
+				ReturnAddress returnAddress = null;
+				if (vm.Top () is ReturnAddress) {
+					returnAddress = vm.Pop () as ReturnAddress;
+				}
+				for (var i = argCount - 1; i >= 0; i++) {
+					vm.currentEnvironment.Frame.Values [i] = vm.Pop ();
+				}
+				if (returnAddress != null) {
+					vm.Push (returnAddress);
+				}
+			}
+			vm.programCounter++;
 		}
 
-		static void HandleReturn (Vm obj)
+		static void HandleReturn (Vm vm)
 		{
-			throw new NotImplementedException ();
+			// SLOW: maybe there's a faster way to manipulate the stack here?
+			var result = vm.Pop ();
+			var returnAddress = vm.Pop () as ReturnAddress;
+			vm.ApplyReturnAddress (returnAddress);
+			vm.Push (result);
 		}
 
-		static void HandleBlock (Vm obj)
+		void ApplyReturnAddress (ReturnAddress returnAddress)
 		{
-			throw new NotImplementedException ();
+			if (returnAddress == null) {
+				Utils.Panic ();
+			}
+			this.programCounter = returnAddress.ProgramCounter;
+			this.currentEnvironment = returnAddress.Environment;
 		}
 
-		static void HandlePopBlock (Vm obj)
+		static void HandleBlock (Vm vm)
 		{
-			throw new NotImplementedException ();
+			var instruction = vm.CurrentInstruction ();
+			var blockEnd = (int)instruction.Arguments;
+			var name = vm.Pop ();
+			if (!(name is String)) {
+				vm.RaiseShovelError ("The name of a block must be a string.");
+			}
+			vm.Push (new NamedBlock () {
+				Name = (string)name,
+				BlockEnd = blockEnd,
+				Environment = vm.currentEnvironment
+			}
+			);
+			vm.IncrementCells (3);
+			vm.programCounter++;
 		}
 
-		static void HandleBlockReturn (Vm obj)
+		static void HandlePopBlock (Vm vm)
 		{
-			throw new NotImplementedException ();
+			var returnValue = vm.Pop ();
+			var namedBlock = vm.Pop ();
+			if (!(namedBlock is NamedBlock)) {
+				vm.RaiseShovelError ("Invalid context for POP_BLOCK.");
+			}
+			vm.Push (returnValue);
+			vm.programCounter++;
+		}
+
+		static void HandleBlockReturn (Vm vm)
+		{
+			var returnValue = vm.Pop ();
+			var name = vm.Pop ();
+			if (!(name is String)) {
+				vm.RaiseShovelError ("The name of a block must be a string.");
+			}
+			var namedBlockIndex = vm.FindNamedBlock ((string)name);
+			if (vm.stack.Count > namedBlockIndex + 1) {
+				vm.stack.RemoveRange (namedBlockIndex + 1, vm.stack.Count - namedBlockIndex - 1);
+			}
+			var namedBlock = (NamedBlock)vm.Top ();
+			vm.Push (returnValue);
+			vm.programCounter = namedBlock.BlockEnd;
+			vm.currentEnvironment = namedBlock.Environment;
+		}
+
+		int FindNamedBlock (string blockName)
+		{
+			for (var i = this.stack.Count - 1; i >= 0; i--) {
+				if (this.stack[i] is NamedBlock && ((NamedBlock)this.stack[i]).Name == blockName) {
+					return i;
+				}
+			}
+			this.RaiseShovelError(
+				String.Format ("Cannot find block '{0}'.", blockName));
+			return -1;
 		}
 
 		static void HandleContext (Vm obj)
@@ -221,14 +396,9 @@ namespace Shovel.Vm
 			throw new NotImplementedException ();
 		}
 
-		static void HandleTjump (Vm obj)
+		static void HandleNop (Vm vm)
 		{
-			throw new NotImplementedException ();
-		}
-
-		static void HandleNop (Vm obj)
-		{
-			throw new NotImplementedException ();
+			vm.programCounter++;
 		}
 
 		bool IsLive ()
