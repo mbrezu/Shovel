@@ -49,6 +49,12 @@
     <Compile Include="EnvVar.cs" />
     <Compile Include="Environment.cs" />
     <Compile Include="Api.cs" />
+    <Compile Include="Vm\Vm.cs" />
+    <Compile Include="UserDefinedPrimitive.cs" />
+    <Compile Include="VmEnvironment.cs" />
+    <Compile Include="VmEnvFrame.cs" />
+    <Compile Include="Vm\VmApi.cs" />
+    <Compile Include="ShovelCellQuotaExceeded.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

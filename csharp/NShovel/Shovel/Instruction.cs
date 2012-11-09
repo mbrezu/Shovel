@@ -52,7 +52,8 @@ namespace Shovel
 			Fn,
 			NewFrame,
 			Args,
-			DropFrame
+			DropFrame,
+			Tjump
 		}
 
 		public Opcodes Opcode { get; set; }

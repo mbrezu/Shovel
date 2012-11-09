@@ -21,43 +21,14 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Shovel
 {
-	public class Api
+	public class VmEnvFrame
 	{
-		public static int Version = 1;
+		public IEnumerable<string> VarNames { get; set; }
 
-		public static string PrintCode (List<SourceFile> sources)
-		{
-			var bytecode = Utils.GetRawBytecode(sources);
-			Utils.DecorateByteCode (bytecode, sources);
-			var sb = new StringBuilder ();
-			foreach (var instruction in bytecode) {
-				sb.Append (instruction.ToString ());
-			}
-			return sb.ToString ();
-		}
-
-		public static Instruction[] GetBytecode(List<SourceFile> sources)
-		{
-			var rawBytecode = Utils.GetRawBytecode(sources);
-			return Utils.Assemble(rawBytecode);
-		}
-
-		public static List<SourceFile> MakeSources (params string[] namesAndContents)
-		{
-			List<SourceFile> result = new List<SourceFile> ();
-			for (var i = 0; i < namesAndContents.Length; i+=2) {
-				result.Add (new SourceFile () {
-					FileName = namesAndContents[i],
-					Content = namesAndContents[i+1]
-				}
-				);
-			}
-			return result;
-		}
+		public object[] Values { get; set; }
 	}
 }
 

@@ -20,43 +20,30 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Shovel
+namespace Shovel.Vm
 {
-	public class Api
+	public class VmApi
 	{
-		public static int Version = 1;
+		public Action<string> RaiseShovelError { get; private set; }
 
-		public static string PrintCode (List<SourceFile> sources)
-		{
-			var bytecode = Utils.GetRawBytecode(sources);
-			Utils.DecorateByteCode (bytecode, sources);
-			var sb = new StringBuilder ();
-			foreach (var instruction in bytecode) {
-				sb.Append (instruction.ToString ());
-			}
-			return sb.ToString ();
-		}
+		public Action<int> TicksIncrementer { get; private set; }
 
-		public static Instruction[] GetBytecode(List<SourceFile> sources)
-		{
-			var rawBytecode = Utils.GetRawBytecode(sources);
-			return Utils.Assemble(rawBytecode);
-		}
+		public Action<int> CellsIncrementer { get; private set; }
 
-		public static List<SourceFile> MakeSources (params string[] namesAndContents)
+		// This is only useful for required primitives that allocate memory, such as 'arrayN'.
+		internal Action<int> CellsIncrementHerald { get; private set; }
+
+		internal VmApi (
+			Action<string> raiseShovelError, 
+			Action<int> ticksIncrementer,
+			Action<int> cellsIncrementer,
+			Action<int> cellsIncrementHerald)
 		{
-			List<SourceFile> result = new List<SourceFile> ();
-			for (var i = 0; i < namesAndContents.Length; i+=2) {
-				result.Add (new SourceFile () {
-					FileName = namesAndContents[i],
-					Content = namesAndContents[i+1]
-				}
-				);
-			}
-			return result;
+			this.RaiseShovelError = raiseShovelError;
+			this.TicksIncrementer = ticksIncrementer;
+			this.CellsIncrementer = cellsIncrementer;
+			this.CellsIncrementHerald = cellsIncrementHerald;
 		}
 	}
 }
