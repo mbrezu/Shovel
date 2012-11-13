@@ -57,8 +57,6 @@ namespace Shovel.Vm
 
 			// Logic operators.
 			AddPrim0 (result, Callable.MakePrim0 ("!", Callable.MakeHostCallable (LogicalNot), 1));
-			AddPrim0 (result, Callable.MakePrim0 ("&&", Callable.MakeHostCallable (LogicalAnd)));
-			AddPrim0 (result, Callable.MakePrim0 ("||", Callable.MakeHostCallable (LogicalOr)));
 
 			// Bitwise operators.
 			AddPrim0 (result, Callable.MakePrim0 ("&", Callable.MakeHostCallable (BitwiseAnd)));
@@ -117,7 +115,8 @@ namespace Shovel.Vm
 			// Stringification.
 			AddPrim0 (result, Callable.MakePrim0 ("string", Callable.MakeHostCallable (ShovelString), 1));
 			AddPrim0 (result, Callable.MakePrim0 (
-				"stringRepresentation", Callable.MakeHostCallable (ShovelStringRepresentation), 1));
+				"stringRepresentation", Callable.MakeHostCallable (ShovelStringRepresentation), 1)
+			);
 
 			// Parsing numbers.
 			AddPrim0 (result, Callable.MakePrim0 ("parseInt", Callable.MakeHostCallable (ParseInt), 1));
@@ -131,82 +130,273 @@ namespace Shovel.Vm
 
 		static object Add (VmApi api, object t1, object t2)
 		{
-			throw new NotImplementedException ();
+			if (t1 is string && t2 is string) {
+				return (string)t1 + (string)t2;
+			} else if (t1 is long && t2 is long) {
+				return Prim0.LimitResult ((long)t1 + (long)t2);
+			} else if (t1 is double && t2 is double) {
+				return (double)t1 + (double)t2;
+			} else if (t1 is double && t2 is long) {
+				return (double)t1 + (long)t2;
+			} else if (t1 is long && t2 is Double) {
+				return (long)t1 + (double)t2;
+			} else if (t1 is List<object> && t2 is List<object>) {
+				var result = new List<object> ();
+				result.AddRange ((List<object>)t1);
+				result.AddRange ((List<object>)t2);
+				return result;
+			} else {
+				api.RaiseShovelError (
+					"Arguments must have the same type (numbers or strings or arrays).");
+			}
+			return null;
+		}
+
+		const long limitMask = ((long)1 << 60) - 1;
+
+		static object LimitResult (object obj)
+		{
+			if (obj is long) {
+				return (long)obj & limitMask;
+			} else {
+				return obj;
+			}
 		}
 
 		static object Subtract (VmApi api, object t1, object t2)
 		{
-			throw new NotImplementedException ();
+			if (t1 is long && t2 is long) {
+				return Prim0.LimitResult ((long)t1 - (long)t2);
+			} else if (t1 is double && t2 is double) {
+				return (double)t1 - (double)t2;
+			} else if (t1 is double && t2 is long) {
+				return (double)t1 - (long)t2;
+			} else if (t1 is long && t2 is Double) {
+				return (long)t1 - (double)t2;
+			} else {
+				api.RaiseShovelError ("Both arguments must be numbers.");
+			}
+			return null;
 		}
 
 		static object UnaryMinus (VmApi api, object t1)
 		{
-			throw new NotImplementedException ();
+			if (t1 is long) {
+				return -(long)t1;
+			} else if (t1 is Double) {
+				return -(double)t1;
+			} else {
+				api.RaiseShovelError ("Argument must be number.");
+			}
+			return null;
 		}
 
 		static object Multiply (VmApi api, object t1, object t2)
 		{
-			throw new NotImplementedException ();
+			if (t1 is long && t2 is long) {
+				return Prim0.LimitResult ((long)t1 * (long)t2);
+			} else if (t1 is double && t2 is double) {
+				return (double)t1 * (double)t2;
+			} else if (t1 is double && t2 is long) {
+				return (double)t1 * (long)t2;
+			} else if (t1 is long && t2 is Double) {
+				return (long)t1 * (double)t2;
+			} else {
+				api.RaiseShovelError ("Both arguments must be numbers.");
+			}
+			return null;
 		}
 
 		static object Divide (VmApi api, object t1, object t2)
 		{
-			throw new NotImplementedException ();
+			if (t1 is long && t2 is long) {
+				return Prim0.LimitResult ((long)t1 / (long)t2);
+			} else if (t1 is double && t2 is double) {
+				return (double)t1 / (double)t2;
+			} else if (t1 is double && t2 is long) {
+				return (double)t1 / (long)t2;
+			} else if (t1 is long && t2 is Double) {
+				return (long)t1 / (double)t2;
+			} else {
+				api.RaiseShovelError ("Both arguments must be numbers.");
+			}
+			return null;
 		}
 
 		static object ShiftLeft (VmApi api, object t1, object t2)
 		{
-			throw new NotImplementedException ();
+			if (t1 is long && t2 is long) {
+				return Prim0.LimitResult ((long)t1 << (int)(long)t2);
+			} else {
+				api.RaiseShovelError ("Both arguments must be integers.");
+			}
+			return null;
 		}
 
 		static object ShiftRight (VmApi api, object t1, object t2)
 		{
-			throw new NotImplementedException ();
+			if (t1 is long && t2 is long) {
+				return Prim0.LimitResult ((long)t1 >> (int)(long)t2);
+			} else {
+				api.RaiseShovelError ("Both arguments must be integers.");
+			}
+			return null;
 		}
 
 		static object Modulo (VmApi api, object t1, object t2)
 		{
-			throw new NotImplementedException ();
+			if (t1 is long && t2 is long) {
+				return Prim0.LimitResult ((long)t1 % (long)t2);
+			} else {
+				api.RaiseShovelError ("Both arguments must be integers.");
+			}
+			return null;
+		}
+
+		static long Expt (long b, long e)
+		{
+			long result = 1;
+			while (e > 0) {
+				if (e % 2 == 0) {
+					e = e >> 1;
+					b = b * b;
+				} else {
+					result *= b;
+					e --;
+				}
+			}
+			return result;
 		}
 
 		static object Pow (VmApi api, object t1, object t2)
 		{
-			throw new NotImplementedException ();
+			if (t1 is long && t2 is long) {
+				return Prim0.LimitResult (Expt ((long)t1, (long)t2));
+			} else if (t1 is double && t2 is double) {
+				return Math.Pow ((double)t1, (double)t2);
+			} else if (t1 is double && t2 is long) {
+				return Math.Pow ((double)t1, (long)t2);
+			} else if (t1 is long && t2 is Double) {
+				return Math.Pow ((long)t1, (double)t2);
+			} else {
+				api.RaiseShovelError ("Both arguments must be numbers.");
+			}
+			return null;
 		}
 
 		static object Floor (VmApi api, object t1)
 		{
-			throw new NotImplementedException ();
+			if (t1 is double) {
+				return (long)Math.Floor ((double)t1);
+			} else if (t1 is long) {
+				return t1;
+			} else {
+				api.RaiseShovelError ("Argument must be number.");
+			}
+			return null;
 		}
 
 		static object LessThan (VmApi api, object t1, object t2)
 		{
-			throw new NotImplementedException ();
+			if (t1 is string && t2 is string) {
+				return ((string)t1).CompareTo ((string)t2) == -1;
+			} else if (t1 is long && t2 is long) {
+				return (long)t1 < (long)t2;
+			} else if (t1 is double && t2 is double) {
+				return (double)t1 < (double)t2;
+			} else if (t1 is double && t2 is long) {
+				return (double)t1 < (long)t2;
+			} else if (t1 is long && t2 is Double) {
+				return (long)t1 < (double)t2;
+			} else {
+				api.RaiseShovelError (
+					"Arguments must have the same type (numbers or strings).");
+			}
+			return null;
 		}
 
 		static object LessThanOrEqual (VmApi api, object t1, object t2)
 		{
-			throw new NotImplementedException ();
+			if (t1 is string && t2 is string) {
+				var comparison = ((string)t1).CompareTo ((string)t2);
+				return comparison == -1 || comparison == 0;
+			} else if (t1 is long && t2 is long) {
+				return (long)t1 <= (long)t2;
+			} else if (t1 is double && t2 is double) {
+				return (double)t1 <= (double)t2;
+			} else if (t1 is double && t2 is long) {
+				return (double)t1 <= (long)t2;
+			} else if (t1 is long && t2 is Double) {
+				return (long)t1 <= (double)t2;
+			} else {
+				api.RaiseShovelError (
+					"Arguments must have the same type (numbers or strings).");
+			}
+			return null;
 		}
 
 		static object GreaterThan (VmApi api, object t1, object t2)
 		{
-			throw new NotImplementedException ();
+			if (t1 is string && t2 is string) {
+				return ((string)t1).CompareTo ((string)t2) == 1;
+			} else if (t1 is long && t2 is long) {
+				return (long)t1 > (long)t2;
+			} else if (t1 is double && t2 is double) {
+				return (double)t1 > (double)t2;
+			} else if (t1 is double && t2 is long) {
+				return (double)t1 > (long)t2;
+			} else if (t1 is long && t2 is Double) {
+				return (long)t1 > (double)t2;
+			} else {
+				api.RaiseShovelError (
+					"Arguments must have the same type (numbers or strings).");
+			}
+			return null;
 		}
 
 		static object GreaterThanOrEqual (VmApi api, object t1, object t2)
 		{
-			throw new NotImplementedException ();
+			if (t1 is string && t2 is string) {
+				var comparison = ((string)t1).CompareTo ((string)t2);
+				return comparison == 1 || comparison == 0;
+			} else if (t1 is long && t2 is long) {
+				return (long)t1 >= (long)t2;
+			} else if (t1 is double && t2 is double) {
+				return (double)t1 >= (double)t2;
+			} else if (t1 is double && t2 is long) {
+				return (double)t1 >= (long)t2;
+			} else if (t1 is long && t2 is Double) {
+				return (long)t1 >= (double)t2;
+			} else {
+				api.RaiseShovelError (
+					"Arguments must have the same type (numbers or strings).");
+			}
+			return null;
 		}
 
 		static object AreEqual (VmApi api, object t1, object t2)
 		{
-			throw new NotImplementedException ();
+			if (t1 is string && t2 is string) {
+				var comparison = ((string)t1).CompareTo ((string)t2);
+				return comparison == 0;
+			} else if (t1 is long && t2 is long) {
+				return (long)t1 == (long)t2;
+			} else if (t1 is double && t2 is double) {
+				return (double)t1 == (double)t2;
+			} else if (t1 is double && t2 is long) {
+				return (double)t1 == (long)t2;
+			} else if (t1 is long && t2 is Double) {
+				return (long)t1 == (double)t2;
+			} else {
+				api.RaiseShovelError (
+					"Arguments must have the same type (numbers or strings).");
+			}
+			return null;
 		}
 
 		static object AreNotEqual (VmApi api, object t1, object t2)
 		{
-			throw new NotImplementedException ();
+			return !(bool)AreEqual (api, t1, t2);
 		}
 
 		internal static object LogicalNot (VmApi api, object argument)
@@ -219,89 +409,262 @@ namespace Shovel.Vm
 			}
 		}
 
-		static object LogicalAnd (VmApi api, object t1, object t2)
-		{
-			throw new NotImplementedException ();
-		}
-
-		static object LogicalOr (VmApi api, object t1, object t2)
-		{
-			throw new NotImplementedException ();
-		}
-
 		static object BitwiseAnd (VmApi api, object t1, object t2)
 		{
-			throw new NotImplementedException ();
+			if (t1 is long && t2 is long) {
+				return Prim0.LimitResult ((long)t1 & (long)t2);
+			} else {
+				api.RaiseShovelError ("Both arguments must be integers.");
+			}
+			return null;
 		}
 
 		static object BitwiseOr (VmApi api, object t1, object t2)
 		{
-			throw new NotImplementedException ();
+			if (t1 is long && t2 is long) {
+				return Prim0.LimitResult ((long)t1 | (long)t2);
+			} else {
+				api.RaiseShovelError ("Both arguments must be integers.");
+			}
+			return null;
 		}
 
 		static object BitwiseXor (VmApi api, object t1, object t2)
 		{
-			throw new NotImplementedException ();
+			if (t1 is long && t2 is long) {
+				return Prim0.LimitResult ((long)t1 ^ (long)t2);
+			} else {
+				api.RaiseShovelError ("Both arguments must be integers.");
+			}
+			return null;
 		}
 
-		static object HashConstructor (VmApi api, List<object> args)
+		static object HashConstructor (VmApi api, object[] args)
 		{
-			throw new NotImplementedException ();
+			if (args.Length % 2 != 0) {
+				api.RaiseShovelError ("Must provide an even number of arguments.");
+			}
+			var sizeIncrease = 1 + 2 * args.Length;
+			api.CellsIncrementHerald (sizeIncrease);
+			var result = new Dictionary<string, object> ();
+			for (var i = 0; i < args.Length; i += 2) {
+				if (args [i] is String) {
+					result [(string)args [i]] = args [i + 1];
+				} else {
+					api.RaiseShovelError ("Keys must be strings");
+				}
+			}
+			api.CellsIncrementer (sizeIncrease);
+			return result;
 		}
 
 		static object HasKey (VmApi api, object hash, object key)
 		{
-			throw new NotImplementedException ();
+			if (!(hash is Dictionary<string, object>)) {
+				api.RaiseShovelError ("First argument must be a hash table.");
+			}
+			if (!(key is string)) {
+				api.RaiseShovelError ("Second argument must be a string.");
+			}
+			return ((Dictionary<string, object>)hash).ContainsKey ((string)key);
 		}
 
 		static object Keys (VmApi api, object hash)
 		{
-			throw new NotImplementedException ();
+			if (!(hash is Dictionary<string, object>)) {
+				api.RaiseShovelError ("First argument must be a hash table.");
+			}
+			var result = new List<object> ();
+			result.AddRange (((Dictionary<string, object>)hash).Keys);
+			return result;
 		}
 
-		static object ArrayConstructor (VmApi api, List<object> args)
+		static object ArrayConstructor (VmApi api, object[] args)
 		{
-			throw new NotImplementedException ();
+			var result = new List<object> ();
+			result.AddRange (args);
+			return result;
 		}
 
 		static object SizedArrayConstructor (VmApi api, object size)
 		{
-			throw new NotImplementedException ();
+			if (!(size is long)) {
+				api.RaiseShovelError ("Argument must be an integer.");
+			}
+			var result = new List<object> ();
+			for (var i = 0; i < (long)size; i++) {
+				result.Add (null);
+			}
+			return result;
+		}
+
+		static void CheckVector (VmApi api, object vector)
+		{
+			if (!(vector is List<object>)) {
+				api.RaiseShovelError ("First argument must be a vector.");
+			}
 		}
 
 		static object ArrayPush (VmApi api, object array, object value)
 		{
-			throw new NotImplementedException ();
+			CheckVector (api, array);
+			((List<object>)array).Add (value);
+			return value;
 		}
 
 		static object ArrayPop (VmApi api, object array)
 		{
-			throw new NotImplementedException ();
+			CheckVector (api, array);
+			var vector = (List<object>)array;
+			if (vector.Count == 0) {
+				api.RaiseShovelError ("Can't pop from an empty array.");
+			}
+			var result = vector [vector.Count - 1];
+			vector.RemoveAt (vector.Count - 1);
+			return result;
 		}
 
-		static object ArrayOrHashGet (VmApi api, object arrayOrHash, object index)
+		static object ArrayOrHashGet (VmApi api, object arrayOrHashOrString, object index)
 		{
-			throw new NotImplementedException ();
+			if (arrayOrHashOrString is List<object>) {
+				if (index is long) {
+					var array = (List<object>)arrayOrHashOrString;
+					var idx = (int)(long)index;
+					return array [idx];
+				} else {
+					api.RaiseShovelError ("Getting an array element requires an integer index.");
+					return null;
+				}
+			} else if (arrayOrHashOrString is String) {
+				if (index is long) {
+					var array = (string)arrayOrHashOrString;
+					var idx = (int)(long)index;
+					return (array [idx]).ToString ();
+				} else {
+					api.RaiseShovelError ("Getting an string element requires an integer index.");
+					return null;
+				}
+			} else if (arrayOrHashOrString is Dictionary<string, object>) {
+				if (index is string) {
+					var hash = (Dictionary<string, object>)arrayOrHashOrString;
+					var key = (string)index;
+					return hash [key];
+				} else {
+					api.RaiseShovelError ("Getting a hash table value requires a key that is a string.");
+					return null;
+				}
+			} else {
+				api.RaiseShovelError ("First argument must be a hash or an array or a string.");
+				return null;
+			}
 		}
 
 		static object HashGetDot (VmApi api, object hash, object index)
 		{
-			throw new NotImplementedException ();
+			if (!(hash is Dictionary<string, object>)) {
+				api.RaiseShovelError ("First argument must be a hash table.");
+			}
+			if (!(index is string)) {
+				api.RaiseShovelError ("Second argument must be a string.");
+			}
+			var h = (Dictionary<string, object>)hash;
+			var k = (string)index;
+			if (!h.ContainsKey (k)) {
+				api.RaiseShovelError ("Key not found in hash table.");
+			}
+			return h [k];
 		}
 
-		static object ArrayOrHashSet (VmApi api, object arrayOrHash, object index, object value)
+		static object ArrayOrHashSet (VmApi api, object arrayOrHashOrString, object index, object value)
 		{
-			throw new NotImplementedException ();
+			if (arrayOrHashOrString is List<object>) {
+				if (index is long) {
+					var array = (List<object>)arrayOrHashOrString;
+					var idx = (int)(long)index;
+					array [idx] = value;
+					return value;
+				} else {
+					api.RaiseShovelError ("Setting an array element requires an integer index.");
+					return null;
+				}
+			} else if (arrayOrHashOrString is Dictionary<string, object>) {
+				if (index is string) {
+					var hash = (Dictionary<string, object>)arrayOrHashOrString;
+					var key = (string)index;
+					hash [key] = value;
+					return value;
+				} else {
+					api.RaiseShovelError ("Setting a hash table value requires a key that is a string.");
+					return null;
+				}
+			} else {
+				api.RaiseShovelError ("First argument must be a hash or an array.");
+				return null;
+			}
 		}
 
 		static object GetLength (VmApi api, object arrayOrString)
 		{
-			throw new NotImplementedException ();
+			if (arrayOrString is List<object>) {
+				return (long)((List<object>)arrayOrString).Count;
+			} else if (arrayOrString is string) {
+				return (long)((string)arrayOrString).Length;
+			} else {
+				api.RaiseShovelError ("Argument must be a string or an array.");
+				return null;
+			}
+		}
+
+		static void AdjustRealStartEnd (VmApi api, ref int realStart, ref int realEnd, int length)
+		{
+			if (realStart < 0) {
+				realStart += length;
+			}
+			if (realEnd < 0) {
+				realEnd += length;
+			}
+			if (realStart > realEnd) {
+				api.RaiseShovelError (String.Format (
+						"Starting index ({0}) is larger than ending index ({1}).",
+						realStart, realEnd)
+				);
+			}
+			if (realStart < 0) {
+				api.RaiseShovelError (String.Format (
+						"Starting index ({0}) is less than 0.", realStart)
+				);
+			}
+			if (realEnd >= length) {
+				api.RaiseShovelError (String.Format (
+						"End index (~d) is equal to or larger than the length of the sequence (~d).",
+						realStart, length)
+				);
+			}
 		}
 
 		static object GetSlice (VmApi api, object arrayOrString, object start, object end)
 		{
-			throw new NotImplementedException ();
+			if (!(start is long)) {
+				api.RaiseShovelError ("The start index must be an integer.");
+				return null;
+			}
+			if (!(end is long)) {
+				api.RaiseShovelError ("The end index must be an integer.");
+				return null;
+			}
+			if (arrayOrString is List<object>) {
+				var array = (List<object>)arrayOrString;
+				var length = array.Count;
+				var realStart = (int)(long)start;
+				var realEnd = (int)(long)end;
+				AdjustRealStartEnd (api, ref realStart, ref realEnd, length);
+				return array.GetRange(realStart, realEnd - realStart + 1);
+			} else if (arrayOrString is string) {
+				throw new NotImplementedException ();
+			} else {
+				api.RaiseShovelError ("Argument must be a string or an array.");
+				return null;
+			}
 		}
 
 		static object StringUpper (VmApi api, object str)
@@ -364,7 +727,7 @@ namespace Shovel.Vm
 			throw new NotImplementedException ();
 		}
 
-		static object ShovelStringRepresentation (VmApi api, object obj)
+		internal static object ShovelStringRepresentation (VmApi api, object obj)
 		{
 			throw new NotImplementedException ();
 		}

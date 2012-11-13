@@ -58,6 +58,14 @@ namespace Shovel
 			}
 			return result;
 		}
+
+		public static object NakedRunVm(List<SourceFile> sources)
+		{
+			var rawBytecode = Utils.GetRawBytecode(sources);
+			var bytecode = Utils.Assemble(rawBytecode);
+			var vm = Vm.Vm.RunVm(bytecode, sources);
+			return vm.CheckStackTop();
+		}
 	}
 }
 

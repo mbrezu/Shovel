@@ -544,8 +544,8 @@ Returns two values: the top of the VM stack and the VM itself."
     (push (instruction-cache instruction)
           (vm-stack vm))
     (inc-pc vm)
-    ;; for the pushed callable (5 fields):
-    (increment-cells-quota vm 5)))
+    ;; for the pushed callable
+    (increment-cells-quota vm 1)))
 
 (defun handle-prim (vm instruction)
   (declare (optimize speed (safety 0))
@@ -558,8 +558,8 @@ Returns two values: the top of the VM stack and the VM itself."
                            :cached-prim (cons nil (find-user-primitive vm args)))))
     (push (instruction-cache instruction) (vm-stack vm))
     (inc-pc vm)
-    ;; for the pushed callable (5 fields):
-    (increment-cells-quota vm 5)))
+    ;; for the pushed callable
+    (increment-cells-quota vm 1)))
 
 (defun handle-fjump (vm instruction)
   (declare (optimize speed (safety 0))
@@ -1098,6 +1098,7 @@ A 'valid value' (with Common Lisp as the host language) is:
   (if save-return-address
       (incf (vm-program-counter vm))
       (apply-return-address vm (pop (vm-stack vm))))
+  (increment-cells-quota vm 1)
   (push result (vm-stack vm)))
 
 (defmacro handle-generic-arity (is-required-primitive)

@@ -56,22 +56,22 @@
       (limit-integer-result (- t1))
       (vm-error "Argument must be number.")))
 (defun multiply (t1 t2) (limit-integer-result (both-numbers *)))
+(defmacro both-integers (op)
+  `(cond ((and (integerp t1) (integerp t2))
+          (,op t1 t2))
+         (t (vm-error "Both arguments must be integers."))))
 (defun shift-left (t1 t2)
   (labels ((shl (t1 t2) (ash t1 t2)))
-    (limit-integer-result (both-numbers shl))))
+    (limit-integer-result (both-integers shl))))
 (defun shift-right (t1 t2)
   (labels ((shr (t1 t2) (ash t1 (- t2))))
-    (limit-integer-result (both-numbers shr))))
+    (limit-integer-result (both-integers shr))))
 (defun divide (t1 t2)
   (cond ((and (integerp t1) (integerp t2))
          (limit-integer-result (floor (/ t1 t2))))
         ((and (numberp t1) (numberp t2))
          (float (/ t1 t2)))
         (t (vm-error "Both arguments must be numbers."))))
-(defmacro both-integers (op)
-  `(cond ((and (integerp t1) (integerp t2))
-          (,op t1 t2))
-         (t (vm-error "Both arguments must be integers."))))
 (defun modulo (t1 t2)
   (limit-integer-result (both-integers mod)))
 (defun pow (t1 t2)
@@ -220,7 +220,8 @@
              (or (gethash index array-or-hash)
                  :null)
              (vm-error
-              "Getting a hash table value requires a key that is a string.")))))
+              "Getting a hash table value requires a key that is a string.")))
+        (t (vm-error "First argument must be a hash or an array."))))
 
 (defun hash-get-dot (hash-table key)
   (unless (hash-table-p hash-table)
@@ -237,12 +238,10 @@
              (progn
                (validate-index-access array-or-hash index)
                (cond ((stringp array-or-hash)
-                      (when (/= 1 (length value))
-                        (vm-error
-                         "Must provide a one character string as right hand side for the assignment."))
+                      (vm-error "Cannot change strings.")
                       (setf (aref array-or-hash index) (elt value 0)))
                      (t (setf (aref array-or-hash index) value))))
-             (vm-error "Getting an array element requires an integer index.")))
+             (vm-error "Setting an array element requires an integer index.")))
         ((hash-table-p array-or-hash)
          (if (stringp index)
              (let ((hash-grows (not (gethash index array-or-hash))))
@@ -251,7 +250,8 @@
                  (funcall shovel-vm::*cells-incrementer* 2))
                (setf (gethash index array-or-hash) value))
              (vm-error
-              "Getting a hash table value requires a key that is a string.")))))
+              "Setting a hash table value requires a key that is a string.")))
+        (t (vm-error "First argument must be an array or a hash."))))
 
 ;; Length of arrays or strings:
 
@@ -299,6 +299,10 @@
 (defun get-slice (array-or-string start end)
   (unless (vectorp array-or-string)
     (vm-error "Argument must be a string or an array."))
+  (unless (integerp start)
+    (vm-error "The start index must be an integer."))
+  (unless (integerp end)
+    (vm-error "The end index must be an integer."))
   (let* ((length (length array-or-string))
          (real-start (if (< start 0) (+ length start) start))
          (real-end (if (< end 0) (+ length end 1) end)))
@@ -312,7 +316,7 @@
     (when (>= real-start length)
       (vm-error
        (format nil
-               "Starting index (~d) is equal to or larger than the length of the sequence (~d)."
+               "End index (~d) is equal to or larger than the length of the sequence (~d)."
                real-start length)))
     (when (< real-end 0)
       (vm-error

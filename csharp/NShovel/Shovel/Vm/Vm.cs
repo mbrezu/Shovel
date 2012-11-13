@@ -44,7 +44,7 @@ namespace Shovel.Vm
 		// FIXME: Add 'runs' later, I'm just implementing a basic version now.
 		VmApi api = null;
 
-		public static void RunVm (
+		public static Vm RunVm (
 			Instruction[] bytecode, 
 			List<SourceFile> sources = null,
 			List<Callable> userPrimitives = null,
@@ -88,6 +88,15 @@ namespace Shovel.Vm
 			while (vm.IsLive()) {
 				vm.StepVm ();
 			}
+			return vm;
+		}
+
+		public object CheckStackTop()
+		{
+			if (this.stack.Count != 1) {
+				Utils.Panic ();
+			}
+			return this.Top();
 		}
 
 		bool StepVm ()
@@ -97,7 +106,6 @@ namespace Shovel.Vm
 			this.CheckCellsQuota ();
 			if (this.IsLive ()) {
 				Vm.handlers [this.bytecode [this.programCounter].NumericOpcode] (this);
-				throw new NotImplementedException ();
 			}
 			return this.IsLive ();
 		}
@@ -165,30 +173,125 @@ namespace Shovel.Vm
 		static Dictionary<string, Callable> Prim0Hash {
 			get {
 				if (Vm.prim0Hash == null) {
-					Vm.prim0Hash = Prim0.GetPrim0Hash();
+					Vm.prim0Hash = Prim0.GetPrim0Hash ();
 				}
 				return prim0Hash;
 			}
 		}
 
-		static void HandlePrim0 (Vm obj)
+		static void HandlePrim0 (Vm vm)
 		{
-
+			var instruction = vm.CurrentInstruction ();
+			if (instruction.Cache == null) {
+				instruction.Cache = Vm.Prim0Hash [(string)instruction.Arguments];
+			}
+			vm.Push (instruction.Cache);
+			vm.IncrementTicks (1);
+			vm.programCounter++;
 		}
 
-		static void HandlePrim (Vm obj)
+		static Callable GetUdpByName (Vm vm, string udpName)
 		{
-			throw new NotImplementedException ();
+			if (vm.userPrimitives == null || !vm.userPrimitives.ContainsKey (udpName)) {
+				vm.RaiseShovelError (String.Format (
+						"Unknown user primitive '{0}'.", udpName)
+				);
+			}
+			return vm.userPrimitives [udpName];
 		}
 
-		static void HandleCall (Vm obj)
+		static void HandlePrim (Vm vm)
 		{
-			throw new NotImplementedException ();
+			var instruction = vm.CurrentInstruction ();
+			if (instruction.Cache == null) {
+				var udpName = (string)instruction.Arguments;
+				instruction.Cache = GetUdpByName(vm, udpName);
+			}
+			vm.Push (instruction.Cache);
+			vm.IncrementTicks (1);
+			vm.programCounter++;
 		}
 
-		static void HandleCallj (Vm obj)
+		static void HandleCall (Vm vm)
 		{
-			throw new NotImplementedException ();
+			var instruction = vm.CurrentInstruction ();
+			var numArgs = (int)instruction.Arguments;
+			Vm.HandleCallImpl (vm, numArgs, true);
+		}
+
+		static void HandleCallImpl (Vm vm, int numArgs, bool saveReturnAddress)
+		{
+			var maybeCallable = vm.Pop ();
+			if (!(maybeCallable is Callable)) {
+				vm.RaiseShovelError (String.Format (
+					"Object [{0}] is not callable.", Prim0.ShovelStringRepresentation (vm.api, maybeCallable))
+				);
+			}
+			var callable = (Callable)maybeCallable;
+			if (callable.UdpName != null || callable.Prim0Name != null) {
+				CallPrimitive (callable, vm, numArgs, saveReturnAddress);
+			} else {
+				CallFunction (callable, vm, numArgs, saveReturnAddress);
+				if (saveReturnAddress) {
+					vm.IncrementCells (1);
+				}
+			}
+		}
+
+		static void CallFunction (Callable callable, Vm vm, int numArgs, bool saveReturnAddress)
+		{
+			if (saveReturnAddress) {
+				vm.Push (new ReturnAddress() {
+					ProgramCounter = vm.programCounter + 1,
+					Environment = vm.currentEnvironment
+				});
+			}
+			if (callable.Arity != null && callable.Arity.Value != numArgs) {
+				ArityError(vm, callable.Arity.Value, numArgs);
+			}
+			vm.currentEnvironment = callable.Environment;
+			vm.programCounter = callable.ProgramCounter.Value;
+		}
+
+		static void CallPrimitive (Callable callable, Vm vm, int numArgs, bool saveReturnAddress)
+		{
+			if (callable.HostCallable == null) {
+				if (callable.UdpName != null) {
+					callable.HostCallable = GetUdpByName(vm, callable.UdpName).HostCallable;
+				} else if (callable.Prim0Name == null) {
+					callable.HostCallable = Vm.Prim0Hash [callable.Prim0Name].HostCallable;
+				} else {
+					Utils.Panic ();
+				}
+			}
+			if (callable.Arity != null && callable.Arity.Value != numArgs) {
+				ArityError(vm, callable.Arity.Value, numArgs);
+			}
+			var args = new object[numArgs];
+			for (var i = args.Length - 1; i >= 0; i--) {
+				args[i] = vm.Pop ();
+			}
+			if (saveReturnAddress) {
+				vm.programCounter ++;
+			} else {
+				vm.ApplyReturnAddress(vm.Pop () as ReturnAddress);
+			}
+			vm.Push (callable.HostCallable(vm.api, args));
+			vm.IncrementCells(1);
+		}
+
+		static void ArityError (Vm vm, int expectedArity, int actualArity)
+		{
+			vm.RaiseShovelError(String.Format (
+				"Function of {0} arguments called with {1} arguments.",
+				expectedArity, actualArity));
+		}
+
+		static void HandleCallj (Vm vm)
+		{
+			var instruction = vm.CurrentInstruction ();
+			var numArgs = (int)instruction.Arguments;
+			Vm.HandleCallImpl (vm, numArgs, false);
 		}
 
 		void CheckBool ()
@@ -269,9 +372,18 @@ namespace Shovel.Vm
 			return FindFrame (env, frameNumber).Values [varIndex];
 		}
 
-		static void HandleFn (Vm obj)
+		static void HandleFn (Vm vm)
 		{
-			throw new NotImplementedException ();
+			var instruction = vm.CurrentInstruction ();
+			var args = (int[])instruction.Arguments;
+			var callable = new Callable () {
+				ProgramCounter = args[0],
+				Arity = args[1],
+				Environment = vm.currentEnvironment
+			};
+			vm.Push (callable);
+			vm.IncrementCells (5);
+			vm.programCounter++;
 		}
 
 		static void HandleNewFrame (Vm vm)
@@ -382,11 +494,11 @@ namespace Shovel.Vm
 		int FindNamedBlock (string blockName)
 		{
 			for (var i = this.stack.Count - 1; i >= 0; i--) {
-				if (this.stack[i] is NamedBlock && ((NamedBlock)this.stack[i]).Name == blockName) {
+				if (this.stack [i] is NamedBlock && ((NamedBlock)this.stack [i]).Name == blockName) {
 					return i;
 				}
 			}
-			this.RaiseShovelError(
+			this.RaiseShovelError (
 				String.Format ("Cannot find block '{0}'.", blockName));
 			return -1;
 		}
@@ -433,7 +545,8 @@ namespace Shovel.Vm
 
 		void RaiseShovelError (string message)
 		{
-			throw new NotImplementedException ();
+			// FIXME: need to implement the real thing.
+			throw new InvalidOperationException(message);
 		}
 
 		void IncrementTicks (int ticks)

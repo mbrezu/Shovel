@@ -602,35 +602,6 @@ if a == b 1 else 2")))))
   (is (= 5 (shovel:naked-run-code
             (list "var a = array(1, 2, 3, 4) a[0] + a[3]")))))
 
-(test assignment-of-one-character-strings-to-string-accesses
-  (is (string= "text" (shovel:naked-run-code (list "
-var a = 'test'
-a[2] = 'x'
-a"))))
-  (is (string= (with-output-to-string (str)
-                 (let ((*standard-output* str))
-                   (shovel:run-code (list "
-var a = 'test'
-a[2] = 'x1'
-a"))))
-               "Shovel error in file '<unspecified-1>' at line 3, column 1: Must provide a one character string as right hand side for the assignment.
-
-Current stack trace:
-file '<unspecified-1>' line 3: a[2] = 'x1'
-file '<unspecified-1>' line 3: ^^^^^^^^^^^
-
-Current environment:
-
-Frame starts at:
-file '<unspecified-1>' line 2: var a = 'test'
-file '<unspecified-1>' line 2: ^^^^^^^^^^^^^^
-Frame variables are:
-a = \"test\"
-
-
-
-")))
-
 (test broken-vm-state-match
   (let (flag)
     (labels ((halt (a)
@@ -1029,7 +1000,7 @@ result
     (multiple-value-bind (result vm)
         (shovel:run-vm bytecode :sources sources)
       (declare (ignore result))
-      (is (= 109 (shovel-vm::vm-used-cells vm)))))
+      (is (= 106 (shovel-vm::vm-used-cells vm)))))
   (let* ((sources (list (shovel:stdlib)
                         "
 stdlib.repeat(1000, fn() {
@@ -1042,7 +1013,7 @@ stdlib.repeat(1000, fn() {
                        :sources sources
                        :cells-quota 900)
       (declare (ignore result))
-      (is (= 765 (shovel-vm::vm-used-cells vm))))
+      (is (= 741 (shovel-vm::vm-used-cells vm))))
     (signals shovel:shovel-cell-quota-exceeded
       (shovel:run-vm bytecode
                      :sources sources

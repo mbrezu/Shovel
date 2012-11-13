@@ -178,11 +178,11 @@ namespace Shovel.Compiler
 			case ParseTree.Labels.Number:
 				{
 					double doubleResult;
-					int intResult;
-					if (double.TryParse (content, out doubleResult)) {
+					long longResult;
+					if (long.TryParse (content, out longResult)) {
+						return longResult;
+					} else if (double.TryParse (content, out doubleResult)) {
 						return doubleResult;
-					} else if (int.TryParse (content, out intResult)) {
-						return intResult;
 					}
 				}
 				Utils.Panic ();

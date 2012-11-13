@@ -26,62 +26,67 @@ namespace Shovel
 {
 	public class Callable
 	{
-		public string UdpName { get; set; }
+		internal string UdpName { get; set; }
 
-		public string Prim0Name { get; set; }
+		internal string Prim0Name { get; set; }
 
 		public int? Arity { get; set; }
 
-		public Func<VmApi, List<object>, object> CachedHostCallable { get; set; }
+		// The next two fields are only used if this is a ShovelScript closure.
+		internal int? ProgramCounter { get; set; }
+
+		internal VmEnvironment Environment { get; set; }
+
+		internal Func<VmApi, object[], object> HostCallable { get; set; }
 
 		public static Callable MakeUdp (
 			string name,
-			Func<VmApi, List<object>, object> hostCallable,
+			Func<VmApi, object[], object> hostCallable,
 			int? arity = null)
 		{
 			return new Callable () 
 			{
 				UdpName = name,
 				Arity = arity,
-				CachedHostCallable = hostCallable
+				HostCallable = hostCallable
 			};
 		}
 
 		internal static Callable MakePrim0 (
 			string name,
-			Func<VmApi, List<object>, object> hostCallable,
+			Func<VmApi, object[], object> hostCallable,
 			int? arity = 2)
 		{
 			return new Callable () 
 			{
 				Prim0Name = name,
 				Arity = arity,
-				CachedHostCallable = hostCallable
+				HostCallable = hostCallable
 			};
 		}
 
-		public static Func<VmApi, List<object>, object> MakeHostCallable (
+		public static Func<VmApi, object[], object> MakeHostCallable (
 			Func<VmApi, object> callable)
 		{
 			return (vmapi, args) => callable (vmapi);
 		}
 
-		public static Func<VmApi, List<object>, object> MakeHostCallable (
+		public static Func<VmApi, object[], object> MakeHostCallable (
 			Func<VmApi, object, object> callable)
 		{
 			return (vmapi, args) => callable (vmapi, args [0]);
 		}
 
-		public static Func<VmApi, List<object>, object> MakeHostCallable (
+		public static Func<VmApi, object[], object> MakeHostCallable (
 			Func<VmApi, object, object, object> callable)
 		{
 			return (vmapi, args) => callable (vmapi, args [0], args [1]);
 		}
 
-		public static Func<VmApi, List<object>, object> MakeHostCallable (
+		public static Func<VmApi, object[], object> MakeHostCallable (
 			Func<VmApi, object, object, object, object> callable)
 		{
-			return (vmapi, args) => callable (vmapi, args [0], args [1], args[2]);
+			return (vmapi, args) => callable (vmapi, args [0], args [1], args [2]);
 		}
 
 	}

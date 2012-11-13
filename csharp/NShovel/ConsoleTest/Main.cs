@@ -30,20 +30,16 @@ namespace ConsoleTest
 		public static void Main (string[] args)
 		{
 			try {
-				var sources = Shovel.Api.MakeSources ("test.sho", @"
-var fact = fn (n) {
-    if n == 0
-    1
-    else n * fact(n - 1)
-}
-fact(10)
-"
-				);
-				Console.WriteLine (Shovel.Api.PrintCode (sources));
+				var sources = Shovel.Api.MakeSources ("test.sho", "hasKey(hash('a', 1, 'b', 2), 'a')");
+				Console.WriteLine (Shovel.Api.PrintCode(sources));
+//				var result = (Dictionary<string, object>)Shovel.Api.NakedRunVm (sources);
+//				foreach (var key in result.Keys) {
+//					Console.WriteLine ("{0}: {1}", key, result[key]);
+//				}
+				Console.WriteLine (Shovel.Api.NakedRunVm (sources));
 			} catch (Shovel.ShovelException ex) {
 				Console.WriteLine (ex.Message);
 			}
 		}
-
 	}
 }
