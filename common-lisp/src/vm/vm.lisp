@@ -701,8 +701,8 @@ Returns two values: the top of the VM stack and the VM itself."
     (setf (gethash "environment" context) current-environment)
     (push context (vm-stack vm))
     ;; for the pushed hash: 1 (the pushed hash), 1 (the hash), 2 keys
-    ;; and 2 values.
-    (increment-cells-quota vm 6)
+    ;; and 2 values, the length of the strings.
+    (increment-cells-quota vm (+ 6 (length stack-trace) (length current-environment)))
     (inc-pc vm)))
 
 (defun handle-tjump (vm instruction)

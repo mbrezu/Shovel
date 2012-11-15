@@ -515,9 +515,21 @@ namespace Shovel.Vm
 			return -1;
 		}
 
-		static void HandleContext (Vm obj)
+		static void HandleContext (Vm vm)
 		{
-			throw new NotImplementedException ();
+			var stackTraceSb = new StringBuilder();
+			vm.WriteStackTrace(stackTraceSb);
+			var stackTrace = stackTraceSb.ToString();
+			var currentEnvironmentSb = new StringBuilder();
+			vm.WriteCurrentEnvironment(currentEnvironmentSb);
+			var currentEnvironment = currentEnvironmentSb.ToString();
+			var result = new Dictionary<string, object>();
+			result.Add ("stack", stackTrace);
+			result.Add ("environment", currentEnvironment);
+			vm.IncrementCells(6 + stackTrace.Length + currentEnvironment.Length);
+			vm.Push (result);
+			vm.programCounter ++;
+			return;
 		}
 
 		static void HandleNop (Vm vm)
@@ -658,6 +670,9 @@ namespace Shovel.Vm
 
 		void WriteStackTrace (StringBuilder sb)
 		{
+			int? startPos, endPos;
+			this.FindStartEndPos(out startPos, out endPos);
+			this.PrintLineFor(sb, this.programCounter, startPos, endPos);
 			for (var i = this.stack.Count - 1; i >= 0; i--) {
 				if (this.stack[i] is ReturnAddress) {
 					var ra = (ReturnAddress)this.stack[i];

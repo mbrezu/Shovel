@@ -419,7 +419,7 @@ namespace Shovel.Compiler
 		{
 			if (this.TokenIs (Token.Types.Identifier)) {
 				return this.ParseName ();
-			} else if (this.TokenIs (Token.Types.Identifier, "context")) {
+			} else if (this.TokenIs (Token.Types.Keyword, "context")) {
 				return this.ParseContext ();
 			} else if (this.TokenIs (Token.Types.Punctuation, "(")) {
 				this.ConsumeToken (Token.Types.Punctuation, "(");

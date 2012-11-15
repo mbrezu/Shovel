@@ -47,28 +47,20 @@ namespace ConsoleTest
 //				Console.WriteLine (ex.Message);
 //			}
 
-			var sources = Shovel.Api.MakeSources ("test.sho", "panic('test')");
-			ExpectException<Shovel.ShovelException> (() => {
-				var result = Shovel.Api.NakedRunVm (sources);
-			},
-			(ex) => {
-				Console.WriteLine (ex.Message);
-			}
+			var sources = Shovel.Api.MakeSources ("test.sho", @"
+var id = fn x x
+var h = fn (x) context
+var g = fn (x) id(h(x))
+var f = fn (x) id(g(x))
+f(3)
+"
 			);
-
-		}
-
-		public static void ExpectException<T> (Action action, Action<T> check)
-            where T: class
-		{
-			try {
-				action ();
-				Console.WriteLine("auch");
-			} catch (Exception ex) {
-				check (ex as T);
+			var result = (Dictionary<string, object>)Shovel.Api.NakedRunVm(sources);
+			foreach (var key in result.Keys) {
+				Console.WriteLine (key);
+				Console.WriteLine (result[key]);
 			}
 		}
-
 
 	}
 }
