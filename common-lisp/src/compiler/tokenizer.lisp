@@ -150,7 +150,7 @@
           "lower" "upper"
           "hash" "keys" "hasKey"
           "utcSecondsSinceUnixEpoch" "decodeTime" "encodeTime"
-          "isString" "isHash" "isBool" "isArray" "isNumber" "isCallable"
+          "isString" "isHash" "isBool" "isArray" "isNumber" "isInteger" "isCallable"
           "string" "stringRepresentation"
           "parseInt" "parseFloat" "floor"
           "panic")

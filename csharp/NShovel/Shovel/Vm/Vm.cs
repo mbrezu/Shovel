@@ -105,7 +105,13 @@ namespace Shovel.Vm
 			this.CheckTicksQuota ();
 			this.CheckCellsQuota ();
 			if (this.IsLive ()) {
-				Vm.handlers [this.bytecode [this.programCounter].NumericOpcode] (this);
+				var instruction = this.CurrentInstruction();
+//				Console.WriteLine("*****");
+//				Console.WriteLine (instruction.Opcode);
+//				for (var i = 0; i < this.stack.Count; i++) {
+//					Console.WriteLine(this.stack[i]);
+//				}
+				Vm.handlers [instruction.NumericOpcode] (this);
 			}
 			return this.IsLive ();
 		}
@@ -345,6 +351,7 @@ namespace Shovel.Vm
 		{
 			while (env != null && frameNumber > 0) {
 				env = env.Next;
+				frameNumber --;
 			}
 			if (env == null) {
 				Utils.Panic ();
@@ -417,7 +424,7 @@ namespace Shovel.Vm
 				if (vm.Top () is ReturnAddress) {
 					returnAddress = vm.Pop () as ReturnAddress;
 				}
-				for (var i = argCount - 1; i >= 0; i++) {
+				for (var i = argCount - 1; i >= 0; i--) {
 					vm.currentEnvironment.Frame.Values [i] = vm.Pop ();
 				}
 				if (returnAddress != null) {

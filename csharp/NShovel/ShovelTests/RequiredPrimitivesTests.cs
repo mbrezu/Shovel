@@ -160,7 +160,7 @@ namespace ShovelTests
 		}
 
 		[Test]
-		public void LessThanOrEqual()
+		public void LessThanOrEqual ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "10 <= 20");
 			Assert.AreEqual (true, (bool)Shovel.Api.NakedRunVm (sources));
@@ -186,7 +186,7 @@ namespace ShovelTests
 		}
 
 		[Test]
-		public void GreaterThanOrEqual()
+		public void GreaterThanOrEqual ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "20 >= 10");
 			Assert.AreEqual (true, (bool)Shovel.Api.NakedRunVm (sources));
@@ -195,7 +195,7 @@ namespace ShovelTests
 		}
 
 		[Test]
-		public void AreEqual()
+		public void AreEqual ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "20 == 10");
 			Assert.AreEqual (false, (bool)Shovel.Api.NakedRunVm (sources));
@@ -208,7 +208,7 @@ namespace ShovelTests
 		}
 
 		[Test]
-		public void AreNotEqual()
+		public void AreNotEqual ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "20 != 10");
 			Assert.AreEqual (true, (bool)Shovel.Api.NakedRunVm (sources));
@@ -222,7 +222,7 @@ namespace ShovelTests
 		// FIXME: add tests for broken comparisons.
 
 		[Test]
-		public void LogicalNot()
+		public void LogicalNot ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "!(20 == 10)");
 			Assert.AreEqual (true, (bool)Shovel.Api.NakedRunVm (sources));
@@ -231,7 +231,7 @@ namespace ShovelTests
 		// These aren't implemented as primitives (they are rewritten as ifs by the compiler), 
 		// but this looks like a good place to test them.
 		[Test]
-		public void LogicalOrAnd()
+		public void LogicalOrAnd ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "2 == 3 && 2 == 2");
 			Assert.AreEqual (false, (bool)Shovel.Api.NakedRunVm (sources));
@@ -245,7 +245,7 @@ namespace ShovelTests
 		}
 
 		[Test]
-		public void BitwiseAnd()
+		public void BitwiseAnd ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "15 & 3");
 			Assert.AreEqual (3, (long)Shovel.Api.NakedRunVm (sources));
@@ -254,7 +254,7 @@ namespace ShovelTests
 		}
 
 		[Test]
-		public void BitwiseOr()
+		public void BitwiseOr ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "15 | 3");
 			Assert.AreEqual (15, (long)Shovel.Api.NakedRunVm (sources));
@@ -265,7 +265,7 @@ namespace ShovelTests
 		}
 
 		[Test]
-		public void BitwiseXor()
+		public void BitwiseXor ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "2 ^ 2");
 			Assert.AreEqual (0, (long)Shovel.Api.NakedRunVm (sources));
@@ -279,17 +279,17 @@ namespace ShovelTests
 
 		// FIXME: negative tests for primitives tested below (broken parameters).
 		[Test]
-		public void HashConstructor()
+		public void HashConstructor ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "hash('a', 1, 'b', 2)");
 			var result = (Dictionary<string, object>)Shovel.Api.NakedRunVm (sources);
 			Assert.AreEqual (2, result.Keys.Count);
-			Assert.AreEqual (1, result["a"]);
-			Assert.AreEqual (2, result["b"]);
+			Assert.AreEqual (1, result ["a"]);
+			Assert.AreEqual (2, result ["b"]);
 		}
 
 		[Test]
-		public void HasKey()
+		public void HasKey ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "hasKey(hash('a', 1, 'b', 2), 'a')");
 			Assert.AreEqual (true, (bool)Shovel.Api.NakedRunVm (sources));
@@ -300,104 +300,305 @@ namespace ShovelTests
 		}
 
 		[Test]
-		public void Keys()
+		public void Keys ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "keys(hash('a', 1, 'b', 2))");
 			var result = (List<object>)Shovel.Api.NakedRunVm (sources);
 			Assert.AreEqual (2, result.Count);
-			Assert.IsTrue(result.Contains("a"));
-			Assert.IsTrue(result.Contains("b"));
-			Assert.IsFalse(result.Contains("c"));
+			Assert.IsTrue (result.Contains ("a"));
+			Assert.IsTrue (result.Contains ("b"));
+			Assert.IsFalse (result.Contains ("c"));
 		}
 
 		[Test]
-		public void ArrayConstructor()
+		public void ArrayConstructor ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "array(1, 2, 3)");
 			var result = (List<object>)Shovel.Api.NakedRunVm (sources);
 			Assert.AreEqual (3, result.Count);
-			Assert.AreEqual (1, (long)result[0]);
-			Assert.AreEqual (2, (long)result[1]);
-			Assert.AreEqual (3, (long)result[2]);
+			Assert.AreEqual (1, (long)result [0]);
+			Assert.AreEqual (2, (long)result [1]);
+			Assert.AreEqual (3, (long)result [2]);
 		}
 
 		[Test]
-		public void SizedArrayConstructor()
+		public void SizedArrayConstructor ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "arrayN(3)");
 			var result = (List<object>)Shovel.Api.NakedRunVm (sources);
 			Assert.AreEqual (3, result.Count);
-			Assert.AreEqual (null, result[0]);
-			Assert.AreEqual (null, result[1]);
-			Assert.AreEqual (null, result[2]);
+			Assert.AreEqual (null, result [0]);
+			Assert.AreEqual (null, result [1]);
+			Assert.AreEqual (null, result [2]);
 		}
 
 		[Test]
-		public void VectorPush()
+		public void VectorPush ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "var a = array(1, 2) push(a, 3) a");
 			var result = (List<object>)Shovel.Api.NakedRunVm (sources);
 			Assert.AreEqual (3, result.Count);
-			Assert.AreEqual (1, (long)result[0]);
-			Assert.AreEqual (2, (long)result[1]);
-			Assert.AreEqual (3, (long)result[2]);
+			Assert.AreEqual (1, (long)result [0]);
+			Assert.AreEqual (2, (long)result [1]);
+			Assert.AreEqual (3, (long)result [2]);
 		}
 
 		[Test]
-		public void VectorPop()
+		public void VectorPop ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "var a = array(1, 2, 3, 4) pop(a) a");
 			var result = (List<object>)Shovel.Api.NakedRunVm (sources);
 			Assert.AreEqual (3, result.Count);
-			Assert.AreEqual (1, (long)result[0]);
-			Assert.AreEqual (2, (long)result[1]);
-			Assert.AreEqual (3, (long)result[2]);
+			Assert.AreEqual (1, (long)result [0]);
+			Assert.AreEqual (2, (long)result [1]);
+			Assert.AreEqual (3, (long)result [2]);
 		}
 
 		[Test]
-		public void ArrayGet()
+		public void ArrayGet ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "var a = array(1, 2, 3, 4) a[2]");
-			Assert.AreEqual(3, (long)Shovel.Api.NakedRunVm (sources));
+			Assert.AreEqual (3, (long)Shovel.Api.NakedRunVm (sources));
 			sources = Shovel.Api.MakeSources ("test.sho", "var a = 'test' a[2]");
-			Assert.AreEqual("s", (string)Shovel.Api.NakedRunVm (sources));
+			Assert.AreEqual ("s", (string)Shovel.Api.NakedRunVm (sources));
 		}
 
 		[Test]
-		public void HashGet()
+		public void HashGet ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "var h = hash('a', 1, 'b', 2) h['b']");
-			Assert.AreEqual(2, (long)Shovel.Api.NakedRunVm (sources));
+			Assert.AreEqual (2, (long)Shovel.Api.NakedRunVm (sources));
 		}
 
 		[Test]
-		public void HashDotGet()
+		public void HashDotGet ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "var h = hash('a', 1, 'b', 2) h.b");
-			Assert.AreEqual(2, (long)Shovel.Api.NakedRunVm (sources));
+			Assert.AreEqual (2, (long)Shovel.Api.NakedRunVm (sources));
 		}
 
 		[Test]
-		public void ArraySet()
+		public void ArraySet ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "var a = array(1, 2, 3, 4) a[2] = 'b' a[2]");
-			Assert.AreEqual("b", (string)Shovel.Api.NakedRunVm (sources));
+			Assert.AreEqual ("b", (string)Shovel.Api.NakedRunVm (sources));
 		}
 
 		[Test]
-		public void HashSet()
+		public void HashSet ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "var h = hash('a', 1, 'b', 2) h['b'] = 3 h['b']");
-			Assert.AreEqual(3, (long)Shovel.Api.NakedRunVm (sources));
+			Assert.AreEqual (3, (long)Shovel.Api.NakedRunVm (sources));
 		}
 
 		[Test]
-		public void GetLength()
+		public void GetLength ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "var a = array('a', 1, 'b', 2) length(a)");
-			Assert.AreEqual(4, (long)Shovel.Api.NakedRunVm (sources));
+			Assert.AreEqual (4, (long)Shovel.Api.NakedRunVm (sources));
 			sources = Shovel.Api.MakeSources ("test.sho", "length('test')");
-			Assert.AreEqual(4, (long)Shovel.Api.NakedRunVm (sources));
+			Assert.AreEqual (4, (long)Shovel.Api.NakedRunVm (sources));
+		}
+
+		[Test]
+		public void GetSlice ()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", "var a = array('a', 1, 'b', 2) slice(a, -1, -1)");
+			var result = (List<object>)Shovel.Api.NakedRunVm (sources);
+			Assert.AreEqual (1, result.Count);
+			Assert.AreEqual (2, (long)result [0]);
+			sources = Shovel.Api.MakeSources ("test.sho", "var a = 'Test' slice(a, 1, -2)");
+			var result2 = (string)Shovel.Api.NakedRunVm (sources);
+			Assert.AreEqual ("es", result2);
+		}
+
+		[Test]
+		public void StringUpper ()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", "var a = 'Test' upper(a)");
+			Assert.AreEqual ("TEST", (string)Shovel.Api.NakedRunVm (sources));
+		}
+
+		[Test]
+		public void StringLower ()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", "var a = 'Test' lower(a)");
+			Assert.AreEqual ("test", (string)Shovel.Api.NakedRunVm (sources));
+		}
+
+		[Test]
+		public void DecodeTime ()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", "decodeTime(utcSecondsSinceUnixEpoch())");
+			var result = (Dictionary<string, object>)Shovel.Api.NakedRunVm (sources);
+			var aNow = DateTime.UtcNow;
+			Assert.IsInstanceOf (typeof(long), result ["year"]);
+			Assert.IsInstanceOf (typeof(long), result ["month"]);
+			Assert.IsInstanceOf (typeof(long), result ["day"]);
+			Assert.IsInstanceOf (typeof(long), result ["hour"]);
+			Assert.IsInstanceOf (typeof(long), result ["second"]);
+			Assert.IsInstanceOf (typeof(long), result ["dayOfWeek"]);
+			var aDate = new DateTime (
+				(int)(long)result ["year"], (int)(long)result ["month"], (int)(long)result ["day"],
+				(int)(long)result ["hour"], (int)(long)result ["minute"], (int)(long)result ["second"]);
+			var diff = aNow - aDate;
+			Assert.IsTrue (diff.TotalSeconds < 1);
+		}
+
+		[Test]
+		public void EncodeTime ()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", @"
+var time = hash('year', 2012, 'month', 11, 'day', 15,
+                'hour', 12, 'minute', 18, 'second', 37)
+encodeTime(time)"
+			);
+			var result = (long)Shovel.Api.NakedRunVm (sources);
+			Assert.IsInstanceOf (typeof(long), result);
+			var decodedDate = new DateTime (1970, 1, 1) + TimeSpan.FromSeconds ((long)result);
+			Assert.AreEqual (decodedDate, new DateTime (2012, 11, 15, 12, 18, 37));
+		}
+
+		[Test]
+		public void IsString ()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", "isString('test')");
+			Assert.AreEqual (true, (bool)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "isString(12)");
+			Assert.AreEqual (false, (bool)Shovel.Api.NakedRunVm (sources));
+		}
+
+		[Test]
+		public void IsHash ()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", "isHash(hash('a', 1))");
+			Assert.AreEqual (true, (bool)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "isHash(12)");
+			Assert.AreEqual (false, (bool)Shovel.Api.NakedRunVm (sources));
+		}
+
+		[Test]
+		public void IsBool ()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", "isBool(true)");
+			Assert.AreEqual (true, (bool)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "isBool(12)");
+			Assert.AreEqual (false, (bool)Shovel.Api.NakedRunVm (sources));
+		}
+
+		[Test]
+		public void IsArray ()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", "isArray(array(1))");
+			Assert.AreEqual (true, (bool)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "isArray(1)");
+			Assert.AreEqual (false, (bool)Shovel.Api.NakedRunVm (sources));
+		}
+
+		[Test]
+		public void IsNumber ()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", "isNumber(1)");
+			Assert.AreEqual (true, (bool)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "isNumber(1.5)");
+			Assert.AreEqual (true, (bool)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "isNumber(true)");
+			Assert.AreEqual (false, (bool)Shovel.Api.NakedRunVm (sources));
+		}
+
+		[Test]
+		public void IsInteger ()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", "isInteger(1)");
+			Assert.AreEqual (true, (bool)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "isInteger(1.5)");
+			Assert.AreEqual (false, (bool)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "isNumber(true)");
+			Assert.AreEqual (false, (bool)Shovel.Api.NakedRunVm (sources));
+		}
+
+		[Test]
+		public void IsCallable ()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", "isCallable(fn() 1)");
+			Assert.AreEqual (true, (bool)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "isCallable(isCallable)");
+			Assert.AreEqual (true, (bool)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "isCallable(true)");
+			Assert.AreEqual (false, (bool)Shovel.Api.NakedRunVm (sources));
+		}
+
+		[Test]
+		public void Panic ()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", "panic('test')");
+			Utils.ExpectException<InvalidOperationException> (() => {
+				Shovel.Api.NakedRunVm (sources);
+			},
+			(ex) => {
+
+				Assert.AreEqual ("test", ex.Message);
+			}
+			);
+		}
+
+		[Test]
+		public void ParseInt ()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", "parseInt('10')");
+			Assert.AreEqual (10, (long)Shovel.Api.NakedRunVm (sources));
+		}
+
+		[Test]
+		public void ParseFloat ()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", "parseFloat('10.5')");
+			Assert.AreEqual (10.5, (double)Shovel.Api.NakedRunVm (sources));
+		}
+
+		[Test]
+		public void ShovelString ()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", "string('test')");
+			Assert.AreEqual ("test", (string)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "string(array())");
+			Assert.AreEqual ("[...array...]", (string)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "string(10)");
+			Assert.AreEqual ("10", (string)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "string(10.5)");
+			Assert.AreEqual ("10.5", (string)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "string(hash())");
+			Assert.AreEqual ("[...hash...]", (string)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "string(fn() 1)");
+			Assert.AreEqual ("[...callable...]", (string)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "string(true)");
+			Assert.AreEqual ("true", (string)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "string(null)");
+			Assert.AreEqual ("null", (string)Shovel.Api.NakedRunVm (sources));
+		}
+
+		[Test]
+		public void ShovelStringRepresentation ()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", "stringRepresentation('test')");
+			Assert.AreEqual ("\"test\"", (string)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "stringRepresentation('te\"st')");
+			Assert.AreEqual ("\"te\\\"st\"", (string)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "stringRepresentation(array(1, 2))");
+			Assert.AreEqual ("array(1, 2)", (string)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "var a = array(1, 2, 3) a[2] = a stringRepresentation(a)");
+			Assert.AreEqual ("array(1, 2, [...loop...])", (string)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", "var a = hash('a', 1, 'b', 2) stringRepresentation(a)");
+			Assert.AreEqual ("hash(\"a\", 1, \"b\", 2)", (string)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources (
+				"test.sho", "var a = hash('a', 1, 'b', 2) a['c'] = a stringRepresentation(a)");
+			Assert.AreEqual ("hash(\"a\", 1, \"b\", 2, \"c\", [...loop...])", (string)Shovel.Api.NakedRunVm (sources));
+			sources = Shovel.Api.MakeSources ("test.sho", @"
+var a = hash('a', 1, 'b', 2, 'c', array(1, 2, hash('d', 4)))
+stringRepresentation(a)"
+			);
+			Assert.AreEqual ("hash(\"a\", 1, \"b\", 2, \"c\", array(1, 2, hash(\"d\", 4)))", 
+			                 (string)Shovel.Api.NakedRunVm (sources));
 		}
 
 	}

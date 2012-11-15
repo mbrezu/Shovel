@@ -176,7 +176,10 @@ namespace Shovel
 					} else if (instruction.Opcode == Instruction.Opcodes.Fn) {
 						var args = (object[])instruction.Arguments;
 						var label = (string)args [0];
-						args [0] = labels [label];
+                        instruction.Arguments = new int[] {
+                            labels[label],
+                            (int)args[1]
+                        };
 					}
 					instruction.NumericOpcode = Utils.GetNumericOpcode (instruction.Opcode);
 				}

@@ -156,6 +156,7 @@ none."
           (def-prim0 "isBool" shovel-vm-prim0::shovel-is-bool 1)
           (def-prim0 "isArray" shovel-vm-prim0::shovel-is-array 1)
           (def-prim0 "isNumber" shovel-vm-prim0::shovel-is-number 1)
+          (def-prim0 "isInteger" shovel-vm-prim0::shovel-is-integer 1)
           (def-prim0 "isCallable" shovel-vm-prim0::shovel-is-callable 1)
 
           ;; Stringification:

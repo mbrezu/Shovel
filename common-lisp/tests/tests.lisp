@@ -1097,7 +1097,7 @@ stdlib.repeat(1000, fn() {
                                           :user-primitives udps))
           (declare (ignore result))
           (is (string= (with-output-to-string (str)
-                            (print-object error str))
+                         (print-object error str))
                        "Shovel error in file '<unspecified-1>' at line 1, column 24: Arguments must have the same type (numbers or strings or arrays).
 
 Current stack trace:
@@ -1117,6 +1117,24 @@ name = \"John\"
 
 (test key-not-found
   (is (eq :true (shovel:naked-run-code (list "var a = hash() a['a'] == null")))))
+
+(test type-predicates
+  (is (eq :true (shovel:naked-run-code (list "isInteger(1)"))))
+  (is (eq :false (shovel:naked-run-code (list "isInteger(1.5)"))))
+  (is (eq :true (shovel:naked-run-code (list "isNumber(1.5)"))))
+  (is (eq :false (shovel:naked-run-code (list "isNumber('test')"))))
+  (is (eq :true (shovel:naked-run-code (list "isNumber(1.5) && !isInteger(1.5)"))))
+  (is (eq :false (shovel:naked-run-code (list "!isNumber(1.5) || isInteger(1.5)"))))
+  (is (eq :true (shovel:naked-run-code (list "isCallable(fn () 1)"))))
+  (is (eq :false (shovel:naked-run-code (list "isCallable(1)"))))
+  (is (eq :true (shovel:naked-run-code (list "isString('test')"))))
+  (is (eq :false (shovel:naked-run-code (list "isString(10)"))))
+  (is (eq :true (shovel:naked-run-code (list "isBool(1 == 2)"))))
+  (is (eq :false (shovel:naked-run-code (list "isBool(1)"))))
+  (is (eq :true (shovel:naked-run-code (list "isArray(array(1, 2))"))))
+  (is (eq :false (shovel:naked-run-code (list "isArray(1)"))))
+  (is (eq :true (shovel:naked-run-code (list "isHash(hash('a', 2))"))))
+  (is (eq :false (shovel:naked-run-code (list "isHash(1)")))))
 
 (defun run-tests ()
   (let ((*print-circle* t))

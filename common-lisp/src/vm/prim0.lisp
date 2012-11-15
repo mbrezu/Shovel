@@ -347,6 +347,8 @@
 ;; Date/time construction/deconstruction:
 
 (defun decode-time (unix-time)
+  (unless (integerp unix-time)
+    (vm-error "Argument must be an integer."))
   (multiple-value-bind (second minute hour date month year day-of-week)
       (decode-universal-time (unix-to-lisp-time unix-time) 0)
     (hash-constructor "second" second
@@ -357,15 +359,45 @@
                       "year" year
                       "dayOfWeek" (1+ day-of-week))))
 
+(defun check-bounded-integer (value min max error-format)
+  (unless (and (integerp value) (<= min second max))
+    (vm-error (format nil error-format value))))
+
 (defun encode-time (hash)
-  (lisp-to-unix-time
-   (encode-universal-time (gethash "second" hash)
-                          (gethash "minute" hash)
-                          (gethash "hour" hash)
-                          (gethash "day" hash)
-                          (gethash "month" hash)
-                          (gethash "year" hash)
-                          0)))
+  (unless (hash-table-p hash)
+    (vm-error "Argument must be a valid time hash (as returned by 'decodeTime')."))
+  (check-bounded-integer
+   (gethash "second" hash)
+   0 59
+   "Argument must be a valid time hash (as returned by 'decodeTime') - invalid second '~a'.")
+  (check-bounded-integer
+   (gethash "minute" hash)
+   0 59
+   "Argument must be a valid time hash (as returned by 'decodeTime') - invalid minute '~a'.")
+  (check-bounded-integer
+   (gethash "hour" hash)
+   0 23
+   "Argument must be a valid time hash (as returned by 'decodeTime') - invalid hour '~a'.")
+  (check-bounded-integer
+   (gethash "day" hash)
+   1 31
+   "Argument must be a valid time hash (as returned by 'decodeTime') - invalid day '~a'.")
+  (check-bounded-integer
+   (gethash "month" hash)
+   1 12
+   "Argument must be a valid time hash (as returned by 'decodeTime') - invalid month '~a'.")
+  (multiple-value-bind (result error)
+      (ignore-errors
+        (lisp-to-unix-time
+         (encode-universal-time (gethash "second" hash)
+                                (gethash "minute" hash)
+                                (gethash "hour" hash)
+                                (gethash "day" hash)
+                                (gethash "month" hash)
+                                (gethash "year" hash)
+                                0)))
+    (or result
+        (vm-error "Invalid time specified."))))
 
 ;; Object types:
 
@@ -379,6 +411,8 @@
                                                    (vectorp candidate))))
 
 (defun shovel-is-number (candidate) (make-bool (numberp candidate)))
+
+(defun shovel-is-integer (candidate) (make-bool (integerp candidate)))
 
 (defun is-callable (candidate) (shovel-vm::callable-p candidate))
 

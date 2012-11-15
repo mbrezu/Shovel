@@ -21,6 +21,8 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 
 namespace Shovel.Vm
 {
@@ -110,6 +112,7 @@ namespace Shovel.Vm
 			AddPrim0 (result, Callable.MakePrim0 ("isBool", Callable.MakeHostCallable (IsBool), 1));
 			AddPrim0 (result, Callable.MakePrim0 ("isArray", Callable.MakeHostCallable (IsArray), 1));
 			AddPrim0 (result, Callable.MakePrim0 ("isNumber", Callable.MakeHostCallable (IsNumber), 1));
+			AddPrim0 (result, Callable.MakePrim0 ("isInteger", Callable.MakeHostCallable (IsInteger), 1));
 			AddPrim0 (result, Callable.MakePrim0 ("isCallable", Callable.MakeHostCallable (IsCallable), 1));
 
 			// Stringification.
@@ -658,93 +661,247 @@ namespace Shovel.Vm
 				var realStart = (int)(long)start;
 				var realEnd = (int)(long)end;
 				AdjustRealStartEnd (api, ref realStart, ref realEnd, length);
-				return array.GetRange(realStart, realEnd - realStart + 1);
+				return array.GetRange (realStart, realEnd - realStart + 1);
 			} else if (arrayOrString is string) {
-				throw new NotImplementedException ();
+				var str = (string)arrayOrString;
+				var length = str.Length;
+				var realStart = (int)(long)start;
+				var realEnd = (int)(long)end;
+				AdjustRealStartEnd (api, ref realStart, ref realEnd, length);
+				return str.Substring (realStart, realEnd - realStart + 1);
 			} else {
 				api.RaiseShovelError ("Argument must be a string or an array.");
 				return null;
 			}
 		}
 
+		static void CheckString (VmApi api, object str)
+		{
+			if (!(str is string)) {
+				api.RaiseShovelError ("Argument must be a string.");
+			}
+		}
+
 		static object StringUpper (VmApi api, object str)
 		{
-			throw new NotImplementedException ();
+			CheckString (api, str);
+			api.CellsIncrementer (((string)str).Length);
+			return ((string)str).ToUpper ();
 		}
 
 		static object StringLower (VmApi api, object str)
 		{
-			throw new NotImplementedException ();
+			CheckString (api, str);
+			api.CellsIncrementer (((string)str).Length);
+			return ((string)str).ToLower ();
 		}
+
+		static DateTime unixEpoch = new DateTime (1970, 1, 1);
 
 		static object UtcSecondsSinceUnixEpoch (VmApi api)
 		{
-			throw new NotImplementedException ();
+			return (long)(DateTime.UtcNow - unixEpoch).TotalSeconds;
 		}
 
 		static object DecodeTime (VmApi api, object timeInSeconds)
 		{
-			throw new NotImplementedException ();
+			if (!(timeInSeconds is long)) {
+				api.RaiseShovelError ("Argument must be an integer.");
+			}
+			var epochTimeSpan = TimeSpan.FromSeconds ((long)timeInSeconds);
+			var date = Prim0.unixEpoch + epochTimeSpan;
+			var result = new Dictionary<string, object> ();
+			result ["year"] = (long)date.Year;
+			result ["month"] = (long)date.Month;
+			result ["day"] = (long)date.Day;
+			switch (date.DayOfWeek) {
+			case DayOfWeek.Monday:
+				result ["dayOfWeek"] = (long)1;
+				break;
+			case DayOfWeek.Tuesday:
+				result ["dayOfWeek"] = (long)2;
+				break;
+			case DayOfWeek.Wednesday:
+				result ["dayOfWeek"] = (long)3;
+				break;
+			case DayOfWeek.Thursday:
+				result ["dayOfWeek"] = (long)4;
+				break;
+			case DayOfWeek.Friday:
+				result ["dayOfWeek"] = (long)5;
+				break;
+			case DayOfWeek.Saturday:
+				result ["dayOfWeek"] = (long)6;
+				break;
+			case DayOfWeek.Sunday:
+				result ["dayOfWeek"] = (long)7;
+				break;
+			}
+			result ["hour"] = (long)date.Hour;
+			result ["minute"] = (long)date.Minute;
+			result ["second"] = (long)date.Second;
+			return result;
+		}
+
+		static void CheckBoundedInteger (
+			VmApi api, 
+			Dictionary<string, object> hash, string key, 
+			long min, long max, string errorMessageFormat)
+		{
+			if (!hash.ContainsKey (key)) {
+				api.RaiseShovelError (String.Format (errorMessageFormat, "NIL"));
+			}
+			var value = hash [key];
+			var isValid = (value is long) && ((long)value >= min) && ((long)value <= max);
+			if (!isValid) {
+				api.RaiseShovelError (String.Format (errorMessageFormat, value));
+			}
 		}
 
 		static object EncodeTime (VmApi api, object timeHash)
 		{
-			throw new NotImplementedException ();
+			if (!(timeHash is Dictionary<string, object>)) {
+				api.RaiseShovelError ("Argument must be a valid time hash (as returned by 'decodeTime').");
+			}
+			var hash = (Dictionary<string, object>)timeHash;
+			CheckBoundedInteger (
+				api, hash, "second", 0, 59,
+				"Argument must be a valid time hash (as returned by 'decodeTime') - invalid second '{0}'.");
+			CheckBoundedInteger (
+				api, hash, "minute", 0, 59,
+				"Argument must be a valid time hash (as returned by 'decodeTime') - invalid minute '{0}'.");
+			CheckBoundedInteger (
+				api, hash, "hour", 0, 59,
+				"Argument must be a valid time hash (as returned by 'decodeTime') - invalid hour '{0}'.");
+			CheckBoundedInteger (
+				api, hash, "day", 1, 31,
+				"Argument must be a valid time hash (as returned by 'decodeTime') - invalid day '{0}'.");
+			CheckBoundedInteger (
+				api, hash, "month", 1, 12,
+				"Argument must be a valid time hash (as returned by 'decodeTime') - invalid month '{0}'.");
+			var date = new DateTime (
+				(int)(long)hash ["year"], (int)(long)hash ["month"], (int)(long)hash ["day"], 
+				(int)(long)hash ["hour"], (int)(long)hash ["minute"], (int)(long)hash ["second"]);
+			return (long)(date - unixEpoch).TotalSeconds;
 		}
 
 		static object IsString (VmApi api, object obj)
 		{
-			throw new NotImplementedException ();
+			return obj is string;
 		}
 
 		static object IsHash (VmApi api, object obj)
 		{
-			throw new NotImplementedException ();
+			return obj is Dictionary<string, object>;
 		}
 
 		static object IsBool (VmApi api, object obj)
 		{
-			throw new NotImplementedException ();
+			return obj is bool;
 		}
 
 		static object IsArray (VmApi api, object obj)
 		{
-			throw new NotImplementedException ();
+			return obj is List<object>;
 		}
 
 		static object IsNumber (VmApi api, object obj)
 		{
-			throw new NotImplementedException ();
+			return (obj is long) || (obj is double);
+		}
+
+		static object IsInteger (VmApi api, object obj)
+		{
+			return obj is long;
 		}
 
 		static object IsCallable (VmApi api, object obj)
 		{
-			throw new NotImplementedException ();
+			return obj is Callable;
 		}
 
 		static object ShovelString (VmApi api, object obj)
 		{
-			throw new NotImplementedException ();
+			if (obj is String) {
+				return obj;
+			} else if (obj is List<object>) {
+				return "[...array...]";
+			} else if (obj is long) {
+				return ((long)obj).ToString (CultureInfo.InvariantCulture);
+			} else if (obj is double) {
+				return ((double)obj).ToString (CultureInfo.InvariantCulture);
+			} else if (obj is Dictionary<string, object>) {
+				return "[...hash...]";
+			} else if (obj is Callable) {
+				return "[...callable...]";
+			} else if (obj is bool) {
+				return obj.ToString ().ToLower ();
+			} else if (obj == null) {
+				return "null";
+			} else {
+				UnknownTypeError (api);
+			}
+			return null;
+		}
+
+		static void UnknownTypeError (VmApi api)
+		{
+			api.RaiseShovelError ("Object of unknown type.");
 		}
 
 		internal static object ShovelStringRepresentation (VmApi api, object obj)
 		{
-			throw new NotImplementedException ();
+			var result = ShovelStringRepresentationImpl (api, obj, new HashSet<object> ());
+			api.CellsIncrementer (((string)result).Length);
+			return result;
+		}
+
+		internal static object ShovelStringRepresentationImpl (
+			VmApi api, object obj, HashSet<object> visited)
+		{
+			if (visited.Contains (obj)) {
+				return "[...loop...]";
+			} else if (obj is String) {
+				return String.Format ("\"{0}\"", ((string)obj).Replace ("\"", "\\\""));
+			} else if (obj is List<object>) {
+				visited.Add (obj);
+				var stringReps = ((List<object>)obj)
+					.Select (elem => ShovelStringRepresentationImpl (api, elem, visited));
+				return String.Format ("array({0})", String.Join (", ", stringReps));
+			} else if (obj is Dictionary<string, object>) {
+				visited.Add (obj);
+				var stringReps = new List<string> ();
+				var hash = (Dictionary<string, object>)obj;
+				foreach (var key in hash.Keys) {
+					stringReps.Add ((string)ShovelStringRepresentationImpl (api, key, visited));
+					stringReps.Add ((string)ShovelStringRepresentationImpl (api, hash [key], visited));
+				}
+				return String.Format ("hash({0})", String.Join (", ", stringReps));
+			} else if (obj == null || (obj is long) || (obj is double) || (obj is bool) || (obj is Callable)) {
+				return ShovelString (api, obj);
+			} else {
+				UnknownTypeError(api);
+			}
+			return null;
 		}
 
 		static object ParseInt (VmApi api, object str)
 		{
-			throw new NotImplementedException ();
+			CheckString (api, str);
+			return long.Parse ((string)str);
 		}
 
 		static object ParseFloat (VmApi api, object str)
 		{
-			throw new NotImplementedException ();
+			CheckString (api, str);
+			return double.Parse ((string)str);
 		}
 
 		static object Panic (VmApi api, object str)
 		{
-			throw new NotImplementedException ();
+			CheckString (api, str);
+			api.RaiseShovelError ((string)str);
+			return null;
 		}
 
 	}
