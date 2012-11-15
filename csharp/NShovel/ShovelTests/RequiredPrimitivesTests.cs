@@ -532,11 +532,10 @@ encodeTime(time)"
 		public void Panic ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "panic('test')");
-			Utils.ExpectException<InvalidOperationException> (() => {
+			Utils.ExpectException<Shovel.ShovelException> (() => {
 				Shovel.Api.NakedRunVm (sources);
 			},
 			(ex) => {
-
 				Assert.AreEqual ("test", ex.Message);
 			}
 			);

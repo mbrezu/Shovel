@@ -856,7 +856,7 @@ namespace Shovel.Vm
 			return result;
 		}
 
-		internal static object ShovelStringRepresentationImpl (
+		private static object ShovelStringRepresentationImpl (
 			VmApi api, object obj, HashSet<object> visited)
 		{
 			if (visited.Contains (obj)) {

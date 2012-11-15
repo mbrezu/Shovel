@@ -21,6 +21,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace Shovel.Vm
 {
@@ -91,12 +92,12 @@ namespace Shovel.Vm
 			return vm;
 		}
 
-		public object CheckStackTop()
+		public object CheckStackTop ()
 		{
 			if (this.stack.Count != 1) {
 				Utils.Panic ();
 			}
-			return this.Top();
+			return this.Top ();
 		}
 
 		bool StepVm ()
@@ -105,7 +106,7 @@ namespace Shovel.Vm
 			this.CheckTicksQuota ();
 			this.CheckCellsQuota ();
 			if (this.IsLive ()) {
-				var instruction = this.CurrentInstruction();
+				var instruction = this.CurrentInstruction ();
 //				Console.WriteLine("*****");
 //				Console.WriteLine (instruction.Opcode);
 //				for (var i = 0; i < this.stack.Count; i++) {
@@ -211,7 +212,7 @@ namespace Shovel.Vm
 			var instruction = vm.CurrentInstruction ();
 			if (instruction.Cache == null) {
 				var udpName = (string)instruction.Arguments;
-				instruction.Cache = GetUdpByName(vm, udpName);
+				instruction.Cache = GetUdpByName (vm, udpName);
 			}
 			vm.Push (instruction.Cache);
 			vm.IncrementTicks (1);
@@ -247,13 +248,14 @@ namespace Shovel.Vm
 		static void CallFunction (Callable callable, Vm vm, int numArgs, bool saveReturnAddress)
 		{
 			if (saveReturnAddress) {
-				vm.Push (new ReturnAddress() {
+				vm.Push (new ReturnAddress () {
 					ProgramCounter = vm.programCounter + 1,
 					Environment = vm.currentEnvironment
-				});
+				}
+				);
 			}
 			if (callable.Arity != null && callable.Arity.Value != numArgs) {
-				ArityError(vm, callable.Arity.Value, numArgs);
+				ArityError (vm, callable.Arity.Value, numArgs);
 			}
 			vm.currentEnvironment = callable.Environment;
 			vm.programCounter = callable.ProgramCounter.Value;
@@ -263,7 +265,7 @@ namespace Shovel.Vm
 		{
 			if (callable.HostCallable == null) {
 				if (callable.UdpName != null) {
-					callable.HostCallable = GetUdpByName(vm, callable.UdpName).HostCallable;
+					callable.HostCallable = GetUdpByName (vm, callable.UdpName).HostCallable;
 				} else if (callable.Prim0Name == null) {
 					callable.HostCallable = Vm.Prim0Hash [callable.Prim0Name].HostCallable;
 				} else {
@@ -271,26 +273,28 @@ namespace Shovel.Vm
 				}
 			}
 			if (callable.Arity != null && callable.Arity.Value != numArgs) {
-				ArityError(vm, callable.Arity.Value, numArgs);
+				ArityError (vm, callable.Arity.Value, numArgs);
 			}
 			var args = new object[numArgs];
 			for (var i = args.Length - 1; i >= 0; i--) {
-				args[i] = vm.Pop ();
+				args [i] = vm.Pop ();
 			}
+			var result = callable.HostCallable (vm.api, args);
 			if (saveReturnAddress) {
 				vm.programCounter ++;
 			} else {
-				vm.ApplyReturnAddress(vm.Pop () as ReturnAddress);
+				vm.ApplyReturnAddress (vm.Pop () as ReturnAddress);
 			}
-			vm.Push (callable.HostCallable(vm.api, args));
-			vm.IncrementCells(1);
+			vm.Push (result);
+			vm.IncrementCells (1);
 		}
 
 		static void ArityError (Vm vm, int expectedArity, int actualArity)
 		{
-			vm.RaiseShovelError(String.Format (
+			vm.RaiseShovelError (String.Format (
 				"Function of {0} arguments called with {1} arguments.",
-				expectedArity, actualArity));
+				expectedArity, actualArity)
+			);
 		}
 
 		static void HandleCallj (Vm vm)
@@ -399,11 +403,12 @@ namespace Shovel.Vm
 			var args = (string[])instruction.Arguments;
 			var frame = new VmEnvFrame () {
 				VarNames = args,
-				Values = new object[args.Length]
+				Values = new object[args.Length],
+				IntroducedAtProgramCounter = vm.programCounter
 			};
 			var newEnv = new VmEnvironment () {
 				Frame = frame,
-				Next = vm.currentEnvironment
+				Next = vm.currentEnvironment,
 			};
 			vm.currentEnvironment = newEnv;
 			vm.programCounter++;
@@ -552,8 +557,115 @@ namespace Shovel.Vm
 
 		void RaiseShovelError (string message)
 		{
-			// FIXME: need to implement the real thing.
-			throw new InvalidOperationException(message);
+			var sb = new StringBuilder ();
+			sb.AppendLine (message);
+			sb.AppendLine ();
+			sb.AppendLine ("Current stack trace:");
+			this.WriteStackTrace (sb);
+			sb.AppendLine ();
+			sb.AppendLine ("Current environment:");
+			sb.AppendLine ();
+			this.WriteCurrentEnvironment (sb);
+			var fileName = this.FindFileName (this.programCounter);
+			int? line = null, column = null;
+			if (fileName != null && this.sources != null) {
+				var source = SourceFile.FindSource (this.sources, fileName);
+				int? startPos, endPos;
+				this.FindStartEndPos (out startPos, out endPos);
+				if (startPos != null) {
+					var pos = Position.CalculatePosition (source, startPos.Value);
+					if (pos != null) {
+						line = pos.Line;
+						column = pos.Column;
+					}
+				}
+			}
+			throw new ShovelException (){
+					Message = message,
+					FileName = fileName,
+					Line = line,
+					Column = column
+				};
+		}
+
+		string FindFileName (int programCounter)
+		{
+			for (var i = programCounter; i >= 0; i--) {
+				var instruction = this.bytecode [i];
+				if (instruction.Opcode == Instruction.Opcodes.FileName) {
+					return (string)instruction.Arguments;
+				}
+			}
+			return null;
+		}
+
+		void FindStartEndPos (out int? startPos, out int? endPos)
+		{
+			startPos = null;
+			endPos = null;
+			for (var i = this.programCounter; i >= 0; i--) {
+				var instruction = this.bytecode [i];
+				if (instruction.StartPos != null && instruction.EndPos != null) {
+					startPos = instruction.StartPos;
+					endPos = instruction.EndPos;
+					return;
+				}
+			}
+		}
+
+		void WriteCurrentEnvironment (StringBuilder sb)
+		{
+			for (var env = this.currentEnvironment; env != null; env = env.Next) {
+				if (env.Frame.IntroducedAtProgramCounter != null) {
+					sb.AppendLine ("Frame starts at:");
+					var pc = env.Frame.IntroducedAtProgramCounter.Value;
+					var instruction = this.bytecode[pc];
+					this.PrintLineFor(sb, pc, instruction.StartPos, instruction.EndPos);
+				}
+				sb.AppendLine("Frame variables are:");
+				for (var i = 0; i < env.Frame.VarNames.Length; i++) {
+					sb.AppendLine (String.Format (
+						"{0} = {1}",
+						env.Frame.VarNames[i],
+						Prim0.ShovelStringRepresentation(this.api, env.Frame.Values[i])));
+				}
+				sb.AppendLine ();
+			}
+		}
+
+		void PrintLineFor (StringBuilder sb, int pc, int? characterStartPos, int? characterEndPos)
+		{
+			var foundLocation = false;
+			if (characterStartPos != null && characterEndPos != null) {
+				if (this.sources != null) {
+					var fileName = this.FindFileName(pc);
+					var sourceFile = SourceFile.FindSource(this.sources, fileName);
+					var startPos = Position.CalculatePosition(sourceFile, characterStartPos.Value);
+					var endPos = Position.CalculatePosition(sourceFile, characterEndPos.Value);
+					var lines = Utils.ExtractRelevantSource(sourceFile.Content.Split ('\n'), startPos, endPos);
+					foreach (var line in lines) {
+						sb.AppendLine (line);
+					}
+					foundLocation = true;
+				}
+			}
+			if (!foundLocation) {
+				sb.AppendLine (String.Format (
+					"... unknown source location, program counter {0} ...",
+					pc));
+			}
+		}
+
+		void WriteStackTrace (StringBuilder sb)
+		{
+			for (var i = this.stack.Count - 1; i >= 0; i--) {
+				if (this.stack[i] is ReturnAddress) {
+					var ra = (ReturnAddress)this.stack[i];
+					var pc = ra.ProgramCounter;
+					var callSite = this.bytecode[pc - 1];
+					this.PrintLineFor(sb, pc, callSite.StartPos, callSite.EndPos);
+				}
+			}
 		}
 
 		void IncrementTicks (int ticks)

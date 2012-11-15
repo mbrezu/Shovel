@@ -26,9 +26,11 @@ namespace Shovel
 {
 	public class VmEnvFrame
 	{
-		public IEnumerable<string> VarNames { get; set; }
+		public string[] VarNames { get; set; }
 
 		public object[] Values { get; set; }
+
+		public int? IntroducedAtProgramCounter;
 	}
 }
 
