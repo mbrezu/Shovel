@@ -624,7 +624,7 @@ namespace Shovel.Vm
 				realStart += length;
 			}
 			if (realEnd < 0) {
-				realEnd += length;
+				realEnd += length + 1;
 			}
 			if (realStart > realEnd) {
 				api.RaiseShovelError (String.Format (
@@ -637,10 +637,10 @@ namespace Shovel.Vm
 						"Starting index ({0}) is less than 0.", realStart)
 				);
 			}
-			if (realEnd >= length) {
+			if (realEnd > length) {
 				api.RaiseShovelError (String.Format (
-						"End index (~d) is equal to or larger than the length of the sequence (~d).",
-						realStart, length)
+					"End index ({0}) is larger than the length of the sequence ({1}).",
+						realEnd, length)
 				);
 			}
 		}
@@ -661,14 +661,14 @@ namespace Shovel.Vm
 				var realStart = (int)(long)start;
 				var realEnd = (int)(long)end;
 				AdjustRealStartEnd (api, ref realStart, ref realEnd, length);
-				return array.GetRange (realStart, realEnd - realStart + 1);
+				return array.GetRange (realStart, realEnd - realStart);
 			} else if (arrayOrString is string) {
 				var str = (string)arrayOrString;
 				var length = str.Length;
 				var realStart = (int)(long)start;
 				var realEnd = (int)(long)end;
 				AdjustRealStartEnd (api, ref realStart, ref realEnd, length);
-				return str.Substring (realStart, realEnd - realStart + 1);
+				return str.Substring (realStart, realEnd - realStart);
 			} else {
 				api.RaiseShovelError ("Argument must be a string or an array.");
 				return null;
@@ -880,7 +880,7 @@ namespace Shovel.Vm
 			} else if (obj == null || (obj is long) || (obj is double) || (obj is bool) || (obj is Callable)) {
 				return ShovelString (api, obj);
 			} else {
-				UnknownTypeError(api);
+				UnknownTypeError (api);
 			}
 			return null;
 		}

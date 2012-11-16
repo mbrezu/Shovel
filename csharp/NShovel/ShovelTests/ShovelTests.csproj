@@ -45,6 +45,7 @@
     <Compile Include="CodeGeneratorTests.cs" />
     <Compile Include="RequiredPrimitivesTests.cs" />
     <Compile Include="VmTests.cs" />
+    <Compile Include="BytecodeSerializationTests.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

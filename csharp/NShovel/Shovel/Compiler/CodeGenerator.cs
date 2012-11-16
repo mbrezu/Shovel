@@ -55,10 +55,6 @@ namespace Shovel.Compiler
 			this.Gen (Instruction.Opcodes.VmVersion, Api.Version);
 			this.Gen (Instruction.Opcodes.VmSourcesMd5, Utils.ComputeSourcesMd5 (sources));
 			this.Gen (Instruction.Opcodes.VmBytecodeMd5, "?");
-			if (this.ast.Count > 0 && this.ast [0].Label == ParseTree.Labels.FileName) {
-				this.CompileAst (this.ast [0], this.EmptyEnv (), true, true);
-				this.ast.RemoveAt (0);
-			}
 			this.CompileBlock (this.ast, this.EmptyEnv (), true, true);
 		}
 
@@ -147,7 +143,7 @@ namespace Shovel.Compiler
 			this.Gen (Instruction.Opcodes.Block, blockEnd, ast);
 			this.CompileAst (blockContents, env, true, true);
 			this.Gen (Instruction.Opcodes.Label, blockEnd);
-			this.Gen (Instruction.Opcodes.PopBlock, ast);
+			this.Gen (Instruction.Opcodes.PopBlock, null, ast);
 			if (!more) {
 				this.Gen (Instruction.Opcodes.Return);
 			}
@@ -235,7 +231,7 @@ namespace Shovel.Compiler
 					this.Gen (Instruction.Opcodes.Pop);
 				}
 			} else {
-				this.Gen (Instruction.Opcodes.Callj, ast.Children.Count () - 1, ast);
+				this.Gen (Instruction.Opcodes.CallJ, ast.Children.Count () - 1, ast);
 			}
 		}
 
@@ -454,37 +450,91 @@ namespace Shovel.Compiler
 		{
 			var nameAst = ast.Children.ElementAt (0);
 			var name = nameAst.Content;
-			this.ExtendFrame(env, name, nameAst);
+			this.ExtendFrame (env, name, nameAst);
 			this.CompileAst (ast.Children.ElementAt (1), env, true, true);
 			this.CompileSetVar (name, env, useVal, more, ast);
 		}
 
-		void CompileBlock (IEnumerable<ParseTree> ast, Environment env, bool useVal, bool more)
+		void CompileBlockMeat (IEnumerable<ParseTree> ast, Environment env, bool useVal, bool more)
 		{
-			var newVars = ast.Where (child => child.Label == ParseTree.Labels.Var);
-			var newVarCount = newVars.Count ();
-			var dropValueCount = ast.Count () - 1;
-			var dropValueAsts = ast.Take (dropValueCount);
-			var valueAst = ast.Skip (dropValueCount).First ();
-			if (newVarCount > 0) {
-				var newVarNames = newVars
+			if (ast.Count () > 0) {
+				var newVars = ast.Where (child => child.Label == ParseTree.Labels.Var);
+				var newVarCount = newVars.Count ();
+				var dropValueCount = ast.Count () - 1;
+				var dropValueAsts = ast.Take (dropValueCount);
+				var valueAst = ast.Skip (dropValueCount).First ();
+				var newEnv = this.EmptyEnv();
+				newEnv.Next = env;
+				if (newVarCount > 0) {
+					var newVarNames = newVars
 					.Select (child => child.Children.ElementAt (0).Content).ToArray ();
-				this.Gen (
+					this.Gen (
 					Instruction.Opcodes.NewFrame, newVarNames,
 					startPos: newVars.First ().StartPos,
 					endPos: newVars.Last ().EndPos);
-				this.CompileStatements (env, dropValueAsts, valueAst, more);
-				if (more) {
-					this.Gen (Instruction.Opcodes.DropFrame);
-				}
-				if (!useVal) {
-					this.Gen (Instruction.Opcodes.Pop);
+					this.CompileStatements (newEnv, dropValueAsts, valueAst, more);
+					if (more) {
+						this.Gen (Instruction.Opcodes.DropFrame);
+					}
+					if (!useVal) {
+						this.Gen (Instruction.Opcodes.Pop);
+					}
+				} else {
+					this.CompileStatements (env, dropValueAsts, valueAst, more);
+					if (!useVal) {
+						this.Gen (Instruction.Opcodes.Pop);
+					}
 				}
 			} else {
-				this.CompileStatements (env, dropValueAsts, valueAst, more);
+				this.Gen (Instruction.Opcodes.Const, null);
 				if (!useVal) {
 					this.Gen (Instruction.Opcodes.Pop);
 				}
+			}
+		}
+
+		int? PositionOf (IEnumerable<ParseTree> ast, Func<ParseTree, bool> pred, bool fromEnd = false)
+		{
+			int idx, dir, limit;
+			if (fromEnd) {
+				idx = ast.Count () - 1;
+				dir = -1;
+				limit = -1;
+			} else {
+				idx = 0;
+				dir = 1;
+				limit = ast.Count ();
+			}
+			while (idx != limit) {
+				if (pred (ast.ElementAt (idx))) {
+					return idx;
+				}
+				idx += dir;
+			}
+			return null;
+		}
+
+		void CompileBlock (IEnumerable<ParseTree> ast, Environment env, bool useVal, bool more)
+		{
+			int? meatStart = PositionOf (ast, pt => pt.Label != ParseTree.Labels.FileName, false);
+			int? meatEnd = PositionOf (ast, pt => pt.Label != ParseTree.Labels.FileName, true);
+
+			IEnumerable<ParseTree> prefixFluff, meat, suffixFluff;
+			if (meatStart == null && meatEnd == null) {
+				prefixFluff = ast;
+				meat = new List<ParseTree> ();
+				suffixFluff = new List<ParseTree> ();
+			} else {
+				prefixFluff = ast.Take (meatStart.Value);
+				meat = ast.Skip (meatStart.Value).Take (meatEnd.Value - meatStart.Value + 1);
+				suffixFluff = ast.Skip (meatEnd.Value + 1);
+			}
+			foreach (var pt in prefixFluff) {
+				CompileAst (pt, this.EmptyEnv (), true, true);
+			}
+			CompileBlockMeat (meat, env, useVal, more);
+			foreach (var pt in suffixFluff) {
+				CompileAst (pt, this.EmptyEnv (), true, true);
 			}
 		}
 

@@ -71,7 +71,7 @@ file 'test.sho' line 6: ^^^^
 		}
 
 		[Test]
-		public void Context2()
+		public void Context2 ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", @"
 var h = fn (x) context
@@ -104,6 +104,33 @@ file 'test.sho' line 2:                ^^^^^^^
 file 'test.sho' line 5: f(3)
 file 'test.sho' line 5: ^^^^
 ", result ["stack"]);
+		}
+
+		[Test]
+		public void Factorial ()
+		{
+			var sources = Shovel.Api.MakeSources ("fact.sho", Utils.FactorialOfTenProgram());
+			Assert.AreEqual(3628800, (long)Shovel.Api.NakedRunVm(sources));
+		}
+
+		[Test]
+		public void Fibonacci()
+		{
+			var sources = Shovel.Api.MakeSources ("fact.sho", Utils.FibonacciOfTenProgram());
+			Assert.AreEqual(89, (long)Shovel.Api.NakedRunVm(sources));
+		}
+
+		[Test]
+		public void QuickSort()
+		{
+			var sources = Shovel.Api.MakeSourcesWithStdlib("qsort.sho", Utils.QsortProgram());
+			var result = (List<object>)Shovel.Api.NakedRunVm(sources);
+			Assert.AreEqual (5, result.Count);
+			Assert.AreEqual (1, (long)result[0]);
+			Assert.AreEqual (2, (long)result[1]);
+			Assert.AreEqual (3, (long)result[2]);
+			Assert.AreEqual (4, (long)result[3]);
+			Assert.AreEqual (5, (long)result[4]);
 		}
 	}
 }

@@ -1136,6 +1136,161 @@ name = \"John\"
   (is (eq :true (shovel:naked-run-code (list "isHash(hash('a', 2))"))))
   (is (eq :false (shovel:naked-run-code (list "isHash(1)")))))
 
+(defun print-to-string (&rest sources)
+  (with-output-to-string (str)
+    (let ((*standard-output* str))
+      (shovel:print-code sources))))
+
+(test empties
+  (is (string= (print-to-string) "    VM-VERSION 1
+
+    VM-SOURCES-MD5 D41D8CD98F00B204E9800998ECF8427E
+
+    VM-BYTECODE-MD5 ?
+
+    CONST NULL
+
+NIL
+"))
+  (is (string= (print-to-string "") "    VM-VERSION 1
+
+    VM-SOURCES-MD5 D41D8CD98F00B204E9800998ECF8427E
+
+    VM-BYTECODE-MD5 ?
+
+    FILE-NAME <unspecified-1>
+
+    CONST NULL
+
+NIL
+"))
+  (is (string= (print-to-string "" "")
+               "    VM-VERSION 1
+
+    VM-SOURCES-MD5 D41D8CD98F00B204E9800998ECF8427E
+
+    VM-BYTECODE-MD5 ?
+
+    FILE-NAME <unspecified-1>
+
+    FILE-NAME <unspecified-2>
+
+    CONST NULL
+
+NIL
+"))
+  (is (string= (print-to-string "{}")
+               "    VM-VERSION 1
+
+    VM-SOURCES-MD5 99914B932BD37A50B983C5E7C90AE93B
+
+    VM-BYTECODE-MD5 ?
+
+    FILE-NAME <unspecified-1>
+
+    CONST NULL
+
+NIL
+"))
+  (is (string= (print-to-string "{}{}")
+               "    VM-VERSION 1
+
+    VM-SOURCES-MD5 C53F4EBE9B2A50BC2B52FD88A5D503E1
+
+    VM-BYTECODE-MD5 ?
+
+    FILE-NAME <unspecified-1>
+
+    CONST NULL
+
+    POP
+
+    CONST NULL
+
+NIL
+"))
+  (is (string= (print-to-string "{{}}")
+               "    VM-VERSION 1
+
+    VM-SOURCES-MD5 3F7A56499D58DE719351A6D324A76BBD
+
+    VM-BYTECODE-MD5 ?
+
+    FILE-NAME <unspecified-1>
+
+    CONST NULL
+
+NIL
+"))
+  (is (string= (print-to-string "{{}}{{{}}}")
+               "    VM-VERSION 1
+
+    VM-SOURCES-MD5 66F99E017EE16ED7E471D3B4830ADF02
+
+    VM-BYTECODE-MD5 ?
+
+    FILE-NAME <unspecified-1>
+
+    CONST NULL
+
+    POP
+
+    CONST NULL
+
+NIL
+"))
+  (is (string= (print-to-string "1" "")
+               "    VM-VERSION 1
+
+    VM-SOURCES-MD5 C4CA4238A0B923820DCC509A6F75849B
+
+    VM-BYTECODE-MD5 ?
+
+    FILE-NAME <unspecified-1>
+
+    ; file '<unspecified-1>' line 1: 1
+    ; file '<unspecified-1>' line 1: ^
+    CONST 1
+
+    FILE-NAME <unspecified-2>
+
+NIL
+"))
+  (is (string= (print-to-string "1" "2")
+               "    VM-VERSION 1
+
+    VM-SOURCES-MD5 C20AD4D76FE97759AA27A0C99BFF6710
+
+    VM-BYTECODE-MD5 ?
+
+    FILE-NAME <unspecified-1>
+
+    FILE-NAME <unspecified-2>
+
+    ; file '<unspecified-2>' line 1: 2
+    ; file '<unspecified-2>' line 1: ^
+    CONST 2
+
+NIL
+"))
+  (is (string= (print-to-string "" "2")
+               "    VM-VERSION 1
+
+    VM-SOURCES-MD5 C81E728D9D4C2F636F067F89CC14862C
+
+    VM-BYTECODE-MD5 ?
+
+    FILE-NAME <unspecified-1>
+
+    FILE-NAME <unspecified-2>
+
+    ; file '<unspecified-2>' line 1: 2
+    ; file '<unspecified-2>' line 1: ^
+    CONST 2
+
+NIL
+")))
+
 (defun run-tests ()
   (let ((*print-circle* t))
     (fiveam:run! :shovel-tests)))

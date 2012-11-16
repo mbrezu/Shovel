@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Security.Cryptography;
 using System.IO;
+using System.Linq;
 
 namespace Shovel
 {
@@ -137,13 +138,25 @@ namespace Shovel
 
 		internal static List<Instruction> GetRawBytecode (List<SourceFile> sources)
 		{
-			var allTokens = new List<Token> ();
+			// Tokenize files.
+			var tokenizedFiles = new List<List<Token>> ();
 			foreach (var sourceFile in sources) {
 				var tokenizer = new Shovel.Compiler.Tokenizer (sourceFile);
-				allTokens.AddRange (tokenizer.Tokens);
+				tokenizedFiles.Add (tokenizer.Tokens);
 			}
-			var parser = new Shovel.Compiler.Parser (allTokens, sources);
-			var codeGenerator = new Shovel.Compiler.CodeGenerator (parser.ParseTrees, sources);
+			// Parse files.
+			var parseForests = new List<List<ParseTree>> ();
+			foreach (var tokenizedFile in tokenizedFiles) {
+				var parser = new Shovel.Compiler.Parser (tokenizedFile, sources);
+				parseForests.Add(parser.ParseTrees);
+			}
+			// Flatten the forests of parse trees into one for code generation.
+			var bigParseForest = new List<ParseTree>();
+			foreach (var parseTrees in parseForests) {
+				bigParseForest.AddRange (parseTrees); 
+			}
+			// Generate the code.
+			var codeGenerator = new Shovel.Compiler.CodeGenerator (bigParseForest, sources);
 			return codeGenerator.Bytecode;
 		}
 
@@ -176,9 +189,9 @@ namespace Shovel
 					} else if (instruction.Opcode == Instruction.Opcodes.Fn) {
 						var args = (object[])instruction.Arguments;
 						var label = (string)args [0];
-                        instruction.Arguments = new int[] {
-                            labels[label],
-                            (int)args[1]
+						instruction.Arguments = new int[] {
+                            labels [label],
+                            (int)args [1]
                         };
 					}
 					instruction.NumericOpcode = Utils.GetNumericOpcode (instruction.Opcode);
@@ -200,7 +213,7 @@ namespace Shovel
 				return 3;
 			case Instruction.Opcodes.Call:
 				return 4;
-			case Instruction.Opcodes.Callj:
+			case Instruction.Opcodes.CallJ:
 				return 5;
 			case Instruction.Opcodes.Fjump:
 				return 6;
@@ -243,6 +256,133 @@ namespace Shovel
 				return 0;
 			}
 		}
+
+		static internal byte Endianess() {
+			return (byte)(BitConverter.IsLittleEndian ? 1 : 0);
+		}
+
+		static internal string ShovelStdlib() {
+			return @"
+var stdlib = {
+   var min = fn (a, b) if a < b a else b
+   var max = fn (a, b) if a > b a else b
+   var while = fn (condition, body) {
+     if condition() {
+       body()
+       while(condition, body)
+     }
+   }
+   var forIndex = fn (arr, fun) {
+     var i = 0
+     while (fn () i < length(arr), fn () {
+       fun(i)
+       i = i + 1
+     })
+   }
+   var forEach = fn (arr, fun) {
+     forIndex(arr, fn i fun(arr[i]))
+   }
+   var forEachWithIndex = fn (arr, fun) {
+     forIndex(arr, fn i fun(arr[i], i))
+   }
+   var map = fn (arr, fun) {
+     var result = arrayN(length(arr))
+     forIndex(arr, fn i result[i] = fun(arr[i]))
+     result
+   }
+   var mapWithIndex = fn (arr, fun) {
+     var result = arrayN(length(arr))
+     forIndex(arr, fn i result[i] = fun(arr[i], i))
+     result
+   }
+   var filter = fn (arr, fun) {
+     var result = arrayN(length(arr))
+     var ptr = 0
+     forIndex(arr, fn i if fun(arr[i]) {
+       result[ptr] = arr[i]
+       ptr = ptr + 1
+     })
+     slice(result, 0, ptr)
+   }
+   var reduceFromLeft = fn (arr, initialElement, fun) {
+     var result = initialElement
+     forEach(arr, fn item result = fun(result, item))
+     result
+   }
+   var qsort = fn (arr, lessThan) {
+     if length(arr) == 0 || length(arr) == 1
+     arr
+     else {
+       var pivot = arr[0]
+       var butFirst = slice(arr, 1, -1)
+       var lesser = filter(butFirst, fn el lessThan(el, pivot))
+       var greater = filter(butFirst, fn el !lessThan(el, pivot))
+       qsort(lesser, lessThan) + array(pivot) + qsort(greater, lessThan)
+     }
+   }
+   var reverse = fn (arr) {
+     var result = arrayN(length(arr))
+     forIndex(arr, fn i result[length(arr) - 1 - i] = arr[i])
+     result
+   }
+
+   var getPrefixedBlockName = {
+     var namedBlockCounter = 0
+     fn (prefix) {
+       namedBlockCounter = namedBlockCounter + 1
+       prefix + '_' +string(namedBlockCounter)
+     }
+   }
+   var getBlockName = fn () getPrefixedBlockName('block')
+
+   var tryAndThrow = {
+     var tryStack = array()
+     var throw = fn (error) {
+       var blockName = pop(tryStack)
+       push(tryStack, array(error))
+       return blockName null
+     }
+     var try = fn (tryCode, catchCode) {
+       var newBlockName = getPrefixedBlockName('tryCatchBlock')
+       push(tryStack, newBlockName)
+       var exitValue = block newBlockName tryCode()
+       var stackTop = pop(tryStack)
+       if isArray(stackTop) catchCode(stackTop[0])
+       else exitValue
+     }
+     array(try, throw)
+   }
+
+   var repeat = fn (count, fun) {
+     var counter = 0
+     while (fn () counter < count, fn () {
+       fun()
+       counter = counter + 1
+     })
+   }
+
+   hash('min', min,
+        'max', max,
+        'while', while,
+        'forIndex', forIndex,
+        'forEach', forEach,
+        'forEachWithIndex', forEachWithIndex,
+        'map', map,
+        'mapWithIndex', mapWithIndex,
+        'filter', filter,
+        'reduceFromLeft', reduceFromLeft,
+        'sort', qsort,
+        'reverse', reverse,
+        'getPrefixedBlockName', getPrefixedBlockName,
+        'getBlockName', getBlockName,
+        'try', tryAndThrow[0],
+        'throw' , tryAndThrow[1],
+        'repeat', repeat
+       )
+}
+";
+		}
+
 	}
 }
 

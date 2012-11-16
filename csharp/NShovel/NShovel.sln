@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleTest", "ConsoleTest\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShovelTests", "ShovelTests\ShovelTests.csproj", "{870A0A6D-70E9-4BBD-8B15-49C0A33F05DB}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Support", "Support", "{8D909F49-B0A2-4F22-9AEC-BB891BDB3970}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libraries", "Libraries", "{4FA9E24B-4E9F-47F0-8D47-86A79CAAE933}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -25,6 +29,9 @@ Global
 		{870A0A6D-70E9-4BBD-8B15-49C0A33F05DB}.Debug|x86.Build.0 = Debug|x86
 		{870A0A6D-70E9-4BBD-8B15-49C0A33F05DB}.Release|x86.ActiveCfg = Release|x86
 		{870A0A6D-70E9-4BBD-8B15-49C0A33F05DB}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{4FA9E24B-4E9F-47F0-8D47-86A79CAAE933} = {8D909F49-B0A2-4F22-9AEC-BB891BDB3970}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		StartupItem = ConsoleTest\ConsoleTest.csproj

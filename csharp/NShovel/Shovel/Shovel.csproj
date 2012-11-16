@@ -52,12 +52,16 @@
     <Compile Include="Vm\Vm.cs" />
     <Compile Include="VmEnvironment.cs" />
     <Compile Include="VmEnvFrame.cs" />
-    <Compile Include="ShovelCellQuotaExceeded.cs" />
     <Compile Include="Vm\Prim0.cs" />
     <Compile Include="ReturnAddress.cs" />
     <Compile Include="NamedBlock.cs" />
     <Compile Include="Callable.cs" />
     <Compile Include="VmApi.cs" />
+    <Compile Include="BytecodeSerialization.cs" />
+    <Compile Include="EndianessMismatchException.cs" />
+    <Compile Include="ShovelCellQuotaExceededException.cs" />
+    <Compile Include="BrokenDataException.cs" />
+    <Compile Include="VersionNotSupportedException.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

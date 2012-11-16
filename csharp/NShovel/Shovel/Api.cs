@@ -22,6 +22,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.IO;
+using System.Linq;
 
 namespace Shovel
 {
@@ -31,7 +33,7 @@ namespace Shovel
 
 		public static string PrintCode (List<SourceFile> sources)
 		{
-			var bytecode = Utils.GetRawBytecode(sources);
+			var bytecode = Utils.GetRawBytecode (sources);
 			Utils.DecorateByteCode (bytecode, sources);
 			var sb = new StringBuilder ();
 			foreach (var instruction in bytecode) {
@@ -40,32 +42,63 @@ namespace Shovel
 			return sb.ToString ();
 		}
 
-		public static Instruction[] GetBytecode(List<SourceFile> sources)
+		public static Instruction[] GetBytecode (List<SourceFile> sources)
 		{
-			var rawBytecode = Utils.GetRawBytecode(sources);
-			return Utils.Assemble(rawBytecode);
+			var rawBytecode = Utils.GetRawBytecode (sources);
+			return Utils.Assemble (rawBytecode);
+		}
+
+		public static MemoryStream SerializeBytecode (Instruction[] bytecode)
+		{
+			return BytecodeSerialization.SerializeBytecode (bytecode);
+		}
+
+		public static Instruction[] DeserializeBytecode (MemoryStream ms)
+		{
+			return BytecodeSerialization.DeserializeBytecode (ms);
 		}
 
 		public static List<SourceFile> MakeSources (params string[] namesAndContents)
 		{
+			return MakeSourcesFromIEnumerable (namesAndContents);
+		}
+
+		public static List<SourceFile> MakeSourcesFromIEnumerable(IEnumerable<string> namesAndContents)
+		{
 			List<SourceFile> result = new List<SourceFile> ();
-			for (var i = 0; i < namesAndContents.Length; i+=2) {
+			for (var i = 0; i < namesAndContents.Count(); i+=2) {
 				result.Add (new SourceFile () {
-					FileName = namesAndContents[i],
-					Content = namesAndContents[i+1]
+					FileName = namesAndContents.ElementAt(i),
+					Content = namesAndContents.ElementAt(i+1)
 				}
 				);
 			}
 			return result;
 		}
 
-		public static object NakedRunVm(List<SourceFile> sources)
+		public static List<SourceFile> MakeSourcesWithStdlib (params string[] namesAndContents)
 		{
-			var rawBytecode = Utils.GetRawBytecode(sources);
-			var bytecode = Utils.Assemble(rawBytecode);
-			var vm = Vm.Vm.RunVm(bytecode, sources);
-			return vm.CheckStackTop();
+			List<string> sources = new List<string>();
+			sources.Add ("stdlib.sho");
+			sources.Add (Utils.ShovelStdlib());
+			sources.AddRange(namesAndContents);
+			return MakeSourcesFromIEnumerable(sources);
 		}
+
+		public static object NakedRunVm (List<SourceFile> sources)
+		{
+			var rawBytecode = Utils.GetRawBytecode (sources);
+			var bytecode = Utils.Assemble (rawBytecode);
+			var vm = Vm.Vm.RunVm (bytecode, sources);
+			return vm.CheckStackTop ();
+		}
+
+		public static object RunVm (Shovel.Instruction[] bytecode, List<SourceFile> sources)
+		{
+			var vm = Vm.Vm.RunVm (bytecode, sources);
+			return vm.CheckStackTop ();
+		}
+
 	}
 }
 

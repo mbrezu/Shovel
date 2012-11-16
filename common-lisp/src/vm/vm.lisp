@@ -231,8 +231,8 @@ none."
       (terpri stream))))
 
 (defun wake-up-vm (vm)
-  "If VM went to sleep and you want to resume it without rebuilding
-it, you have to call this function before calling RUN-VM."
+  "If the VM went to sleep and you want to resume it without
+rebuilding it, you have to call this function before calling RUN-VM."
   (setf (vm-should-take-a-nap vm) nil))
 
 (defun find-start-end-pos (vm)

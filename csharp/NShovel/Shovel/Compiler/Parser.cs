@@ -165,6 +165,7 @@ namespace Shovel.Compiler
 				return this.ParseIf ();
 			} else if (this.TokenIs (Token.Types.Keyword, "block")) {
 				return this.WithNewParseTree (ParseTree.Labels.NamedBlock, pt => {
+					this.ConsumeToken(Token.Types.Keyword, "block");
 					pt.Children = new ParseTree[] {
                         this.ParseExpression (),
                         this.ParseStatement ()

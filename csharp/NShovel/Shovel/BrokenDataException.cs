@@ -20,25 +20,11 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
-using System.Text;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 
-namespace ConsoleTest
+namespace Shovel
 {
-	class MainClass
+	public class BrokenDataException : Exception
 	{
-		public static void Main (string[] args)
-		{
-			var sources = Shovel.Api.MakeSourcesWithStdlib ("qsort", "stdlib.sort(array(1, 5, 3, 4, 2), fn (a, b) a < b)");
-			File.WriteAllText ("test.txt", Shovel.Api.PrintCode(sources));
-			var result = Shovel.Api.NakedRunVm (sources);
-			foreach (var k in (List<object>)result) {
-				Console.WriteLine (k);
-			}
-		}	
-
-
 	}
 }
+

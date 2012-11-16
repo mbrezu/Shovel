@@ -27,6 +27,9 @@ namespace Shovel
 {
 	public class Instruction
 	{
+		// Do not change the order of Opcodes, they are serialized as ints.
+		// The only valid way to change this list is to add a new opcode 
+		// at the end (additive changes).
 		public enum Opcodes
 		{ 
 			VmVersion,
@@ -44,7 +47,7 @@ namespace Shovel
 			Label,
 			PopBlock,
 			Call,
-			Callj,
+			CallJ,
 			Lget,
 			Fjump,
 			Jump,
@@ -68,7 +71,7 @@ namespace Shovel
 
 		public object Cache { get; set; }
 
-		public byte NumericOpcode { get; set; }
+		public int NumericOpcode { get; set; }
 
 		public override string ToString ()
 		{
@@ -92,6 +95,9 @@ namespace Shovel
 					} else {
 						sb.Append (this.Arguments.ToString());
 					}
+				}
+				if (this.Opcode == Opcodes.Const && this.Arguments == null) {
+					sb.Append (" NULL");
 				}
 				sb.Append (System.Environment.NewLine);
 			}

@@ -38,6 +38,31 @@ namespace ShovelTests
 			}
 		}
 
+		public static string FactorialOfTenProgram() {
+			return @"
+var fact = fn (n) {
+    if n == 0
+    1
+    else n * fact(n - 1)
+}
+fact(10)";
+		}
+
+		public static string FibonacciOfTenProgram() {
+			return @"
+var fib = fn (n) {
+	if n == 0 || n == 1
+    1
+    else fib(n - 1) + fib(n - 2)
+}
+fib(10)
+";
+		}
+
+		public static string QsortProgram() {
+			return "stdlib.sort(array(1, 3, 4, 5, 2), fn (a, b) a < b)";
+		}
+
 	}
 }
 

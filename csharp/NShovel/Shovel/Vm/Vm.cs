@@ -108,7 +108,7 @@ namespace Shovel.Vm
 			if (this.IsLive ()) {
 				var instruction = this.CurrentInstruction ();
 //				Console.WriteLine("*****");
-//				Console.WriteLine (instruction.Opcode);
+//				Console.WriteLine (instruction.ToString ());
 //				for (var i = 0; i < this.stack.Count; i++) {
 //					Console.WriteLine(this.stack[i]);
 //				}
@@ -697,7 +697,7 @@ namespace Shovel.Vm
 		void IncrementCellsHerald (int cells)
 		{
 			if (this.cellsQuota != null && cells > this.cellsQuota.Value) {
-				throw new ShovelCellQuotaExceeded ();
+				throw new ShovelCellQuotaExceededException ();
 			}
 		}
 	}

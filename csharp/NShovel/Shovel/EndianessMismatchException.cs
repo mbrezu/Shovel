@@ -23,7 +23,7 @@ using System;
 
 namespace Shovel
 {
-	public class ShovelCellQuotaExceeded : Exception
+	public class EndianessMismatchException : Exception
 	{
 	}
 }
