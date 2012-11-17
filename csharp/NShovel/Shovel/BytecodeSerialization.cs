@@ -234,27 +234,17 @@ namespace Shovel
 			case Instruction.Opcodes.Prim0:
 				instruction.Arguments = ReadString (s);
 				break;
-			case Instruction.Opcodes.Return:
-				break;
-			case Instruction.Opcodes.Pop:
-				break;
 			case Instruction.Opcodes.Prim:
 				instruction.Arguments = ReadString (s);
 				break;
 			case Instruction.Opcodes.Const:
 				instruction.Arguments = ReadConst (s);
 				break;
-			case Instruction.Opcodes.Context:
-				break;
-			case Instruction.Opcodes.BlockReturn:
-				break;
 			case Instruction.Opcodes.Block:
 				instruction.Arguments = ReadInt (s);
 				break;
 			case Instruction.Opcodes.Label:
 				Utils.Panic ();
-				break;
-			case Instruction.Opcodes.PopBlock:
 				break;
 			case Instruction.Opcodes.Call:
 				instruction.Arguments = ReadInt (s);
@@ -283,13 +273,8 @@ namespace Shovel
 			case Instruction.Opcodes.Args:
 				instruction.Arguments = ReadInt (s);
 				break;
-			case Instruction.Opcodes.DropFrame:
-				break;
 			case Instruction.Opcodes.Tjump:
 				instruction.Arguments = ReadInt (s);
-				break;
-			default:
-				Utils.Panic ();
 				break;
 			}
 		}
@@ -312,27 +297,17 @@ namespace Shovel
 			case Instruction.Opcodes.Prim0:
 				WriteString (stream, (string)instruction.Arguments);
 				break;
-			case Instruction.Opcodes.Return:
-				break;
-			case Instruction.Opcodes.Pop:
-				break;
 			case Instruction.Opcodes.Prim:
 				WriteString (stream, (string)instruction.Arguments);
 				break;
 			case Instruction.Opcodes.Const:
 				WriteConst (stream, instruction.Arguments);
 				break;
-			case Instruction.Opcodes.Context:
-				break;
-			case Instruction.Opcodes.BlockReturn:
-				break;
 			case Instruction.Opcodes.Block:
 				WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
 				break;
 			case Instruction.Opcodes.Label:
 				Utils.Panic ();
-				break;
-			case Instruction.Opcodes.PopBlock:
 				break;
 			case Instruction.Opcodes.Call:
 				WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
@@ -361,13 +336,8 @@ namespace Shovel
 			case Instruction.Opcodes.Args:
 				WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
 				break;
-			case Instruction.Opcodes.DropFrame:
-				break;
 			case Instruction.Opcodes.Tjump:
 				WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
-				break;
-			default:
-				Utils.Panic ();
 				break;
 			}
 		}

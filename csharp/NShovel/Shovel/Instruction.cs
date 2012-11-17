@@ -56,7 +56,16 @@ namespace Shovel
 			NewFrame,
 			Args,
 			DropFrame,
-			Tjump
+			Tjump,
+            Div,
+            Mod,
+            Neq,
+            Lt,
+            Add,
+            Gref,
+            Eq,
+            Apush,
+            GrefDot,
 		}
 
 		public Opcodes Opcode { get; set; }

@@ -62,10 +62,7 @@ FN1:
     CONST 0
 ;; file 'test.sho' line 3:     if n == 0
 ;; file 'test.sho' line 3:          ^^
-    PRIM0 ==
-;; file 'test.sho' line 3:     if n == 0
-;; file 'test.sho' line 3:        ^^^^^^
-    CALL 2
+    EQ
     FJUMP L3
 ;; file 'test.sho' line 4:     1
 ;; file 'test.sho' line 4:     ^
