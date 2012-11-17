@@ -676,7 +676,7 @@ namespace Shovel.Compiler
             {
                 instruction.StartPos = startPos;
             }
-            else if (pos != null)
+            else if (pos != null && pos.StartPos != -1)
             {
                 instruction.StartPos = pos.StartPos;
             }
@@ -684,7 +684,7 @@ namespace Shovel.Compiler
             {
                 instruction.EndPos = endPos;
             }
-            else if (pos != null)
+            else if (pos != null && pos.EndPos != -1)
             {
                 instruction.EndPos = pos.EndPos;
             }

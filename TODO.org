@@ -192,8 +192,22 @@
 * TODO add license information to files (see CL-MESSAGEPACK)
 * TODO document VM serialization format in the VM SPEC
 
+* TODO Common Lisp
+** TODO Port the C# optimizations and VM changes to CL
+*** TODO give up lget optimization in VM runs?
+*** TODO turn the primitives into instructions
+*** TODO implement the Lset/Pop/Lget peep-hole optmization
+*** TODO implement jump propagation
+
+
 * TODO C#
 ** TODO check that stack overflows are handled correctly
    (the stack grows)
 ** TODO implement vm state serialization
 ** TODO port documentation
+** TODO optimizations
+*** TODO print the assembled code correctly (add numeric labels)
+*** TODO implement the Lset/Pop/Lget peep-hole optmization
+*** TODO implement jump propagation
+**** TODO verify that it works for && AND ||
+*** TODO finish converting the primitives to instructions

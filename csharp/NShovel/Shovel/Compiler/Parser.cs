@@ -187,7 +187,9 @@ namespace Shovel.Compiler
 			if (Parser.trueParseTree == null) {
 				Parser.trueParseTree = new ParseTree () {
 					Label = ParseTree.Labels.Bool,
-					Content = "true"
+					Content = "true",
+					StartPos = -1,
+					EndPos = -1
 				};
 			}
 			return Parser.trueParseTree;
@@ -200,7 +202,9 @@ namespace Shovel.Compiler
 			if (Parser.falseParseTree == null) {
 				Parser.falseParseTree = new ParseTree () {
 					Label = ParseTree.Labels.Bool,
-					Content = "false"
+					Content = "false",
+					StartPos = -1,
+					EndPos = -1
 				};
 			}
 			return Parser.falseParseTree;
