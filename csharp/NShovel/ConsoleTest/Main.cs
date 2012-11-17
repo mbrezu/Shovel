@@ -32,6 +32,8 @@ namespace ConsoleTest
 		public static void Main (string[] args)
 		{
 			MasterMindBenchmark();
+			//SimpleTest ();
+			//AnotherSimpleTest();
 		}
 
 		public static void SimpleTest()
@@ -43,6 +45,13 @@ add1(3)");
 			Console.WriteLine (Shovel.Api.PrintCode(sources));
 			Console.WriteLine (Shovel.Api.NakedRunVm(sources));
 		}
+
+		public static void AnotherSimpleTest()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", "10 >> 2");
+			Console.WriteLine (Shovel.Api.PrintCode(sources));
+			Console.WriteLine(Shovel.Api.NakedRunVm (sources));
+		}	
 
         public static void MasterMindBenchmark ()
         {

@@ -30,8 +30,8 @@ namespace Shovel.Vm
 		Instruction[] bytecode = null;
 		int programCounter = 0;
 		VmEnvironment currentEnvironment = null;
-		Stack stack = new Stack();
-		Dictionary<string, Callable> userPrimitives = new Dictionary<string, Callable> ();
+		Stack stack = new Stack ();
+		Dictionary<string, Callable> userPrimitives = null;
 		int usedCells = 0;
 		long executedTicks = 0;
 		long executedTicksSinceLastNap = 0;
@@ -42,7 +42,7 @@ namespace Shovel.Vm
 		int? cellsQuota = null;
 		long? totalTicksQuota = null;
 		long? untilNextNapTicksQuota = null;
-		// FIXME: Add 'runs' later, I'm just implementing a basic version now.
+		Action<Vm>[] runs = null;
 		VmApi api = null;
 
 		public static Vm RunVm (
@@ -60,9 +60,10 @@ namespace Shovel.Vm
 				vm.bytecode = bytecode;
 				vm.programCounter = 0;
 				vm.currentEnvironment = null;
-				vm.stack = new Stack();
+				vm.stack = new Stack ();
 				vm.sources = sources;
 				vm.userPrimitives = new Dictionary<string, Callable> ();
+				vm.runs = new Action<Vm>[bytecode.Length];
 			}
 			vm.cellsQuota = cellsQuota;
 			vm.totalTicksQuota = totalTicksQuota;
@@ -100,19 +101,83 @@ namespace Shovel.Vm
 			return this.stack.Top ();
 		}
 
+		Action<Vm> GetRun ()
+		{
+			Instruction.Opcodes? lastOpcode = null;
+			string lastPrim0 = null;
+			var iter = this.programCounter;
+			while (true) {
+				var instruction = this.bytecode [iter];
+				var op = instruction.Opcode;
+				if (op == Instruction.Opcodes.Prim0) {
+					lastPrim0 = (string)instruction.Arguments;
+				}
+				if ((op == Instruction.Opcodes.Call) && lastOpcode != Instruction.Opcodes.Prim0) {
+					break;
+				}
+				if ((op == Instruction.Opcodes.Lset) 
+					|| (op == Instruction.Opcodes.Jump)
+					|| (op == Instruction.Opcodes.Fjump)
+					|| (op == Instruction.Opcodes.Tjump)
+					|| (op == Instruction.Opcodes.DropFrame)
+					|| (op == Instruction.Opcodes.Args)
+					|| (op == Instruction.Opcodes.Return)
+					|| (op == Instruction.Opcodes.CallJ)
+					|| (op == Instruction.Opcodes.BlockReturn)) {
+					break;
+				}
+				if ((op == Instruction.Opcodes.NewFrame) 
+					&& (this.bytecode [iter + 1].Opcode != Instruction.Opcodes.Args)) {
+					break;
+				}
+				if ((op == Instruction.Opcodes.Call) 
+					&& (lastOpcode == Instruction.Opcodes.Prim0)
+					&& this.IsRunStopper (lastPrim0)) {
+					break;
+				}
+				if (iter == this.bytecode.Length - 1) {
+					break;
+				}
+				lastOpcode = op;
+				iter++;
+			}
+			var runActions = new Action<Vm>[iter - this.programCounter + 1];
+			for (var i = this.programCounter; i <= iter; i++) 
+			{
+				var instruction = this.bytecode[i];
+				runActions[i - this.programCounter] = Vm.handlers[instruction.NumericOpcode];
+			}
+			return vm => {
+				foreach (var action in runActions) {
+					action(vm);
+				}
+			};
+		}
+
+		bool IsRunStopper (string lastPrim0)
+		{
+			return lastPrim0 == "arrayN" 
+				|| lastPrim0 == "stringRepresentation"
+				|| lastPrim0 == "svm_set_indexed";
+		}
+
 		bool StepVm ()
 		{
 			this.CheckVmWithoutError ();
 			this.CheckTicksQuota ();
 			this.CheckCellsQuota ();
 			if (this.IsLive ()) {
-				var instruction = this.CurrentInstruction ();
+				if (this.runs [this.programCounter] == null) {
+					this.runs [this.programCounter] = this.GetRun ();
+				}
+				this.runs [this.programCounter] (this);
+//				var instruction = this.CurrentInstruction ();
 //				Console.WriteLine("*****");
 //				Console.WriteLine (instruction.ToString ());
 //				for (var i = 0; i < this.stack.Count; i++) {
 //					Console.WriteLine(this.stack[i]);
 //				}
-				Vm.handlers [instruction.NumericOpcode] (this);
+//				Vm.handlers [instruction.NumericOpcode] (this);
 			}
 			return this.IsLive ();
 		}
@@ -260,8 +325,8 @@ namespace Shovel.Vm
 			}
 			object[] array;
 			int start;
-			vm.stack.GetTopRange(numArgs, out array, out start);
-			vm.stack.PopMany(numArgs);
+			vm.stack.GetTopRange (numArgs, out array, out start);
+			vm.stack.PopMany (numArgs);
 			var result = callable.HostCallable (vm.api, array, start, numArgs);
 			if (saveReturnAddress) {
 				vm.programCounter ++;
@@ -490,7 +555,7 @@ namespace Shovel.Vm
 		{
 			for (var i = this.stack.Count - 1; i >= 0; i--) {
 				if (this.stack.Storage [i] is NamedBlock
-				    && ((NamedBlock)this.stack.Storage [i]).Name == blockName) {
+					&& ((NamedBlock)this.stack.Storage [i]).Name == blockName) {
 					return i;
 				}
 			}
@@ -501,16 +566,16 @@ namespace Shovel.Vm
 
 		static void HandleContext (Vm vm)
 		{
-			var stackTraceSb = new StringBuilder();
-			vm.WriteStackTrace(stackTraceSb);
-			var stackTrace = stackTraceSb.ToString();
-			var currentEnvironmentSb = new StringBuilder();
-			vm.WriteCurrentEnvironment(currentEnvironmentSb);
-			var currentEnvironment = currentEnvironmentSb.ToString();
-			var result = new Dictionary<string, object>();
+			var stackTraceSb = new StringBuilder ();
+			vm.WriteStackTrace (stackTraceSb);
+			var stackTrace = stackTraceSb.ToString ();
+			var currentEnvironmentSb = new StringBuilder ();
+			vm.WriteCurrentEnvironment (currentEnvironmentSb);
+			var currentEnvironment = currentEnvironmentSb.ToString ();
+			var result = new Dictionary<string, object> ();
 			result.Add ("stack", stackTrace);
 			result.Add ("environment", currentEnvironment);
-			vm.IncrementCells(6 + stackTrace.Length + currentEnvironment.Length);
+			vm.IncrementCells (6 + stackTrace.Length + currentEnvironment.Length);
 			vm.stack.Push (result);
 			vm.programCounter ++;
 			return;
@@ -615,15 +680,16 @@ namespace Shovel.Vm
 				if (env.Frame.IntroducedAtProgramCounter != null) {
 					sb.AppendLine ("Frame starts at:");
 					var pc = env.Frame.IntroducedAtProgramCounter.Value;
-					var instruction = this.bytecode[pc];
-					this.PrintLineFor(sb, pc, instruction.StartPos, instruction.EndPos);
+					var instruction = this.bytecode [pc];
+					this.PrintLineFor (sb, pc, instruction.StartPos, instruction.EndPos);
 				}
-				sb.AppendLine("Frame variables are:");
+				sb.AppendLine ("Frame variables are:");
 				for (var i = 0; i < env.Frame.VarNames.Length; i++) {
 					sb.AppendLine (String.Format (
 						"{0} = {1}",
-						env.Frame.VarNames[i],
-						Prim0.ShovelStringRepresentation(this.api, env.Frame.Values[i])));
+						env.Frame.VarNames [i],
+						Prim0.ShovelStringRepresentation (this.api, env.Frame.Values [i]))
+					);
 				}
 				sb.AppendLine ();
 			}
@@ -634,11 +700,11 @@ namespace Shovel.Vm
 			var foundLocation = false;
 			if (characterStartPos != null && characterEndPos != null) {
 				if (this.sources != null) {
-					var fileName = this.FindFileName(pc);
-					var sourceFile = SourceFile.FindSource(this.sources, fileName);
-					var startPos = Position.CalculatePosition(sourceFile, characterStartPos.Value);
-					var endPos = Position.CalculatePosition(sourceFile, characterEndPos.Value);
-					var lines = Utils.ExtractRelevantSource(sourceFile.Content.Split ('\n'), startPos, endPos);
+					var fileName = this.FindFileName (pc);
+					var sourceFile = SourceFile.FindSource (this.sources, fileName);
+					var startPos = Position.CalculatePosition (sourceFile, characterStartPos.Value);
+					var endPos = Position.CalculatePosition (sourceFile, characterEndPos.Value);
+					var lines = Utils.ExtractRelevantSource (sourceFile.Content.Split ('\n'), startPos, endPos);
 					foreach (var line in lines) {
 						sb.AppendLine (line);
 					}
@@ -648,21 +714,22 @@ namespace Shovel.Vm
 			if (!foundLocation) {
 				sb.AppendLine (String.Format (
 					"... unknown source location, program counter {0} ...",
-					pc));
+					pc)
+				);
 			}
 		}
 
 		void WriteStackTrace (StringBuilder sb)
 		{
 			int? startPos, endPos;
-			this.FindStartEndPos(out startPos, out endPos);
-			this.PrintLineFor(sb, this.programCounter, startPos, endPos);
+			this.FindStartEndPos (out startPos, out endPos);
+			this.PrintLineFor (sb, this.programCounter, startPos, endPos);
 			for (var i = this.stack.Count - 1; i >= 0; i--) {
-				if (this.stack.Storage[i] is ReturnAddress) {
-					var ra = (ReturnAddress)this.stack.Storage[i];
+				if (this.stack.Storage [i] is ReturnAddress) {
+					var ra = (ReturnAddress)this.stack.Storage [i];
 					var pc = ra.ProgramCounter;
-					var callSite = this.bytecode[pc - 1];
-					this.PrintLineFor(sb, pc, callSite.StartPos, callSite.EndPos);
+					var callSite = this.bytecode [pc - 1];
+					this.PrintLineFor (sb, pc, callSite.StartPos, callSite.EndPos);
 				}
 			}
 		}
