@@ -62,6 +62,7 @@
     <Compile Include="ShovelCellQuotaExceededException.cs" />
     <Compile Include="BrokenDataException.cs" />
     <Compile Include="VersionNotSupportedException.cs" />
+    <Compile Include="Vm\Stack.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

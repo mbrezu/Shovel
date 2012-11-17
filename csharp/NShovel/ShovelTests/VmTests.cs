@@ -132,6 +132,25 @@ file 'test.sho' line 5: ^^^^
 			Assert.AreEqual (4, (long)result[3]);
 			Assert.AreEqual (5, (long)result[4]);
 		}
+
+		[Test]
+		public void NonLocalReturn()
+		{
+			var sources = Shovel.Api.MakeSourcesWithStdlib("test.sho", @"
+var h = fn x x + 2
+var g = fn x h(x) + 2
+var f = fn x block 'f' g(x) + 2
+f(1)
+");
+			Assert.AreEqual(7, (long)Shovel.Api.NakedRunVm(sources));
+			sources = Shovel.Api.MakeSourcesWithStdlib("test.sho", @"
+var h = fn x return 'f' 10
+var g = fn x h(x) + 2
+var f = fn x block 'f' g(x) + 2
+f(1)
+");
+			Assert.AreEqual(10, (long)Shovel.Api.NakedRunVm(sources));
+		}
 	}
 }
 

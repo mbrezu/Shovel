@@ -159,11 +159,7 @@ namespace Shovel.Vm
 
 		static object LimitResult (object obj)
 		{
-			if (obj is long) {
-				return (long)obj & limitMask;
-			} else {
-				return obj;
-			}
+			return (long)obj & limitMask;
 		}
 
 		static object Subtract (VmApi api, object t1, object t2)
@@ -442,7 +438,7 @@ namespace Shovel.Vm
 			return null;
 		}
 
-		static object HashConstructor (VmApi api, object[] args)
+		static object HashConstructor (VmApi api, object[] args, int start, int length)
 		{
 			if (args.Length % 2 != 0) {
 				api.RaiseShovelError ("Must provide an even number of arguments.");
@@ -450,7 +446,7 @@ namespace Shovel.Vm
 			var sizeIncrease = 1 + 2 * args.Length;
 			api.CellsIncrementHerald (sizeIncrease);
 			var result = new Dictionary<string, object> ();
-			for (var i = 0; i < args.Length; i += 2) {
+			for (var i = start; i < start + length; i += 2) {
 				if (args [i] is String) {
 					result [(string)args [i]] = args [i + 1];
 				} else {
@@ -482,10 +478,12 @@ namespace Shovel.Vm
 			return result;
 		}
 
-		static object ArrayConstructor (VmApi api, object[] args)
+		static object ArrayConstructor (VmApi api, object[] args, int start, int length)
 		{
 			var result = new List<object> ();
-			result.AddRange (args);
+			for (var i = start; i < start+length; i++) {
+				result.Add (args[i]);
+			}
 			return result;
 		}
 

@@ -37,11 +37,11 @@ namespace Shovel
 
 		internal VmEnvironment Environment { get; set; }
 
-		internal Func<VmApi, object[], object> HostCallable { get; set; }
+		internal Func<VmApi, object[], int, int, object> HostCallable { get; set; }
 
 		public static Callable MakeUdp (
 			string name,
-			Func<VmApi, object[], object> hostCallable,
+			Func<VmApi, object[], int, int, object> hostCallable,
 			int? arity = null)
 		{
 			return new Callable () 
@@ -54,7 +54,7 @@ namespace Shovel
 
 		internal static Callable MakePrim0 (
 			string name,
-			Func<VmApi, object[], object> hostCallable,
+			Func<VmApi, object[], int, int, object> hostCallable,
 			int? arity = 2)
 		{
 			return new Callable () 
@@ -65,28 +65,28 @@ namespace Shovel
 			};
 		}
 
-		public static Func<VmApi, object[], object> MakeHostCallable (
+		public static Func<VmApi, object[], int, int, object> MakeHostCallable (
 			Func<VmApi, object> callable)
 		{
-			return (vmapi, args) => callable (vmapi);
+			return (vmapi, args, start, length) => callable (vmapi);
 		}
 
-		public static Func<VmApi, object[], object> MakeHostCallable (
+		public static Func<VmApi, object[], int, int, object> MakeHostCallable (
 			Func<VmApi, object, object> callable)
 		{
-			return (vmapi, args) => callable (vmapi, args [0]);
+			return (vmapi, args, start, length) => callable (vmapi, args [start]);
 		}
 
-		public static Func<VmApi, object[], object> MakeHostCallable (
+		public static Func<VmApi, object[], int, int, object> MakeHostCallable (
 			Func<VmApi, object, object, object> callable)
 		{
-			return (vmapi, args) => callable (vmapi, args [0], args [1]);
+			return (vmapi, args, start, length) => callable (vmapi, args [start], args [start + 1]);
 		}
 
-		public static Func<VmApi, object[], object> MakeHostCallable (
+		public static Func<VmApi, object[], int, int, object> MakeHostCallable (
 			Func<VmApi, object, object, object, object> callable)
 		{
-			return (vmapi, args) => callable (vmapi, args [0], args [1], args [2]);
+			return (vmapi, args, start, length) => callable (vmapi, args [start], args [start + 1], args [start + 2]);
 		}
 
 	}

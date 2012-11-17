@@ -191,3 +191,9 @@
 * TODO tests for all the required primitives
 * TODO add license information to files (see CL-MESSAGEPACK)
 * TODO document VM serialization format in the VM SPEC
+
+* TODO C#
+** TODO check that stack overflows are handled correctly
+   (the stack grows)
+** TODO implement vm state serialization
+** TODO port documentation
