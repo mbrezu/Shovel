@@ -216,7 +216,9 @@ namespace Shovel.Compiler
 			if (Parser.nullParseTree == null) {
 				Parser.nullParseTree = new ParseTree() {
 					Label = ParseTree.Labels.Void,
-					Content = "null"
+					Content = "null",
+					StartPos = -1,
+					EndPos = -1
 				};
 			}
 			return Parser.nullParseTree;
