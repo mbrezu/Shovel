@@ -27,84 +27,103 @@ using System.Linq;
 
 namespace Shovel
 {
-    public class Api
-    {
-        public static int Version = 1;
+	public class Api
+	{
+		public static int Version = 1;
 
-        public static string PrintCode(List<SourceFile> sources)
-        {
-            var bytecode = Utils.GetRawBytecode(sources);
-            Utils.DecorateByteCode(bytecode, sources);
-            var sb = new StringBuilder();
-            foreach (var instruction in bytecode)
-            {
-                sb.Append(instruction.ToString());
-            }
-            return sb.ToString();
-        }
+		public static string PrintRawBytecode (List<SourceFile> sources, bool optimize = false)
+		{
+			var bytecode = Utils.GetRawBytecode (sources);
+			if (optimize) {
+				bytecode = RawBytecodeOptimizations.Optimize (bytecode);
+			}
+			Utils.DecorateByteCode (bytecode, sources);
+			var sb = new StringBuilder ();
+			foreach (var instruction in bytecode) {
+				sb.Append (instruction.ToString ());
+			}
+			return sb.ToString ();
+		}
 
-        public static Instruction[] GetBytecode(List<SourceFile> sources)
-        {
-            var rawBytecode = Utils.GetRawBytecode(sources);
-            var optimized1 = Utils.OptimizeLsetPopLget(rawBytecode);
-            var assembled = Utils.Assemble(optimized1);            
-            var optimized2 = Utils.JumpPropagation(assembled);
-            return optimized2;
-        }
+		public static string PrintAssembledBytecode (List<SourceFile> sources)
+		{
+			var bytecode = Shovel.Api.GetBytecode (sources);
+			var labels = Utils.GetNumericLabels (bytecode);
+			Utils.DecorateByteCode (bytecode, sources);
+			var sb = new StringBuilder ();
+			for (var i = 0; i < bytecode.Length; i++) {
+				if (labels.Contains (i)) {
+					sb.AppendLine (String.Format ("{0}:", i));
+				}
+				sb.Append (bytecode [i].ToString ());
+			}
+			if (labels.Contains (bytecode.Length)) {
+				sb.AppendLine (String.Format ("{0}:", bytecode.Length));
+			}
+			return sb.ToString ();
+		}
 
-        public static MemoryStream SerializeBytecode(Instruction[] bytecode)
-        {
-            return BytecodeSerialization.SerializeBytecode(bytecode);
-        }
+		public static Instruction[] GetBytecode (List<SourceFile> sources)
+		{
+			var rawBytecode = Utils.GetRawBytecode (sources);
+			rawBytecode = RawBytecodeOptimizations.Optimize (rawBytecode);
+			var assembled = Utils.Assemble (rawBytecode);            
+			assembled = AssembledBytecodeOptimizations.Optimize (assembled);
+			return assembled;
+		}
 
-        public static Instruction[] DeserializeBytecode(MemoryStream ms)
-        {
-            return BytecodeSerialization.DeserializeBytecode(ms);
-        }
+		public static MemoryStream SerializeBytecode (Instruction[] bytecode)
+		{
+			return BytecodeSerialization.SerializeBytecode (bytecode);
+		}
 
-        public static List<SourceFile> MakeSources(params string[] namesAndContents)
-        {
-            return MakeSourcesFromIEnumerable(namesAndContents);
-        }
+		public static Instruction[] DeserializeBytecode (MemoryStream ms)
+		{
+			return BytecodeSerialization.DeserializeBytecode (ms);
+		}
 
-        public static List<SourceFile> MakeSourcesFromIEnumerable(IEnumerable<string> namesAndContents)
-        {
-            List<SourceFile> result = new List<SourceFile>();
-            for (var i = 0; i < namesAndContents.Count(); i += 2)
-            {
-                result.Add(new SourceFile()
+		public static List<SourceFile> MakeSources (params string[] namesAndContents)
+		{
+			return MakeSourcesFromIEnumerable (namesAndContents);
+		}
+
+		public static List<SourceFile> MakeSourcesFromIEnumerable (IEnumerable<string> namesAndContents)
+		{
+			List<SourceFile> result = new List<SourceFile> ();
+			for (var i = 0; i < namesAndContents.Count(); i += 2) {
+				result.Add (new SourceFile ()
                 {
                     FileName = namesAndContents.ElementAt(i),
                     Content = namesAndContents.ElementAt(i + 1)
                 }
-                );
-            }
-            return result;
-        }
+				);
+			}
+			return result;
+		}
 
-        public static List<SourceFile> MakeSourcesWithStdlib(params string[] namesAndContents)
-        {
-            List<string> sources = new List<string>();
-            sources.Add("stdlib.sho");
-            sources.Add(Utils.ShovelStdlib());
-            sources.AddRange(namesAndContents);
-            return MakeSourcesFromIEnumerable(sources);
-        }
+		public static List<SourceFile> MakeSourcesWithStdlib (params string[] namesAndContents)
+		{
+			List<string> sources = new List<string> ();
+			sources.Add ("stdlib.sho");
+			sources.Add (Utils.ShovelStdlib ());
+			sources.AddRange (namesAndContents);
+			return MakeSourcesFromIEnumerable (sources);
+		}
 
-        public static object NakedRunVm(List<SourceFile> sources)
-        {
-            var rawBytecode = Utils.GetRawBytecode(sources);
-            var bytecode = Utils.Assemble(rawBytecode);
-            var vm = Vm.Vm.RunVm(bytecode, sources);
-            return vm.CheckStackTop();
-        }
+		public static object NakedRunVm (List<SourceFile> sources)
+		{
+			var rawBytecode = Utils.GetRawBytecode (sources);
+			var bytecode = Utils.Assemble (rawBytecode);
+			var vm = Vm.Vm.RunVm (bytecode, sources);
+			return vm.CheckStackTop ();
+		}
 
-        public static object RunVm(Shovel.Instruction[] bytecode, List<SourceFile> sources)
-        {
-            var vm = Vm.Vm.RunVm(bytecode, sources);
-            return vm.CheckStackTop();
-        }
+		public static object RunVm (Shovel.Instruction[] bytecode, List<SourceFile> sources)
+		{
+			var vm = Vm.Vm.RunVm (bytecode, sources);
+			return vm.CheckStackTop ();
+		}
 
-    }
+	}
 }
 

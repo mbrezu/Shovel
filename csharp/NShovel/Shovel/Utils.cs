@@ -28,7 +28,7 @@ using System.Linq;
 
 namespace Shovel
 {
-    public static class Utils
+    internal static class Utils
     {
         internal static string ComputeSourcesMd5(List<SourceFile> sources)
         {
@@ -120,7 +120,7 @@ namespace Shovel
             throw new InvalidOperationException("Shovel internal WTF.");
         }
 
-        internal static void DecorateByteCode(List<Instruction> bytecode, List<SourceFile> sources)
+        internal static void DecorateByteCode(IEnumerable<Instruction> bytecode, List<SourceFile> sources)
         {
             string[] currentSourceFileSplit = null;
             SourceFile currentSource = null;
@@ -309,6 +309,30 @@ namespace Shovel
             return (byte)(BitConverter.IsLittleEndian ? 1 : 0);
         }
 
+		static internal HashSet<int> GetNumericLabels(Instruction[] bytecode) {
+			var result = new HashSet<int>();
+			foreach (var instruction in bytecode) {
+				switch (instruction.Opcode) {
+				case Instruction.Opcodes.Jump:
+					result.Add((int)instruction.Arguments);
+					break;
+				case Instruction.Opcodes.Fjump:
+					result.Add((int)instruction.Arguments);
+					break;				
+				case Instruction.Opcodes.Fn:
+					result.Add (((int[])instruction.Arguments)[0]);
+					break;
+				case Instruction.Opcodes.Block:
+					result.Add((int)instruction.Arguments);
+					break;
+				case Instruction.Opcodes.Tjump:
+					result.Add((int)instruction.Arguments);
+					break;
+				}
+			}
+			return result;
+		}
+
         static internal string ShovelStdlib()
         {
             return @"
@@ -428,20 +452,9 @@ var stdlib = {
         'throw' , tryAndThrow[1],
         'repeat', repeat
        )
-}
-";
+}";
         }
 
-
-        internal static List<Instruction> OptimizeLsetPopLget(List<Instruction> bytecode)
-        {
-            return bytecode;
-        }
-
-        internal static Instruction[] JumpPropagation(Instruction[] bytecode)
-        {
-            return bytecode;
-        }
     }
 }
 

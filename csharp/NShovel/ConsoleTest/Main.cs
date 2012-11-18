@@ -42,20 +42,14 @@ namespace ConsoleTest
 var adder = fn (n) fn (x) x + n
 var add1 = adder(1)
 add1(3)");
-            Console.WriteLine (Shovel.Api.PrintCode(sources));
+            Console.WriteLine (Shovel.Api.PrintRawBytecode(sources));
             Console.WriteLine (Shovel.Api.NakedRunVm(sources));
         }
 
         public static void AnotherSimpleTest()
         {
-            var sources = Shovel.Api.MakeSources ("test.sho", @"
-var fact = fn (n) {
-    if n == 0
-    1
-    else n * fact(n - 1)
-}
-fact(10)");
-            Console.WriteLine (Shovel.Api.PrintCode(sources));
+            var sources = Shovel.Api.MakeSources ("test.sho", @"true || false");
+            Console.WriteLine (Shovel.Api.PrintAssembledBytecode(sources));
             Console.WriteLine(Shovel.Api.NakedRunVm (sources));
         }	
 
@@ -63,7 +57,7 @@ fact(10)");
         {
 //			var sources = Shovel.Api.MakeSourcesWithStdlib ("qsort", "stdlib.sort(array(1, 5, 3, 4, 2), fn (a, b) a < b)");
             var sources = Shovel.Api.MakeSourcesWithStdlib ("mmind", Mastermind ());
-            File.WriteAllText ("test.txt", Shovel.Api.PrintCode (sources));
+            File.WriteAllText ("test.txt", Shovel.Api.PrintAssembledBytecode (sources));
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
 //			sw.Reset ();
 //			sw.Start ();

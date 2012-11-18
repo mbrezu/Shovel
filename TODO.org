@@ -207,7 +207,7 @@
 ** TODO port documentation
 ** TODO optimizations
 *** TODO print the assembled code correctly (add numeric labels)
-*** TODO implement the Lset/Pop/Lget peep-hole optmization
-*** TODO implement jump propagation
+*** DONE implement the Lset/Pop/Lget peep-hole optmization
+*** DONE implement jump propagation
 **** TODO verify that it works for && AND ||
 *** TODO finish converting the primitives to instructions

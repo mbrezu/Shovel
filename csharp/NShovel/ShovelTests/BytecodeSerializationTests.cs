@@ -76,7 +76,7 @@ namespace ShovelTests
 		void TestBytecodeSerialization (string fileName, string program, Func<object, bool> resultChecker)
 		{
 			var sources = Shovel.Api.MakeSources (fileName, program);
-			Console.WriteLine (Shovel.Api.PrintCode (sources));
+			Console.WriteLine (Shovel.Api.PrintRawBytecode (sources));
 			var bytecode = Shovel.Api.GetBytecode (sources);
 			var ms = Shovel.Api.SerializeBytecode (bytecode);
 			var bytecode2 = Shovel.Api.DeserializeBytecode (ms);
