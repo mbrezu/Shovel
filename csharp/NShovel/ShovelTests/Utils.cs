@@ -38,7 +38,8 @@ namespace ShovelTests
 			}
 		}
 
-		public static string FactorialOfTenProgram() {
+		public static string FactorialOfTenProgram ()
+		{
 			return @"
 var fact = fn (n) {
     if n == 0
@@ -48,7 +49,8 @@ var fact = fn (n) {
 fact(10)";
 		}
 
-		public static string FibonacciOfTenProgram() {
+		public static string FibonacciOfTenProgram ()
+		{
 			return @"
 var fib = fn (n) {
 	if n == 0 || n == 1
@@ -59,9 +61,51 @@ fib(10)
 ";
 		}
 
-		public static string QsortProgram() {
+		public static string QsortProgram ()
+		{
 			return "stdlib.sort(array(1, 3, 4, 5, 2), fn (a, b) a < b)";
 		}
+
+		internal static void TestValue (
+			string source, Shovel.ShovelValue.Kinds expectedResultType, object expectedResult)
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", source);
+			var result = Shovel.Api.NakedRunVm (sources);
+			Assert.IsTrue (result.Kind == expectedResultType);
+			switch (expectedResultType) {
+			case Shovel.ShovelValue.Kinds.Null:
+				break;
+			case Shovel.ShovelValue.Kinds.Integer:
+				Assert.AreEqual ((long)expectedResult, result.IntegerValue);
+				break;
+			case Shovel.ShovelValue.Kinds.String:
+				Assert.AreEqual ((string)expectedResult, result.StringValue);
+				break;
+			case Shovel.ShovelValue.Kinds.Double:
+				Assert.AreEqual ((double)expectedResult, result.DoubleValue);
+				break;
+			case Shovel.ShovelValue.Kinds.Bool:
+				Assert.AreEqual ((bool)expectedResult, result.BoolValue);
+				break;
+			case Shovel.ShovelValue.Kinds.Array:
+				Assert.Fail();
+				break;
+			case Shovel.ShovelValue.Kinds.Hash:
+				Assert.Fail();
+				break;
+			case Shovel.ShovelValue.Kinds.Callable:
+				Assert.Fail();
+				break;
+			case Shovel.ShovelValue.Kinds.ReturnAddress:
+				Assert.Fail();
+				break;
+			case Shovel.ShovelValue.Kinds.NamedBlock:
+				Assert.Fail();
+				break;
+			}
+		}
+
+
 
 	}
 }

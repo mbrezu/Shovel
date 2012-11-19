@@ -22,9 +22,9 @@
 using System;
 using System.Collections.Generic;
 
-namespace Shovel.Vm
+namespace Shovel
 {
-	class NamedBlock
+	public class NamedBlock
 	{
 		public string Name { get; set; }
 

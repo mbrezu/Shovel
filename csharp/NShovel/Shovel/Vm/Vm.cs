@@ -94,7 +94,7 @@ namespace Shovel.Vm
 			return vm;
 		}
 
-		public object CheckStackTop ()
+		public ShovelValue CheckStackTop ()
 		{
 			if (this.stack.Count != 1) {
 				Utils.Panic ();
@@ -153,7 +153,7 @@ namespace Shovel.Vm
 			}
 			var runActions = new Action<Vm>[iter - this.programCounter + 1];
 			var optimizableLgetCount = lgets.Keys.Select (key => lgets [key] > 1).Count ();
-			var values = new object[optimizableLgetCount];
+			var values = new ShovelValue[optimizableLgetCount];
 			var lgetValueIndexes = new Dictionary<Tuple<int, int>, int> ();
 			var runningIndex = 0;
 			for (var i = this.programCounter; i <= iter; i++) {
@@ -576,7 +576,7 @@ namespace Shovel.Vm
 
 		static void HandleConst (Vm vm)
 		{
-			vm.stack.Push (vm.CurrentInstruction ().Arguments);
+			vm.stack.Push ((ShovelValue)vm.CurrentInstruction ().Arguments);
 			vm.programCounter++;
 			vm.IncrementCells (1);
 		}
@@ -598,13 +598,14 @@ namespace Shovel.Vm
 			if (instruction.Cache == null) {
 				var primName = (string)instruction.Arguments;
 				if (!Vm.Prim0Hash.ContainsKey (primName)) {
-					vm.RaiseShovelError(String.Format (
+					vm.RaiseShovelError (String.Format (
 						"Cannot take address of primitive '{0}' (implemented as instruction).",
-						primName));
+						primName)
+					);
 				}
-				instruction.Cache = Vm.Prim0Hash[primName];
+				instruction.Cache = ShovelValue.Make (Vm.Prim0Hash [primName]);
 			}
-			vm.stack.Push (instruction.Cache);
+			vm.stack.Push ((ShovelValue)instruction.Cache);
 			vm.IncrementTicks (1);
 			vm.programCounter++;
 		}
@@ -626,7 +627,7 @@ namespace Shovel.Vm
 				var udpName = (string)instruction.Arguments;
 				instruction.Cache = GetUdpByName (vm, udpName);
 			}
-			vm.stack.Push (instruction.Cache);
+			vm.stack.Push ((ShovelValue)instruction.Cache);
 			vm.IncrementTicks (1);
 			vm.programCounter++;
 		}
@@ -640,13 +641,13 @@ namespace Shovel.Vm
 
 		static void HandleCallImpl (Vm vm, int numArgs, bool saveReturnAddress)
 		{
-			var maybeCallable = vm.stack.Pop ();
-			if (!(maybeCallable is Callable)) {
+			var maybeCallable = vm.stack.PopTop ();
+			if (maybeCallable.Kind != ShovelValue.Kinds.Callable) {
 				vm.RaiseShovelError (String.Format (
                     "Object [{0}] is not callable.", Prim0.ShovelStringRepresentation (vm.api, maybeCallable))
 				);
 			}
-			var callable = (Callable)maybeCallable;
+			var callable = maybeCallable.CallableValue;
 			if (callable.UdpName != null || callable.Prim0Name != null) {
 				CallPrimitive (callable, vm, numArgs, saveReturnAddress);
 			} else {
@@ -660,10 +661,11 @@ namespace Shovel.Vm
 		static void CallFunction (Callable callable, Vm vm, int numArgs, bool saveReturnAddress)
 		{
 			if (saveReturnAddress) {
-				vm.stack.Push (new ReturnAddress () {
+				vm.stack.Push (ShovelValue.Make (new ReturnAddress () {
                     ProgramCounter = vm.programCounter + 1,
                     Environment = vm.currentEnvironment
                 }
+				)
 				);
 			}
 			if (callable.Arity != null && callable.Arity.Value != numArgs) {
@@ -687,7 +689,7 @@ namespace Shovel.Vm
 			if (callable.Arity != null && callable.Arity.Value != numArgs) {
 				ArityError (vm, callable.Arity.Value, numArgs);
 			}
-			object[] array;
+			ShovelValue[] array;
 			int start;
 			vm.stack.GetTopRange (numArgs, out array, out start);
 			vm.stack.PopMany (numArgs);
@@ -695,7 +697,12 @@ namespace Shovel.Vm
 			if (saveReturnAddress) {
 				vm.programCounter ++;
 			} else {
-				vm.ApplyReturnAddress (vm.stack.Pop () as ReturnAddress);
+				var maybeRa = vm.stack.PopTop ();
+				if (maybeRa.Kind == ShovelValue.Kinds.ReturnAddress) {
+					vm.ApplyReturnAddress (maybeRa.ReturnAddressValue);
+				} else {
+					Utils.Panic ();
+				}
 			}
 			vm.stack.Push (result);
 			vm.IncrementCells (1);
@@ -718,7 +725,7 @@ namespace Shovel.Vm
 
 		void CheckBool ()
 		{
-			if (!(this.stack.Top () is bool)) {
+			if (this.stack.Top ().Kind != ShovelValue.Kinds.Bool) {
 				RaiseShovelError ("Argument must be a boolean.");
 			}
 		}
@@ -727,17 +734,14 @@ namespace Shovel.Vm
 		{
 			var args = vm.CurrentInstruction ().Arguments;
 			vm.CheckBool ();
-			// SLOW: the first argument could be optimized to !(bool)vm.Pop().
-			// Not done because I'm not sure of all implications yet (and it doesn't
-			// show up as one of the top time consumers in profiler reports).
-			vm.JumpIf (!(bool)vm.stack.Pop (), (int)args);
+			vm.JumpIf (!vm.stack.PopTop ().BoolValue, (int)args);
 		}
 
 		static void HandleTjump (Vm vm)
 		{
 			var args = vm.CurrentInstruction ().Arguments;
 			vm.CheckBool ();
-			vm.JumpIf ((bool)vm.stack.Pop (), (int)args);
+			vm.JumpIf (vm.stack.PopTop ().BoolValue, (int)args);
 		}
 
 		void JumpIf (bool shouldJump, int jumpDestination)
@@ -758,7 +762,7 @@ namespace Shovel.Vm
 		}
 
 		static void SetInEnvironment (
-            VmEnvironment env, int frameNumber, int varIndex, object value)
+            VmEnvironment env, int frameNumber, int varIndex, ShovelValue value)
 		{
 			FindFrame (env, frameNumber).Values [varIndex] = value;
 		}
@@ -790,7 +794,7 @@ namespace Shovel.Vm
 			vm.programCounter++;
 		}
 
-		static object GetFromEnvironment (VmEnvironment env, int frameNumber, int varIndex)
+		static ShovelValue GetFromEnvironment (VmEnvironment env, int frameNumber, int varIndex)
 		{
 			return FindFrame (env, frameNumber).Values [varIndex];
 		}
@@ -804,7 +808,7 @@ namespace Shovel.Vm
                 Arity = args[1],
                 Environment = vm.currentEnvironment
             };
-			vm.stack.Push (callable);
+			vm.stack.Push (ShovelValue.Make (callable));
 			vm.IncrementCells (5);
 			vm.programCounter++;
 		}
@@ -815,7 +819,7 @@ namespace Shovel.Vm
 			var args = (string[])instruction.Arguments;
 			var frame = new VmEnvFrame () {
                 VarNames = args,
-                Values = new object[args.Length],
+                Values = new ShovelValue[args.Length],
                 IntroducedAtProgramCounter = vm.programCounter
             };
 			var newEnv = new VmEnvironment () {
@@ -837,15 +841,16 @@ namespace Shovel.Vm
 			var instruction = vm.CurrentInstruction ();
 			var argCount = (int)instruction.Arguments;
 			if (argCount > 0) {
-				ReturnAddress returnAddress = null;
-				if (vm.stack.Top () is ReturnAddress) {
-					returnAddress = vm.stack.Pop () as ReturnAddress;
+				ShovelValue? returnAddress = null;
+				if (vm.stack.Top ().Kind == ShovelValue.Kinds.ReturnAddress) {
+					returnAddress = vm.stack.PopTop ();
 				}
+				// SLOW: may be optimized with an array copy.
 				for (var i = argCount - 1; i >= 0; i--) {
-					vm.currentEnvironment.Frame.Values [i] = vm.stack.Pop ();
+					vm.currentEnvironment.Frame.Values [i] = vm.stack.PopTop ();
 				}
-				if (returnAddress != null) {
-					vm.stack.Push (returnAddress);
+				if (returnAddress.HasValue) {
+					vm.stack.Push (returnAddress.Value);
 				}
 			}
 			vm.programCounter++;
@@ -854,17 +859,18 @@ namespace Shovel.Vm
 		static void HandleReturn (Vm vm)
 		{
 			// SLOW: maybe there's a faster way to manipulate the stack here?
-			var result = vm.stack.Pop ();
-			var returnAddress = vm.stack.Pop () as ReturnAddress;
-			vm.ApplyReturnAddress (returnAddress);
+			var result = vm.stack.PopTop ();
+			var maybeRa = vm.stack.PopTop ();
+			if (maybeRa.Kind == ShovelValue.Kinds.ReturnAddress) {
+				vm.ApplyReturnAddress (maybeRa.ReturnAddressValue);
+			} else {
+				Utils.Panic ();
+			}
 			vm.stack.Push (result);
 		}
 
 		void ApplyReturnAddress (ReturnAddress returnAddress)
 		{
-			if (returnAddress == null) {
-				Utils.Panic ();
-			}
 			this.programCounter = returnAddress.ProgramCounter;
 			this.currentEnvironment = returnAddress.Environment;
 		}
@@ -873,15 +879,16 @@ namespace Shovel.Vm
 		{
 			var instruction = vm.CurrentInstruction ();
 			var blockEnd = (int)instruction.Arguments;
-			var name = vm.stack.Pop ();
-			if (!(name is String)) {
+			var name = vm.stack.PopTop ();
+			if (name.Kind != ShovelValue.Kinds.String) {
 				vm.RaiseShovelError ("The name of a block must be a string.");
 			}
-			vm.stack.Push (new NamedBlock () {
-                Name = (string)name,
+			vm.stack.Push (ShovelValue.Make (new NamedBlock () {
+                Name = name.StringValue,
                 BlockEnd = blockEnd,
                 Environment = vm.currentEnvironment
             }
+			)
 			);
 			vm.IncrementCells (3);
 			vm.programCounter++;
@@ -889,9 +896,9 @@ namespace Shovel.Vm
 
 		static void HandlePopBlock (Vm vm)
 		{
-			var returnValue = vm.stack.Pop ();
-			var namedBlock = vm.stack.Pop ();
-			if (!(namedBlock is NamedBlock)) {
+			var returnValue = vm.stack.PopTop ();
+			var namedBlock = vm.stack.PopTop ();
+			if (namedBlock.Kind != ShovelValue.Kinds.NamedBlock) {
 				vm.RaiseShovelError ("Invalid context for POP_BLOCK.");
 			}
 			vm.stack.Push (returnValue);
@@ -900,16 +907,16 @@ namespace Shovel.Vm
 
 		static void HandleBlockReturn (Vm vm)
 		{
-			var returnValue = vm.stack.Pop ();
-			var name = vm.stack.Pop ();
-			if (!(name is String)) {
+			var returnValue = vm.stack.PopTop ();
+			var name = vm.stack.PopTop ();
+			if (name.Kind != ShovelValue.Kinds.String) {
 				vm.RaiseShovelError ("The name of a block must be a string.");
 			}
-			var namedBlockIndex = vm.FindNamedBlock ((string)name);
+			var namedBlockIndex = vm.FindNamedBlock (name.StringValue);
 			if (vm.stack.Count > namedBlockIndex + 1) {
 				vm.stack.RemoveRange (namedBlockIndex + 1, vm.stack.Count - namedBlockIndex - 1);
 			}
-			var namedBlock = (NamedBlock)vm.stack.Top ();
+			var namedBlock = vm.stack.Top ().NamedBlockValue;
 			vm.stack.Push (returnValue);
 			vm.programCounter = namedBlock.BlockEnd;
 			vm.currentEnvironment = namedBlock.Environment;
@@ -918,8 +925,8 @@ namespace Shovel.Vm
 		int FindNamedBlock (string blockName)
 		{
 			for (var i = this.stack.Count - 1; i >= 0; i--) {
-				if (this.stack.Storage [i] is NamedBlock
-					&& ((NamedBlock)this.stack.Storage [i]).Name == blockName) {
+				if (this.stack.Storage [i].Kind == ShovelValue.Kinds.NamedBlock
+					&& this.stack.Storage [i].NamedBlockValue.Name == blockName) {
 					return i;
 				}
 			}
@@ -936,11 +943,11 @@ namespace Shovel.Vm
 			var currentEnvironmentSb = new StringBuilder ();
 			vm.WriteCurrentEnvironment (currentEnvironmentSb);
 			var currentEnvironment = currentEnvironmentSb.ToString ();
-			var result = new Dictionary<string, object> ();
-			result.Add ("stack", stackTrace);
-			result.Add ("environment", currentEnvironment);
+			var result = new Dictionary<ShovelValue, ShovelValue> ();
+			result.Add (ShovelValue.Make ("stack"), ShovelValue.Make (stackTrace));
+			result.Add (ShovelValue.Make ("environment"), ShovelValue.Make (currentEnvironment));
 			vm.IncrementCells (6 + stackTrace.Length + currentEnvironment.Length);
-			vm.stack.Push (result);
+			vm.stack.Push (ShovelValue.Make (result));
 			vm.programCounter ++;
 			return;
 		}
@@ -1052,7 +1059,7 @@ namespace Shovel.Vm
 					sb.AppendLine (String.Format (
                         "{0} = {1}",
                         env.Frame.VarNames [i],
-                        Prim0.ShovelStringRepresentation (this.api, env.Frame.Values [i]))
+                        Prim0.ShovelStringRepresentation (this.api, env.Frame.Values [i]).StringValue)
 					);
 				}
 				sb.AppendLine ();
@@ -1089,8 +1096,8 @@ namespace Shovel.Vm
 			this.FindStartEndPos (out startPos, out endPos);
 			this.PrintLineFor (sb, this.programCounter, startPos, endPos);
 			for (var i = this.stack.Count - 1; i >= 0; i--) {
-				if (this.stack.Storage [i] is ReturnAddress) {
-					var ra = (ReturnAddress)this.stack.Storage [i];
+				if (this.stack.Storage [i].Kind == ShovelValue.Kinds.ReturnAddress) {
+					var ra = this.stack.Storage [i].ReturnAddressValue;
 					var pc = ra.ProgramCounter;
 					var callSite = this.bytecode [pc - 1];
 					this.PrintLineFor (sb, pc, callSite.StartPos, callSite.EndPos);

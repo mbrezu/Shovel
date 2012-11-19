@@ -507,6 +507,31 @@ var stdlib = {
 }";
         }
 
+		internal static string SideBySide (string str1, string str2, int halfSize = 38)
+		{
+			string[] lines1 = str1.Split ('\n');
+			string[] lines2 = str2.Split ('\n');
+			var sb = new StringBuilder();
+			var formatString = String.Format ("{{0,-{0}}}{{1,-{1}}}\n", halfSize, halfSize);
+			for (int i = 0; i < Math.Max (lines1.Length, lines2.Length); i++) {
+				string half1, half2;
+				if (i < lines1.Length) {
+					half1 = lines1[i];
+				} else {
+					half1 = "";
+				}
+				if (i < lines2.Length) {
+					half2 = lines2[i];
+				} else {
+					half2 = "";
+				}
+				sb.AppendFormat (formatString, half1, half2);
+			}
+			return sb.ToString();
+		}
+
+
+
     }
 }
 

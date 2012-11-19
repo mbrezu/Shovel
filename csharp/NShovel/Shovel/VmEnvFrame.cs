@@ -28,7 +28,7 @@ namespace Shovel
 	{
 		public string[] VarNames { get; set; }
 
-		public object[] Values { get; set; }
+		public ShovelValue[] Values { get; set; }
 
 		public int? IntroducedAtProgramCounter;
 	}

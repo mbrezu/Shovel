@@ -39,10 +39,11 @@ var f = fn (x) id(g(x))
 f(3)
 "
 			);
-			var result = (Dictionary<string, object>)Shovel.Api.NakedRunVm (sources);
-			Assert.AreEqual (2, result.Keys.Count);
-			Assert.IsTrue (result.ContainsKey ("stack"));
-			Assert.IsTrue (result.ContainsKey ("environment"));
+			var result = Shovel.Api.NakedRunVm (sources);
+			Assert.IsTrue (result.Kind == Shovel.ShovelValue.Kinds.Hash);
+			Assert.AreEqual (2, result.HashValue.Keys.Count);
+			Assert.IsTrue (result.HashValue.ContainsKey (Shovel.ShovelValue.Make("stack")));
+			Assert.IsTrue (result.HashValue.ContainsKey (Shovel.ShovelValue.Make("environment")));
 			Assert.AreEqual (@"Frame starts at:
 file 'test.sho' line 3: var h = fn (x) context
 file 'test.sho' line 3:             ^
@@ -58,7 +59,7 @@ h = [...callable...]
 g = [...callable...]
 f = [...callable...]
 
-", result ["environment"]);
+", result.HashValue [Shovel.ShovelValue.Make("environment")].StringValue);
 			Assert.AreEqual (@"file 'test.sho' line 3: var h = fn (x) context
 file 'test.sho' line 3:                ^^^^^^^
 file 'test.sho' line 4: var g = fn (x) id(h(x))
@@ -67,7 +68,7 @@ file 'test.sho' line 5: var f = fn (x) id(g(x))
 file 'test.sho' line 5:                   ^^^^
 file 'test.sho' line 6: f(3)
 file 'test.sho' line 6: ^^^^
-", result ["stack"]);
+", result.HashValue [Shovel.ShovelValue.Make("stack")].StringValue);
 		}
 
 		[Test]
@@ -80,10 +81,11 @@ var f = fn (x) g(x)
 f(3)
 "
 			);
-			var result = (Dictionary<string, object>)Shovel.Api.NakedRunVm (sources);
-			Assert.AreEqual (2, result.Keys.Count);
-			Assert.IsTrue (result.ContainsKey ("stack"));
-			Assert.IsTrue (result.ContainsKey ("environment"));
+			var result = Shovel.Api.NakedRunVm (sources);
+			Assert.IsTrue (result.Kind == Shovel.ShovelValue.Kinds.Hash);
+			Assert.AreEqual (2, result.HashValue.Keys.Count);
+			Assert.IsTrue (result.HashValue.ContainsKey (Shovel.ShovelValue.Make("stack")));
+			Assert.IsTrue (result.HashValue.ContainsKey (Shovel.ShovelValue.Make("environment")));
 			Assert.AreEqual (@"Frame starts at:
 file 'test.sho' line 2: var h = fn (x) context
 file 'test.sho' line 2:             ^
@@ -98,58 +100,56 @@ h = [...callable...]
 g = [...callable...]
 f = [...callable...]
 
-", result ["environment"]);
+", result.HashValue [Shovel.ShovelValue.Make("environment")].StringValue);
 			Assert.AreEqual (@"file 'test.sho' line 2: var h = fn (x) context
 file 'test.sho' line 2:                ^^^^^^^
 file 'test.sho' line 5: f(3)
 file 'test.sho' line 5: ^^^^
-", result ["stack"]);
+", result.HashValue [Shovel.ShovelValue.Make("stack")].StringValue);
 		}
 
 		[Test]
 		public void Factorial ()
 		{
-			var sources = Shovel.Api.MakeSources ("fact.sho", Utils.FactorialOfTenProgram());
-			Assert.AreEqual(3628800, (long)Shovel.Api.NakedRunVm(sources));
+			Utils.TestValue (Utils.FactorialOfTenProgram(), Shovel.ShovelValue.Kinds.Integer, (long)3628800);
 		}
 
 		[Test]
 		public void Fibonacci()
 		{
-			var sources = Shovel.Api.MakeSources ("fact.sho", Utils.FibonacciOfTenProgram());
-			Assert.AreEqual(89, (long)Shovel.Api.NakedRunVm(sources));
+			Utils.TestValue (Utils.FibonacciOfTenProgram(), Shovel.ShovelValue.Kinds.Integer, (long)89);
 		}
 
 		[Test]
 		public void QuickSort()
 		{
 			var sources = Shovel.Api.MakeSourcesWithStdlib("qsort.sho", Utils.QsortProgram());
-			var result = (List<object>)Shovel.Api.NakedRunVm(sources);
-			Assert.AreEqual (5, result.Count);
-			Assert.AreEqual (1, (long)result[0]);
-			Assert.AreEqual (2, (long)result[1]);
-			Assert.AreEqual (3, (long)result[2]);
-			Assert.AreEqual (4, (long)result[3]);
-			Assert.AreEqual (5, (long)result[4]);
+			var result = Shovel.Api.NakedRunVm(sources);
+			Assert.IsTrue (result.Kind == Shovel.ShovelValue.Kinds.Array);
+			Assert.AreEqual (5, result.ArrayValue.Count);
+			Assert.AreEqual (1, result.ArrayValue[0].IntegerValue);
+			Assert.AreEqual (2, result.ArrayValue[1].IntegerValue);
+			Assert.AreEqual (3, result.ArrayValue[2].IntegerValue);
+			Assert.AreEqual (4, result.ArrayValue[3].IntegerValue);
+			Assert.AreEqual (5, result.ArrayValue[4].IntegerValue);
 		}
 
 		[Test]
 		public void NonLocalReturn()
 		{
-			var sources = Shovel.Api.MakeSourcesWithStdlib("test.sho", @"
+			Utils.TestValue(@"
 var h = fn x x + 2
 var g = fn x h(x) + 2
 var f = fn x block 'f' g(x) + 2
 f(1)
-");
-			Assert.AreEqual(7, (long)Shovel.Api.NakedRunVm(sources));
-			sources = Shovel.Api.MakeSourcesWithStdlib("test.sho", @"
+", Shovel.ShovelValue.Kinds.Integer, (long)7);
+
+			Utils.TestValue(@"
 var h = fn x return 'f' 10
 var g = fn x h(x) + 2
 var f = fn x block 'f' g(x) + 2
 f(1)
-");
-			Assert.AreEqual(10, (long)Shovel.Api.NakedRunVm(sources));
+", Shovel.ShovelValue.Kinds.Integer, (long)10);
 		}
 	}
 }

@@ -37,11 +37,11 @@ namespace Shovel
 
 		internal VmEnvironment Environment { get; set; }
 
-		internal Func<VmApi, object[], int, int, object> HostCallable { get; set; }
+		internal Func<VmApi, ShovelValue[], int, int, ShovelValue> HostCallable { get; set; }
 
 		public static Callable MakeUdp (
 			string name,
-			Func<VmApi, object[], int, int, object> hostCallable,
+			Func<VmApi, ShovelValue[], int, int, ShovelValue> hostCallable,
 			int? arity = null)
 		{
 			return new Callable () 
@@ -54,7 +54,7 @@ namespace Shovel
 
 		internal static Callable MakePrim0 (
 			string name,
-			Func<VmApi, object[], int, int, object> hostCallable,
+			Func<VmApi, ShovelValue[], int, int, ShovelValue> hostCallable,
 			int? arity = 2)
 		{
 			return new Callable () 
@@ -65,26 +65,26 @@ namespace Shovel
 			};
 		}
 
-		public static Func<VmApi, object[], int, int, object> MakeHostCallable (
-			Func<VmApi, object> callable)
+		public static Func<VmApi, ShovelValue[], int, int, ShovelValue> MakeHostCallable (
+			Func<VmApi, ShovelValue> callable)
 		{
 			return (vmapi, args, start, length) => callable (vmapi);
 		}
 
-		public static Func<VmApi, object[], int, int, object> MakeHostCallable (
-			Func<VmApi, object, object> callable)
+		public static Func<VmApi, ShovelValue[], int, int, ShovelValue> MakeHostCallable (
+			Func<VmApi, ShovelValue, ShovelValue> callable)
 		{
 			return (vmapi, args, start, length) => callable (vmapi, args [start]);
 		}
 
-		public static Func<VmApi, object[], int, int, object> MakeHostCallable (
-			Func<VmApi, object, object, object> callable)
+		public static Func<VmApi, ShovelValue[], int, int, ShovelValue> MakeHostCallable (
+			Func<VmApi, ShovelValue, ShovelValue, ShovelValue> callable)
 		{
 			return (vmapi, args, start, length) => callable (vmapi, args [start], args [start + 1]);
 		}
 
-		public static Func<VmApi, object[], int, int, object> MakeHostCallable (
-			Func<VmApi, object, object, object, object> callable)
+		public static Func<VmApi, ShovelValue[], int, int, ShovelValue> MakeHostCallable (
+			Func<VmApi, ShovelValue, ShovelValue, ShovelValue, ShovelValue> callable)
 		{
 			return (vmapi, args, start, length) => callable (vmapi, args [start], args [start + 1], args [start + 2]);
 		}

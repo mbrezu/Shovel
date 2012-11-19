@@ -48,8 +48,13 @@ namespace Shovel
 		public static string PrintAssembledBytecode (List<SourceFile> sources)
 		{
 			var bytecode = Shovel.Api.GetBytecode (sources);
-			var labels = Utils.GetNumericLabels (bytecode);
 			Utils.DecorateByteCode (bytecode, sources);
+			return PrintAssembledBytecode(bytecode);
+		}
+
+		public static string PrintAssembledBytecode(Instruction[] bytecode)
+		{
+			var labels = Utils.GetNumericLabels (bytecode);
 			var sb = new StringBuilder ();
 			for (var i = 0; i < bytecode.Length; i++) {
 				if (labels.Contains (i)) {
@@ -110,7 +115,7 @@ namespace Shovel
 			return MakeSourcesFromIEnumerable (sources);
 		}
 
-		public static object NakedRunVm (List<SourceFile> sources)
+		public static ShovelValue NakedRunVm (List<SourceFile> sources)
 		{
 			var rawBytecode = Utils.GetRawBytecode (sources);
 			var bytecode = Utils.Assemble (rawBytecode);
@@ -118,10 +123,15 @@ namespace Shovel
 			return vm.CheckStackTop ();
 		}
 
-		public static object RunVm (Shovel.Instruction[] bytecode, List<SourceFile> sources)
+		public static ShovelValue RunVm (Shovel.Instruction[] bytecode, List<SourceFile> sources)
 		{
 			var vm = Vm.Vm.RunVm (bytecode, sources);
 			return vm.CheckStackTop ();
+		}
+
+		public static string SideBySide (string str1, string str2, int halfSize = 38)
+		{
+			return Utils.SideBySide(str1, str2, halfSize);
 		}
 
 	}

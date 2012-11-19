@@ -110,6 +110,13 @@ namespace Shovel
 			return BitConverter.ToInt32 (bytes, 0);
 		}
 
+		static long ReadLong(Stream ms)
+		{
+			var bytes = new byte[8];
+			ms.Read (bytes, 0, 8);
+			return BitConverter.ToInt64 (bytes, 0);
+		}
+
 		static internal MemoryStream SerializeBytecode (Instruction[] bytecode)
 		{
 			return SerializeWithMd5CheckSum (str => {
@@ -175,45 +182,44 @@ namespace Shovel
 			}
 		}
 
-		static void WriteConst (Stream stream, object obj)
+		static void WriteConst (Stream stream, ShovelValue sv)
 		{
-			if (obj is string) {
-				stream.WriteByte (1);
-				WriteString (stream, (string)obj);
-			} else if (obj is bool) {
-				stream.WriteByte (2);
-				stream.WriteByte ((byte)((bool)obj ? 1 : 0));
-			} else if (obj is double) {
-				stream.WriteByte (3);
-				WriteBytes (stream, BitConverter.GetBytes ((double)obj));
-			} else if (obj is long) {
-				stream.WriteByte (4);
-				WriteBytes (stream, BitConverter.GetBytes ((long)obj));
+			stream.WriteByte ((byte)sv.Kind);
+			if (sv.Kind == ShovelValue.Kinds.Integer) {
+				WriteBytes (stream, BitConverter.GetBytes (sv.IntegerValue));
+			} else if (sv.Kind == ShovelValue.Kinds.Double) {
+				WriteBytes (stream, BitConverter.GetBytes (sv.IntegerValue));
+			} else if (sv.Kind == ShovelValue.Kinds.String) {
+				WriteString (stream, sv.StringValue);
+			} else if (sv.Kind == ShovelValue.Kinds.Bool) {
+				stream.WriteByte (sv.BoolValue ? (byte)1 : (byte)0);
+			} else if (sv.Kind == ShovelValue.Kinds.Null) {
+				// Do nothing.
 			} else {
 				Utils.Panic ();
 			}
 		}
 
-		static object ReadConst (Stream stream)
+		static ShovelValue ReadConst (Stream stream)
 		{
-			var disc = stream.ReadByte ();
-			if (disc == 1) {
-				return ReadString (stream);
-			} else if (disc == 2) {
-				var byt = stream.ReadByte ();
-				return byt == 1;
-			} else if (disc == 3) {
+			var result = ShovelValue.Make ();
+			result.Kind = (ShovelValue.Kinds)stream.ReadByte ();
+			if (result.Kind == ShovelValue.Kinds.Integer) {
+				result.IntegerValue = ReadLong (stream);
+			} else if (result.Kind == ShovelValue.Kinds.Double) {
 				var bytes = new byte[8];
 				stream.Read (bytes, 0, 8);
-				return BitConverter.ToDouble (bytes, 0);
-			} else if (disc == 4) {
-				var bytes = new byte[8];
-				stream.Read (bytes, 0, 8);
-				return BitConverter.ToInt64 (bytes, 0);
+				result.DoubleValue = BitConverter.ToDouble (bytes, 0);
+			} else if (result.Kind == ShovelValue.Kinds.String) {
+				result.StringValue = ReadString(stream);
+			} else if (result.Kind == ShovelValue.Kinds.Bool) {
+				result.BoolValue = stream.ReadByte() == 1;
+			} else if (result.Kind == ShovelValue.Kinds.Null) {
+				// Do nothing.
 			} else {
 				Utils.Panic ();
-				return null;
 			}
+			return result;
 		}
 
 		static void ReadArguments (Stream s, Instruction instruction)
@@ -301,7 +307,7 @@ namespace Shovel
 				WriteString (stream, (string)instruction.Arguments);
 				break;
 			case Instruction.Opcodes.Const:
-				WriteConst (stream, instruction.Arguments);
+				WriteConst (stream, (ShovelValue)instruction.Arguments);
 				break;
 			case Instruction.Opcodes.Block:
 				WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));

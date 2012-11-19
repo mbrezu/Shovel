@@ -33,48 +33,61 @@ namespace ShovelTests
 		public void ConstInt ()
 		{
 			TestBytecodeSerialization (
-				"test.sho", "1", obj => obj is long && (long)obj == 1);
+				"1", 
+				obj => obj.Kind == Shovel.ShovelValue.Kinds.Integer && obj.IntegerValue == 1);
 		}
 
 		[Test]
 		public void ConstBool ()
 		{
 			TestBytecodeSerialization (
-				"test.sho", "true || false", obj => obj is bool && (bool)obj);
+				"true || false", 
+				obj => obj.Kind == Shovel.ShovelValue.Kinds.Bool && obj.BoolValue);
 		}
 
 		[Test]
 		public void ConstDouble ()
 		{
 			TestBytecodeSerialization (
-				"test.sho", "1.4", obj => obj is double && 1.4 == (double)obj);
+				"1.4", obj => obj.Kind == Shovel.ShovelValue.Kinds.Double && 1.4 == obj.DoubleValue);
 		}
 
 		[Test]
 		public void ConstString ()
 		{
 			TestBytecodeSerialization (
-				"test.sho", "'test'", obj => obj is string && "test" == (string)obj);
+				"'test'", 
+				obj => obj.Kind == Shovel.ShovelValue.Kinds.String && "test" == obj.StringValue);
+		}
+
+		[Test]
+		public void ConstNull ()
+		{
+			TestBytecodeSerialization (
+				"null", 
+				obj => obj.Kind == Shovel.ShovelValue.Kinds.Null);
 		}
 
 		[Test]
 		public void Factorial ()
 		{
 			TestBytecodeSerialization (
-				"test.sho", 
-				Utils.FactorialOfTenProgram(), obj => obj is long && 3628800 == (long)obj);		
+				Utils.FactorialOfTenProgram (), 
+				obj => obj.Kind == Shovel.ShovelValue.Kinds.Integer && (long)3628800 == obj.IntegerValue);
 		}
 
 		[Test]
 		public void Fibonacci ()
 		{
 			TestBytecodeSerialization (
-				"test.sho", 
-				Utils.FibonacciOfTenProgram(), obj => obj is long && 89 == (long)obj);		
+				Utils.FibonacciOfTenProgram (), 
+				obj => obj.Kind == Shovel.ShovelValue.Kinds.Integer && (long)89 == obj.IntegerValue);
 		}
 
-		void TestBytecodeSerialization (string fileName, string program, Func<object, bool> resultChecker)
+		void TestBytecodeSerialization (
+			string program, Func<Shovel.ShovelValue, bool> resultChecker)
 		{
+			var fileName = "test.sho";
 			var sources = Shovel.Api.MakeSources (fileName, program);
 			Console.WriteLine (Shovel.Api.PrintRawBytecode (sources));
 			var bytecode = Shovel.Api.GetBytecode (sources);

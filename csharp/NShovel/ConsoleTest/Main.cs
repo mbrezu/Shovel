@@ -27,48 +27,40 @@ using System.Linq;
 
 namespace ConsoleTest
 {
-    class MainClass
-    {
-        public static void Main (string[] args)
-        {
-            //MasterMindBenchmark();
-            //SimpleTest ();
-            //AnotherSimpleTest();
-			var v1 = Shovel.ShovelValue.Make ();
-			var v2 = Shovel.ShovelValue.Make ();
-			v1.Kind = Shovel.ShovelValue.Kinds.Bool;
-			v1.BoolValue = true;
-			v2.Kind = Shovel.ShovelValue.Kinds.Double;
-			v2.DoubleValue = 1.5;
-			Console.WriteLine(v1.Kind.ToString());
-			Console.WriteLine(v1.BoolValue);
-			Console.WriteLine(v2.Kind.ToString());
-			Console.WriteLine(v2.BoolValue);
-        }
+	class MainClass
+	{
+		public static void Main (string[] args)
+		{
+			MasterMindBenchmark();
+			//SimpleTest ();
+			//AnotherSimpleTest ();
+		}
 
-        public static void SimpleTest()
-        {
-            var sources = Shovel.Api.MakeSources ("test.sho", @"
+		public static void SimpleTest ()
+		{
+			var sources = Shovel.Api.MakeSources ("test.sho", @"
 var adder = fn (n) fn (x) x + n
 var add1 = adder(1)
-add1(3)");
-            Console.WriteLine (Shovel.Api.PrintRawBytecode(sources));
-            Console.WriteLine (Shovel.Api.NakedRunVm(sources));
-        }
+add1(3)"
+			);
+			Console.WriteLine (Shovel.Api.PrintRawBytecode (sources));
+			Console.WriteLine (Shovel.Api.NakedRunVm (sources));
+		}
 
-        public static void AnotherSimpleTest()
-        {
-            var sources = Shovel.Api.MakeSources ("test.sho", @"true || false");
-            Console.WriteLine (Shovel.Api.PrintAssembledBytecode(sources));
-            Console.WriteLine(Shovel.Api.NakedRunVm (sources));
-        }	
+		public static void AnotherSimpleTest ()
+		{
+			var sources = Shovel.Api.MakeSources (
+				"test.sho", 
+				"var a = array(1, 2, 3) a[2] = a stringRepresentation(a)");
+			Console.WriteLine (Shovel.Api.NakedRunVm(sources));
+		}
 
-        public static void MasterMindBenchmark ()
-        {
+		public static void MasterMindBenchmark ()
+		{
 //			var sources = Shovel.Api.MakeSourcesWithStdlib ("qsort", "stdlib.sort(array(1, 5, 3, 4, 2), fn (a, b) a < b)");
-            var sources = Shovel.Api.MakeSourcesWithStdlib ("mmind", Mastermind ());
-            File.WriteAllText ("test.txt", Shovel.Api.PrintAssembledBytecode (sources));
-            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+			var sources = Shovel.Api.MakeSourcesWithStdlib ("mmind", Mastermind ());
+			File.WriteAllText ("test.txt", Shovel.Api.PrintAssembledBytecode (sources));
+			System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch ();
 //			sw.Reset ();
 //			sw.Start ();
 //			for (int i = 0; i < 3000; i ++) {
@@ -76,30 +68,28 @@ add1(3)");
 //			}
 //			sw.Stop ();
 //			Console.WriteLine (sw.ElapsedMilliseconds / 1000.0);
-            var bytecode = Shovel.Api.GetBytecode (sources);
+			var bytecode = Shovel.Api.GetBytecode (sources);
 
-            sw.Reset();
-            sw.Start();
-            var result = Shovel.Api.RunVm(bytecode, sources);
-            sw.Stop();
+			sw.Reset ();
+			sw.Start ();
+			var result = Shovel.Api.RunVm (bytecode, sources);
+			sw.Stop ();
 
-            Console.WriteLine(sw.ElapsedMilliseconds / 1000.0);
+			Console.WriteLine (sw.ElapsedMilliseconds / 1000.0);
 
-            //			var result = Shovel.Api.NakedRunVm (sources);
-            foreach (var k in (List<object>)result)
-            {
-                foreach (var kk in (List<object>)k)
-                {
-                    Console.Write(kk);
-                    Console.Write(" ");
-                }
-                Console.WriteLine();
-            }
-        }
+			//			var result = Shovel.Api.NakedRunVm (sources);
+			foreach (var k in result.ArrayValue) {
+				foreach (var kk in k.ArrayValue) {
+					Console.Write (kk.IntegerValue);
+					Console.Write (" ");
+				}
+				Console.WriteLine ();
+			}
+		}
 
-        static string Mastermind ()
-        {
-            return @"
+		static string Mastermind ()
+		{
+			return @"
     var breakNumber = fn (n) {
       array((n / 1000) % 10,
             (n / 100) % 10,
@@ -152,6 +142,6 @@ add1(3)");
     stdlib.repeat(9, fn() generateOptions())
     slice(generateOptions(), 0, 10)
 ";
-        }
-    }
+		}
+	}
 }

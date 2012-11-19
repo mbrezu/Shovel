@@ -4,40 +4,45 @@ namespace Shovel
 {
 	public class Stack
 	{
-		object[] storage;
+		ShovelValue[] storage;
 		int length;
 
 		public Stack ()
 		{
-			this.storage = new object[1024];
+			this.storage = new ShovelValue[1024];
 		}
 
-		public object Top ()
+		public ShovelValue Top ()
 		{
 			return this.storage [this.length - 1];
 		}
 
-		public object Pop ()
+		public ShovelValue PopTop ()
 		{
 			var result = Top ();
 			this.length --;
 			return result;
 		}
 
-		public void Push (object value)
+		public void Pop()
+		{
+			this.length --;
+		}
+
+		public void Push (ShovelValue value)
 		{
 			if (this.length < this.storage.Length) {
 				this.storage [this.length] = value;
 				this.length++;
 			} else {
-				var newStorage = new object[this.storage.Length * 2];
+				var newStorage = new ShovelValue[this.storage.Length * 2];
 				Array.Copy (this.storage, this.storage, this.length);
 				this.storage = newStorage;
 				this.Push(value);
 			}
 		}
 
-		public void SetTop(object value) 
+		public void SetTop(ShovelValue value) 
 		{
 			this.storage[this.length - 1] = value;
 		}
@@ -46,7 +51,7 @@ namespace Shovel
 			get { return this.length;}
 		}
 
-		public object[] Storage {
+		public ShovelValue[] Storage {
 			get { return this.storage; }
 		}
 
@@ -61,7 +66,7 @@ namespace Shovel
 			this.length -= n;
 		}
 
-		public void GetTopRange(int n, out object[] array, out int start) 
+		public void GetTopRange(int n, out ShovelValue[] array, out int start) 
 		{
 			array = this.storage;
 			start = this.length - n;

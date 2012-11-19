@@ -176,27 +176,27 @@ namespace Shovel.Compiler
 					double doubleResult;
 					long longResult;
 					if (long.TryParse (content, out longResult)) {
-						return longResult;
+						return ShovelValue.MakeInt (longResult);
 					} else if (double.TryParse (content, out doubleResult)) {
-						return doubleResult;
+						return ShovelValue.MakeFloat (doubleResult);
 					}
 				}
 				Utils.Panic ();
 				return null;
 			case ParseTree.Labels.String:
-				return content.Substring (1, content.Length - 2);
+				return ShovelValue.Make (content.Substring (1, content.Length - 2));
 			case ParseTree.Labels.Bool:
 				switch (content) {
 				case "true":
-					return true;
+					return ShovelValue.Make (true);
 				case "false":
-					return false;
+					return ShovelValue.Make (false);
 				default:
 					Utils.Panic ();
 					return null;
 				}
 			case ParseTree.Labels.Void:
-				return null;
+				return ShovelValue.Make ();
 			default:
 				Utils.Panic ();
 				return null;
