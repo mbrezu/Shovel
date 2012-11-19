@@ -65,6 +65,7 @@
     <Compile Include="Vm\Stack.cs" />
     <Compile Include="RawBytecodeOptimizations.cs" />
     <Compile Include="AssembledBytecodeOptimizations.cs" />
+    <Compile Include="ShovelValue.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

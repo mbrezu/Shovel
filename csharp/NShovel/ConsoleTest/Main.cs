@@ -31,9 +31,19 @@ namespace ConsoleTest
     {
         public static void Main (string[] args)
         {
-            MasterMindBenchmark();
+            //MasterMindBenchmark();
             //SimpleTest ();
             //AnotherSimpleTest();
+			var v1 = Shovel.ShovelValue.Make ();
+			var v2 = Shovel.ShovelValue.Make ();
+			v1.Kind = Shovel.ShovelValue.Kinds.Bool;
+			v1.BoolValue = true;
+			v2.Kind = Shovel.ShovelValue.Kinds.Double;
+			v2.DoubleValue = 1.5;
+			Console.WriteLine(v1.Kind.ToString());
+			Console.WriteLine(v1.BoolValue);
+			Console.WriteLine(v2.Kind.ToString());
+			Console.WriteLine(v2.BoolValue);
         }
 
         public static void SimpleTest()
