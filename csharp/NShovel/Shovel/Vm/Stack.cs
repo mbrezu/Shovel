@@ -37,6 +37,11 @@ namespace Shovel
 			}
 		}
 
+		public void SetTop(object value) 
+		{
+			this.storage[this.length - 1] = value;
+		}
+
 		public int Count {
 			get { return this.length;}
 		}

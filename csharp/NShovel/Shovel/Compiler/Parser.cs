@@ -511,7 +511,7 @@ namespace Shovel.Compiler
 			return this.WithNewParseTree (ParseTree.Labels.Call, pt => {
 				this.RequireTokenExactly (Token.Types.Punctuation, "-");
 				pt.Children = new ParseTree[] {
-                    this.MakePrim0ParseTree ("unary-minus"),
+                    this.MakePrim0ParseTree ("unary_minus"),
                     this.ParseMultiplicationTerm ()
                 };
 			}

@@ -139,7 +139,7 @@ add1(3)");
       result
     }
     //length(generateOptions())
-    stdlib.repeat(2, fn() generateOptions())
+    stdlib.repeat(9, fn() generateOptions())
     slice(generateOptions(), 0, 10)
 ";
         }

@@ -352,6 +352,8 @@ namespace ShovelTests
 			Assert.AreEqual (1, (long)result [0]);
 			Assert.AreEqual (2, (long)result [1]);
 			Assert.AreEqual (3, (long)result [2]);
+			sources = Shovel.Api.MakeSources ("test.sho", "var a = array(1, 2, 3, 4) pop(a)");
+			Assert.AreEqual (4, (long)Shovel.Api.NakedRunVm (sources));
 		}
 
 		[Test]
@@ -521,8 +523,6 @@ encodeTime(time)"
 		public void IsCallable ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "isCallable(fn() 1)");
-			Assert.AreEqual (true, (bool)Shovel.Api.NakedRunVm (sources));
-			sources = Shovel.Api.MakeSources ("test.sho", "isCallable(isCallable)");
 			Assert.AreEqual (true, (bool)Shovel.Api.NakedRunVm (sources));
 			sources = Shovel.Api.MakeSources ("test.sho", "isCallable(true)");
 			Assert.AreEqual (false, (bool)Shovel.Api.NakedRunVm (sources));

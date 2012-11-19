@@ -298,6 +298,58 @@ namespace Shovel
                     return 28;
                 case Instruction.Opcodes.GrefDot:
                     return 29;
+                case Instruction.Opcodes.Sub:
+                    return 30;
+                case Instruction.Opcodes.Neg:
+                    return 31;
+                case Instruction.Opcodes.Mul:
+                    return 32;
+                case Instruction.Opcodes.Shl:
+                    return 33;
+                case Instruction.Opcodes.Shr:
+                    return 34;
+                case Instruction.Opcodes.Pow:
+                    return 35;
+                case Instruction.Opcodes.Floor:
+                    return 36;
+                case Instruction.Opcodes.Lte:
+                    return 37;
+                case Instruction.Opcodes.Gt:
+                    return 38;
+                case Instruction.Opcodes.Gte:
+                    return 39;
+                case Instruction.Opcodes.Not:
+                    return 40;
+                case Instruction.Opcodes.And:
+                    return 41;
+                case Instruction.Opcodes.Ior:
+                    return 42;
+                case Instruction.Opcodes.Xor:
+                    return 43;
+                case Instruction.Opcodes.Keys:
+                    return 44;
+                case Instruction.Opcodes.HasKey:
+                    return 45;
+                case Instruction.Opcodes.Apop:
+                    return 46;
+                case Instruction.Opcodes.SetIndexed:
+                    return 47;
+                case Instruction.Opcodes.Len:
+                    return 48;
+                case Instruction.Opcodes.IsString:
+                    return 49;
+                case Instruction.Opcodes.IsHash:
+                    return 50;
+                case Instruction.Opcodes.IsBool:
+                    return 51;
+                case Instruction.Opcodes.IsArray:
+                    return 52;
+                case Instruction.Opcodes.IsNumber:
+                    return 53;
+                case Instruction.Opcodes.IsInteger:
+                    return 54;
+                case Instruction.Opcodes.IsCallable:
+                    return 55;
                 default:
                     Utils.Panic();
                     return 0;

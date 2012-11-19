@@ -37,49 +37,12 @@ namespace Shovel.Vm
 		{
 			var result = new Dictionary<string, Callable> ();
 
-			// Arithmetic operators.
-			AddPrim0 (result, Callable.MakePrim0 ("-", Callable.MakeHostCallable (Subtract)));
-			AddPrim0 (result, Callable.MakePrim0 ("unary-minus", Callable.MakeHostCallable (UnaryMinus), 1));
-			AddPrim0 (result, Callable.MakePrim0 ("*", Callable.MakeHostCallable (Multiply)));
-			AddPrim0 (result, Callable.MakePrim0 ("<<", Callable.MakeHostCallable (ShiftLeft)));
-			AddPrim0 (result, Callable.MakePrim0 (">>", Callable.MakeHostCallable (ShiftRight)));
-			AddPrim0 (result, Callable.MakePrim0 ("pow", Callable.MakeHostCallable (Pow)));
-			AddPrim0 (result, Callable.MakePrim0 ("floor", Callable.MakeHostCallable (Floor), 1));
-
-			// Relational operators.
-			AddPrim0 (result, Callable.MakePrim0 ("<=", LessThanOrEqual));
-			AddPrim0 (result, Callable.MakePrim0 (">", Callable.MakeHostCallable (GreaterThan)));
-			AddPrim0 (result, Callable.MakePrim0 (">=", Callable.MakeHostCallable (GreaterThanOrEqual)));
-
-			// Logic operators.
-			AddPrim0 (result, Callable.MakePrim0 ("!", Callable.MakeHostCallable (LogicalNot), 1));
-
-			// Bitwise operators.
-			AddPrim0 (result, Callable.MakePrim0 ("&", BitwiseAnd));
-			AddPrim0 (result, Callable.MakePrim0 ("|", Callable.MakeHostCallable (BitwiseOr)));
-			AddPrim0 (result, Callable.MakePrim0 ("^", Callable.MakeHostCallable (BitwiseXor)));
-
 			// Hash constructor.
 			AddPrim0 (result, Callable.MakePrim0 ("hash", HashConstructor, null));
-
-			// Hash table has key?
-			AddPrim0 (result, Callable.MakePrim0 ("hasKey", Callable.MakeHostCallable (HasKey)));
-
-			// Keys for hash table.
-			AddPrim0 (result, Callable.MakePrim0 ("keys", Callable.MakeHostCallable (Keys), 1));
 
 			// Array constructors.
 			AddPrim0 (result, Callable.MakePrim0 ("array", ArrayConstructor, null));
 			AddPrim0 (result, Callable.MakePrim0 ("arrayN", Callable.MakeHostCallable (SizedArrayConstructor), 1));
-
-			// Array push and pop.
-			AddPrim0 (result, Callable.MakePrim0 ("pop", ArrayPop, 1));
-
-			// Array and hash set and get.
-			AddPrim0 (result, Callable.MakePrim0 ("svm_set_indexed", Callable.MakeHostCallable (ArrayOrHashSet), 3));
-
-			// String or array length.
-			AddPrim0 (result, Callable.MakePrim0 ("length", Callable.MakeHostCallable (GetLength), 1));
 
 			// String or array slice.
 			AddPrim0 (result, Callable.MakePrim0 ("slice", Callable.MakeHostCallable (GetSlice), 3));
@@ -97,15 +60,6 @@ namespace Shovel.Vm
 			AddPrim0 (result, Callable.MakePrim0 ("decodeTime", Callable.MakeHostCallable (DecodeTime), 1));
 			AddPrim0 (result, Callable.MakePrim0 ("encodeTime", Callable.MakeHostCallable (EncodeTime), 1));
 
-			// Object types.
-			AddPrim0 (result, Callable.MakePrim0 ("isString", Callable.MakeHostCallable (IsString), 1));
-			AddPrim0 (result, Callable.MakePrim0 ("isHash", Callable.MakeHostCallable (IsHash), 1));
-			AddPrim0 (result, Callable.MakePrim0 ("isBool", Callable.MakeHostCallable (IsBool), 1));
-			AddPrim0 (result, Callable.MakePrim0 ("isArray", Callable.MakeHostCallable (IsArray), 1));
-			AddPrim0 (result, Callable.MakePrim0 ("isNumber", Callable.MakeHostCallable (IsNumber), 1));
-			AddPrim0 (result, Callable.MakePrim0 ("isInteger", Callable.MakeHostCallable (IsInteger), 1));
-			AddPrim0 (result, Callable.MakePrim0 ("isCallable", Callable.MakeHostCallable (IsCallable), 1));
-
 			// Stringification.
 			AddPrim0 (result, Callable.MakePrim0 ("string", Callable.MakeHostCallable (ShovelString), 1));
 			AddPrim0 (result, Callable.MakePrim0 (
@@ -122,10 +76,8 @@ namespace Shovel.Vm
 			return result;
 		}
 
-		internal static object Add (VmApi api, object[] args, int start, int length)
+		internal static object Add (VmApi api, object t1, object t2)
 		{
-			object t1 = args [start];
-			object t2 = args [start + 1];
 			if (t1 is string && t2 is string) {
 				return (string)t1 + (string)t2;
 			} else if (t1 is long && t2 is long) {
@@ -155,7 +107,7 @@ namespace Shovel.Vm
 			return (long)obj & limitMask;
 		}
 
-		static object Subtract (VmApi api, object t1, object t2)
+		internal static object Subtract (VmApi api, object t1, object t2)
 		{
 			if (t1 is long && t2 is long) {
 				return Prim0.LimitResult ((long)t1 - (long)t2);
@@ -171,7 +123,7 @@ namespace Shovel.Vm
 			return null;
 		}
 
-		static object UnaryMinus (VmApi api, object t1)
+		internal static object UnaryMinus (VmApi api, object t1)
 		{
 			if (t1 is long) {
 				return -(long)t1;
@@ -183,7 +135,7 @@ namespace Shovel.Vm
 			return null;
 		}
 
-		static object Multiply (VmApi api, object t1, object t2)
+		internal static object Multiply (VmApi api, object t1, object t2)
 		{
 			if (t1 is long && t2 is long) {
 				return Prim0.LimitResult ((long)t1 * (long)t2);
@@ -215,7 +167,7 @@ namespace Shovel.Vm
 			return null;
 		}
 
-		static object ShiftLeft (VmApi api, object t1, object t2)
+		internal static object ShiftLeft (VmApi api, object t1, object t2)
 		{
 			if (t1 is long && t2 is long) {
 				return Prim0.LimitResult ((long)t1 << (int)(long)t2);
@@ -225,7 +177,7 @@ namespace Shovel.Vm
 			return null;
 		}
 
-		static object ShiftRight (VmApi api, object t1, object t2)
+		internal static object ShiftRight (VmApi api, object t1, object t2)
 		{
 			if (t1 is long && t2 is long) {
 				return Prim0.LimitResult ((long)t1 >> (int)(long)t2);
@@ -245,7 +197,7 @@ namespace Shovel.Vm
 			return null;
 		}
 
-		static long Expt (long b, long e)
+		internal static long Expt (long b, long e)
 		{
 			long result = 1;
 			while (e > 0) {
@@ -260,7 +212,7 @@ namespace Shovel.Vm
 			return result;
 		}
 
-		static object Pow (VmApi api, object t1, object t2)
+		internal static object Pow (VmApi api, object t1, object t2)
 		{
 			if (t1 is long && t2 is long) {
 				return Prim0.LimitResult (Expt ((long)t1, (long)t2));
@@ -276,7 +228,7 @@ namespace Shovel.Vm
 			return null;
 		}
 
-		static object Floor (VmApi api, object t1)
+		internal static object Floor (VmApi api, object t1)
 		{
 			if (t1 is double) {
 				return (long)Math.Floor ((double)t1);
@@ -288,10 +240,8 @@ namespace Shovel.Vm
 			return null;
 		}
 
-		internal static object LessThan (VmApi api, object[] args, int start, int length)
+		internal static object LessThan (VmApi api, object t1, object t2)
 		{
-			object t1 = args [start];
-			object t2 = args [start + 1];
 			if (t1 is string && t2 is string) {
 				return ((string)t1).CompareTo ((string)t2) == -1;
 			} else if (t1 is long && t2 is long) {
@@ -309,10 +259,8 @@ namespace Shovel.Vm
 			return null;
 		}
 
-		static object LessThanOrEqual (VmApi api, object[] args, int start, int length)
+		internal static object LessThanOrEqual (VmApi api, object t1, object t2)
 		{
-			object t1 = args [start];
-			object t2 = args [start + 1];
 			if (t1 is string && t2 is string) {
 				var comparison = ((string)t1).CompareTo ((string)t2);
 				return comparison == -1 || comparison == 0;
@@ -331,7 +279,7 @@ namespace Shovel.Vm
 			return null;
 		}
 
-		static object GreaterThan (VmApi api, object t1, object t2)
+		internal static object GreaterThan (VmApi api, object t1, object t2)
 		{
 			if (t1 is string && t2 is string) {
 				return ((string)t1).CompareTo ((string)t2) == 1;
@@ -350,7 +298,7 @@ namespace Shovel.Vm
 			return null;
 		}
 
-		static object GreaterThanOrEqual (VmApi api, object t1, object t2)
+		internal static object GreaterThanOrEqual (VmApi api, object t1, object t2)
 		{
 			if (t1 is string && t2 is string) {
 				var comparison = ((string)t1).CompareTo ((string)t2);
@@ -405,10 +353,8 @@ namespace Shovel.Vm
 			}
 		}
 
-		static object BitwiseAnd (VmApi api, object[] args, int start, int length)
+		internal static object BitwiseAnd (VmApi api, object t1, object t2)
 		{
-			object t1 = args [start];
-			object t2 = args [start + 1];
 			if (t1 is long && t2 is long) {
 				return Prim0.LimitResult ((long)t1 & (long)t2);
 			} else {
@@ -417,7 +363,7 @@ namespace Shovel.Vm
 			return null;
 		}
 
-		static object BitwiseOr (VmApi api, object t1, object t2)
+		internal static object BitwiseOr (VmApi api, object t1, object t2)
 		{
 			if (t1 is long && t2 is long) {
 				return Prim0.LimitResult ((long)t1 | (long)t2);
@@ -427,7 +373,7 @@ namespace Shovel.Vm
 			return null;
 		}
 
-		static object BitwiseXor (VmApi api, object t1, object t2)
+		internal static object BitwiseXor (VmApi api, object t1, object t2)
 		{
 			if (t1 is long && t2 is long) {
 				return Prim0.LimitResult ((long)t1 ^ (long)t2);
@@ -456,7 +402,7 @@ namespace Shovel.Vm
 			return result;
 		}
 
-		static object HasKey (VmApi api, object hash, object key)
+		internal static object HasKey (VmApi api, object hash, object key)
 		{
 			if (!(hash is Dictionary<string, object>)) {
 				api.RaiseShovelError ("First argument must be a hash table.");
@@ -467,7 +413,7 @@ namespace Shovel.Vm
 			return ((Dictionary<string, object>)hash).ContainsKey ((string)key);
 		}
 
-		static object Keys (VmApi api, object hash)
+		internal static object Keys (VmApi api, object hash)
 		{
 			if (!(hash is Dictionary<string, object>)) {
 				api.RaiseShovelError ("First argument must be a hash table.");
@@ -512,9 +458,8 @@ namespace Shovel.Vm
 			return value;
 		}
 
-		static object ArrayPop (VmApi api, object[] args, int start, int length)
+		internal static object ArrayPop (VmApi api, object array)
 		{
-			var array = args [start];
 			CheckVector (api, array);
 			var vector = (List<object>)array;
 			if (vector.Count == 0) {
@@ -525,10 +470,8 @@ namespace Shovel.Vm
 			return result;
 		}
 
-		internal static object ArrayOrHashGet (VmApi api, object[] args, int start, int length)
+		internal static object ArrayOrHashGet (VmApi api, object arrayOrHashOrString, object index)
 		{
-			var arrayOrHashOrString = args [start];
-			var index = args [start + 1];
 			if (arrayOrHashOrString is List<object>) {
 				if (index is long) {
 					var array = (List<object>)arrayOrHashOrString;
@@ -578,7 +521,7 @@ namespace Shovel.Vm
 			return h [k];
 		}
 
-		static object ArrayOrHashSet (VmApi api, object arrayOrHashOrString, object index, object value)
+		internal static object ArrayOrHashSet (VmApi api, object arrayOrHashOrString, object index, object value)
 		{
 			if (arrayOrHashOrString is List<object>) {
 				if (index is long) {
@@ -606,7 +549,7 @@ namespace Shovel.Vm
 			}
 		}
 
-		static object GetLength (VmApi api, object arrayOrString)
+		internal static object GetLength (VmApi api, object arrayOrString)
 		{
 			if (arrayOrString is List<object>) {
 				return (long)((List<object>)arrayOrString).Count;
@@ -785,37 +728,37 @@ namespace Shovel.Vm
 			return (long)(date - unixEpoch).TotalSeconds;
 		}
 
-		static object IsString (VmApi api, object obj)
+		internal static object IsString (VmApi api, object obj)
 		{
 			return obj is string;
 		}
 
-		static object IsHash (VmApi api, object obj)
+		internal static object IsHash (VmApi api, object obj)
 		{
 			return obj is Dictionary<string, object>;
 		}
 
-		static object IsBool (VmApi api, object obj)
+		internal static object IsBool (VmApi api, object obj)
 		{
 			return obj is bool;
 		}
 
-		static object IsArray (VmApi api, object obj)
+		internal static object IsArray (VmApi api, object obj)
 		{
 			return obj is List<object>;
 		}
 
-		static object IsNumber (VmApi api, object obj)
+		internal static object IsNumber (VmApi api, object obj)
 		{
 			return (obj is long) || (obj is double);
 		}
 
-		static object IsInteger (VmApi api, object obj)
+		internal static object IsInteger (VmApi api, object obj)
 		{
 			return obj is long;
 		}
 
-		static object IsCallable (VmApi api, object obj)
+		internal static object IsCallable (VmApi api, object obj)
 		{
 			return obj is Callable;
 		}

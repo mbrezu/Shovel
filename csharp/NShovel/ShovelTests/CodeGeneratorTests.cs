@@ -80,10 +80,7 @@ L3:
     CONST 1
 ;; file 'test.sho' line 5:     else n * fact(n - 1)
 ;; file 'test.sho' line 5:                     ^
-    PRIM0 -
-;; file 'test.sho' line 5:     else n * fact(n - 1)
-;; file 'test.sho' line 5:                   ^^^^^
-    CALL 2
+    SUB
 ;; file 'test.sho' line 5:     else n * fact(n - 1)
 ;; file 'test.sho' line 5:              ^^^^
     LGET 1, 0
@@ -92,10 +89,8 @@ L3:
     CALL 1
 ;; file 'test.sho' line 5:     else n * fact(n - 1)
 ;; file 'test.sho' line 5:            ^
-    PRIM0 *
-;; file 'test.sho' line 5:     else n * fact(n - 1)
-;; file 'test.sho' line 5:          ^^^^^^^^^^^^^^^
-    CALLJ 2
+    MUL
+    RETURN
 L2:
     FN FN1, 1
 ;; file 'test.sho' line 2: var fact = fn (n) { [...content snipped...]
