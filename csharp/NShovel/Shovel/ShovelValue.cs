@@ -22,7 +22,7 @@ namespace Shovel
         }
         ;
 
-        [FieldOffset(16)]
+        [FieldOffset(12)]
         public Kinds Kind;
 
         [FieldOffset(0)]

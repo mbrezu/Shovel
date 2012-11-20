@@ -187,8 +187,7 @@ namespace Shovel.Vm
                             alreadyCompiled = true;
                         }
                     }
-                }
-                else if (instruction.Opcode == Instruction.Opcodes.Args) {
+                } else if (instruction.Opcode == Instruction.Opcodes.Args) {
                     var args = (int)instruction.Arguments;
                     if (args == 1) {
                         runActions [i - this.programCounter] = HandleArgs1;
@@ -200,8 +199,7 @@ namespace Shovel.Vm
                         runActions [i - this.programCounter] = HandleArgs3;
                         alreadyCompiled = true;
                     }
-                }
-                else if (instruction.Opcode == Instruction.Opcodes.Const) {
+                } else if (instruction.Opcode == Instruction.Opcodes.Const) {
                     var args = (ShovelValue)instruction.Arguments;
                     alreadyCompiled = true;
                     runActions [i - this.programCounter] = vm => {
@@ -356,73 +354,71 @@ namespace Shovel.Vm
 
         static void HandleApop (Vm vm)
         {
-            vm.stack.SetTop (Prim0.ArrayPop (vm.api, vm.stack.Storage [vm.stack.Count - 1]));
+            Prim0.ArrayPop (vm.api, ref vm.stack.Storage [vm.stack.Count - 1]);
             vm.programCounter++;
         }
 
         static void HandleLen (Vm vm)
         {
-            vm.stack.SetTop (Prim0.GetLength (vm.api, vm.stack.Storage [vm.stack.Count - 1]));
+            Prim0.GetLength (vm.api, ref vm.stack.Storage [vm.stack.Count - 1]);
             vm.programCounter++;
         }
 
         static void HandleIsString (Vm vm)
         {
-            vm.stack.SetTop (Prim0.IsString (vm.api, vm.stack.Storage [vm.stack.Count - 1]));
+            Prim0.IsString (vm.api, ref vm.stack.Storage [vm.stack.Count - 1]);
             vm.programCounter++;
         }
 
         static void HandleIsHash (Vm vm)
         {
-            vm.stack.SetTop (Prim0.IsHash (vm.api, vm.stack.Storage [vm.stack.Count - 1]));
+            Prim0.IsHash (vm.api, ref vm.stack.Storage [vm.stack.Count - 1]);
             vm.programCounter++;
         }
 
         static void HandleIsBool (Vm vm)
         {
-            vm.stack.SetTop (Prim0.IsBool (vm.api, vm.stack.Storage [vm.stack.Count - 1]));
+            Prim0.IsBool (vm.api, ref vm.stack.Storage [vm.stack.Count - 1]);
             vm.programCounter++;
         }
 
         static void HandleIsArray (Vm vm)
         {
-            vm.stack.SetTop (Prim0.IsArray (vm.api, vm.stack.Storage [vm.stack.Count - 1]));
+            Prim0.IsArray (vm.api, ref vm.stack.Storage [vm.stack.Count - 1]);
             vm.programCounter++;
         }
 
         static void HandleIsNumber (Vm vm)
         {
-            vm.stack.SetTop (Prim0.IsNumber (vm.api, vm.stack.Storage [vm.stack.Count - 1]));
+            Prim0.IsNumber (vm.api, ref vm.stack.Storage [vm.stack.Count - 1]);
             vm.programCounter++;
         }
 
         static void HandleIsInteger (Vm vm)
         {
-            vm.stack.SetTop (Prim0.IsInteger (vm.api, vm.stack.Storage [vm.stack.Count - 1]));
+            Prim0.IsInteger (vm.api, ref vm.stack.Storage [vm.stack.Count - 1]);
             vm.programCounter++;
         }
 
         static void HandleIsCallable (Vm vm)
         {
-            vm.stack.SetTop (Prim0.IsCallable (vm.api, vm.stack.Storage [vm.stack.Count - 1]));
+            Prim0.IsCallable (vm.api, ref vm.stack.Storage [vm.stack.Count - 1]);
             vm.programCounter++;
         }
 
         static void HandleLt (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.LessThan (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.LessThan (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
 
         static void HandleAdd (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.Add (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.Add (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
 
@@ -453,162 +449,147 @@ namespace Shovel.Vm
         static void HandleLte (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.LessThanOrEqual (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.LessThanOrEqual (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
 
         static void HandleGt (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.GreaterThan (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.GreaterThan (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
 
         static void HandleGte (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.GreaterThanOrEqual (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.GreaterThanOrEqual (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
 
         static void HandleApush (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.ArrayPush (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.ArrayPush (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
 
         static void HandleGrefDot (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.HashGetDot (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.HashGetDot (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
 
         static void HandleSub (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.Subtract (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.Subtract (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
 
         static void HandleAnd (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.BitwiseAnd (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.BitwiseAnd (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
 
         static void HandleIor (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.BitwiseOr (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.BitwiseOr (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
 
         static void HandleXor (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.BitwiseXor (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.BitwiseXor (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
 
         static void HandleSetIndexed (Vm vm)
         {
             var start = vm.stack.Count - 3;
-            var result = Prim0.ArrayOrHashSet (vm.api, 
-                                               vm.stack.Storage [start], 
-                                               vm.stack.Storage [start + 1],
-                                               vm.stack.Storage [start + 2]);
+            Prim0.ArrayOrHashSet (vm.api, 
+                                  ref vm.stack.Storage [start], 
+                                  ref vm.stack.Storage [start + 1],
+                                  ref vm.stack.Storage [start + 2]);
             vm.stack.PopMany (2);
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
 
         static void HandleNeg (Vm vm)
         {
-            vm.stack.SetTop (Prim0.UnaryMinus (vm.api, vm.stack.Top ()));
+            Prim0.UnaryMinus (vm.api, ref vm.stack.Storage [vm.stack.Count - 1]);
             vm.programCounter++;
         }
 
         static void HandleNot (Vm vm)
         {
-            vm.stack.SetTop (Prim0.LogicalNot (vm.api, vm.stack.Top ()));
+            Prim0.LogicalNot (vm.api, ref vm.stack.Storage [vm.stack.Count - 1]);
             vm.programCounter++;
         }
 
         static void HandleKeys (Vm vm)
         {
-            vm.stack.SetTop (Prim0.Keys (vm.api, vm.stack.Top ()));
+            Prim0.Keys (vm.api, ref vm.stack.Storage [vm.stack.Count - 1]);
             vm.programCounter++;
         }
 
         static void HandleMul (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.Multiply (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.Multiply (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
 
         static void HandleHasKey (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.HasKey (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.HasKey (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
 
         static void HandleShl (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.ShiftLeft (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.ShiftLeft (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
 
         static void HandleShr (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.ShiftRight (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.ShiftRight (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
 
         static void HandlePow (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.Pow (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.Pow (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
 
         static void HandleFloor (Vm vm)
         {
-            vm.stack.SetTop (Prim0.Floor (vm.api, vm.stack.Top ()));
+            Prim0.Floor (vm.api, ref vm.stack.Storage [vm.stack.Count - 1]);
             vm.programCounter++;
         }
 

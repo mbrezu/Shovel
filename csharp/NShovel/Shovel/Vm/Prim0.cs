@@ -76,108 +76,183 @@ namespace Shovel.Vm
             return result;
         }
 
-        internal static ShovelValue Add (VmApi api, ShovelValue t1, ShovelValue t2)
+        static void AddError (VmApi api)
         {
-            if (t1.Kind == ShovelValue.Kinds.String && t2.Kind == ShovelValue.Kinds.String) {
-                return ShovelValue.Make (t1.StringValue + t2.StringValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.MakeInt (t1.IntegerValue + t2.IntegerValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Double) {
-                return ShovelValue.MakeFloat (t1.DoubleValue + t2.DoubleValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.MakeFloat (t1.DoubleValue + t2.IntegerValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Double) {
-                return ShovelValue.MakeFloat (t1.IntegerValue + t2.DoubleValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Array && t2.Kind == ShovelValue.Kinds.Array) {
-                var result = new List<ShovelValue> ();
-                result.AddRange (t1.ArrayValue);
-                result.AddRange (t2.ArrayValue);
-                return ShovelValue.Make (result);
-            } else {
-                api.RaiseShovelError (
+            api.RaiseShovelError (
                     "Arguments must have the same type (numbers or strings or arrays).");
-            }
-            throw new InvalidOperationException ();
         }
 
-        internal static ShovelValue Subtract (VmApi api, ShovelValue t1, ShovelValue t2)
+        internal static void Add (VmApi api, ref ShovelValue t1, ref ShovelValue t2)
         {
-            if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.MakeInt (t1.IntegerValue - t2.IntegerValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Double) {
-                return ShovelValue.MakeFloat (t1.DoubleValue - t2.DoubleValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.MakeFloat (t1.DoubleValue - t2.IntegerValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Double) {
-                return ShovelValue.MakeFloat (t1.IntegerValue - t2.DoubleValue);
-            } else {
-                api.RaiseShovelError ("Both arguments must be numbers.");
+            switch (t1.Kind) {
+            case ShovelValue.Kinds.Integer:
+                switch (t2.Kind) {
+                case ShovelValue.Kinds.Integer:
+                    t1.Kind = ShovelValue.Kinds.Integer;
+                    t1.IntegerValue = t1.IntegerValue + t2.IntegerValue;
+                    break;
+                case ShovelValue.Kinds.Double:
+                    t1.Kind = ShovelValue.Kinds.Double;
+                    t1.DoubleValue = t1.IntegerValue + t2.DoubleValue;
+                    break;
+                default:
+                    AddError (api);
+                    break;
+                }
+                break;
+            case ShovelValue.Kinds.Double:
+                switch (t2.Kind) {
+                case ShovelValue.Kinds.Integer:
+                    t1.Kind = ShovelValue.Kinds.Double;
+                    t1.DoubleValue = t1.DoubleValue + t2.IntegerValue;
+                    break;
+                case ShovelValue.Kinds.Double:
+                    t1.Kind = ShovelValue.Kinds.Double;
+                    t1.DoubleValue = t1.DoubleValue + t2.DoubleValue;
+                    break;
+                default:
+                    AddError (api);
+                    break;
+                }
+                break;
+            case ShovelValue.Kinds.String:
+                if (t2.Kind == ShovelValue.Kinds.String) {
+                    t1.Kind = ShovelValue.Kinds.String;
+                    t1.StringValue = t1.StringValue + t2.StringValue;
+                } else {
+                    AddError (api);
+                }
+                break;
+            case ShovelValue.Kinds.Array:
+                if (t2.Kind == ShovelValue.Kinds.Array) {
+                    var result = new List<ShovelValue> ();
+                    result.AddRange (t1.ArrayValue);
+                    result.AddRange (t2.ArrayValue);
+                    t1.Kind = ShovelValue.Kinds.Array;
+                    t1.ArrayValue = result;
+                } else {
+                    AddError (api);
+                }
+                break;
+            default:
+                AddError (api);
+                break;
             }
-            throw new InvalidOperationException ();
         }
 
-        internal static ShovelValue UnaryMinus (VmApi api, ShovelValue t1)
+        static void BothNumbersError (VmApi api)
+        {
+            api.RaiseShovelError ("Both arguments must be numbers.");
+        }
+
+        internal static void Subtract (VmApi api, ref ShovelValue t1, ref ShovelValue t2)
         {
             if (t1.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.MakeInt (-t1.IntegerValue);
+                if (t2.Kind == ShovelValue.Kinds.Integer) {
+                    t1.Kind = ShovelValue.Kinds.Integer;
+                    t1.IntegerValue = t1.IntegerValue - t2.IntegerValue;
+                } else if (t2.Kind == ShovelValue.Kinds.Double) {
+                    t1.Kind = ShovelValue.Kinds.Double;
+                    t1.DoubleValue = t1.IntegerValue - t2.DoubleValue;
+                } else {
+                    BothNumbersError (api);
+                }
             } else if (t1.Kind == ShovelValue.Kinds.Double) {
-                return ShovelValue.MakeFloat (-t1.DoubleValue);
+                if (t2.Kind == ShovelValue.Kinds.Double) {
+                    t1.Kind = ShovelValue.Kinds.Double;
+                    t1.DoubleValue = t1.DoubleValue - t2.DoubleValue;
+                } else if (t2.Kind == ShovelValue.Kinds.Integer) {
+                    t1.Kind = ShovelValue.Kinds.Double;
+                    t1.DoubleValue = t1.DoubleValue - t2.IntegerValue;
+                } else {
+                    BothNumbersError (api);
+                }
+            } else {
+                BothNumbersError (api);
+            }
+        }
+
+        internal static void UnaryMinus (VmApi api, ref ShovelValue t1)
+        {
+            if (t1.Kind == ShovelValue.Kinds.Integer) {
+                t1.IntegerValue = -t1.IntegerValue;
+            } else if (t1.Kind == ShovelValue.Kinds.Double) {
+                t1.DoubleValue = -t1.DoubleValue;
             } else {
                 api.RaiseShovelError ("Argument must be number.");
             }
-            throw new InvalidOperationException ();
         }
 
-        internal static ShovelValue Multiply (VmApi api, ShovelValue t1, ShovelValue t2)
+        internal static void Multiply (VmApi api, ref ShovelValue t1, ref ShovelValue t2)
         {
-            if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.MakeInt (t1.IntegerValue * t2.IntegerValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Double) {
-                return ShovelValue.MakeFloat (t1.DoubleValue * t2.DoubleValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.MakeFloat (t1.DoubleValue * t2.IntegerValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Double) {
-                return ShovelValue.MakeFloat (t1.IntegerValue * t2.DoubleValue);
+            if (t1.Kind == ShovelValue.Kinds.Integer) {
+                if (t2.Kind == ShovelValue.Kinds.Integer) {
+                    t1.Kind = ShovelValue.Kinds.Integer;
+                    t1.IntegerValue = t1.IntegerValue * t2.IntegerValue;
+                } else if (t2.Kind == ShovelValue.Kinds.Double) {
+                    t1.Kind = ShovelValue.Kinds.Double;
+                    t1.DoubleValue = t1.IntegerValue * t2.DoubleValue;
+                } else {
+                    BothNumbersError (api);
+                }
+            } else if (t1.Kind == ShovelValue.Kinds.Double) {
+                if (t2.Kind == ShovelValue.Kinds.Double) {
+                    t1.Kind = ShovelValue.Kinds.Double;
+                    t1.DoubleValue = t1.DoubleValue * t2.DoubleValue;
+                } else if (t2.Kind == ShovelValue.Kinds.Integer) {
+                    t1.Kind = ShovelValue.Kinds.Double;
+                    t1.DoubleValue = t1.DoubleValue * t2.IntegerValue;
+                } else {
+                    BothNumbersError (api);
+                }
             } else {
-                api.RaiseShovelError ("Both arguments must be numbers.");
+                BothNumbersError (api);
             }
-            throw new InvalidOperationException ();
         }
 
         internal static void Divide (VmApi api, ref ShovelValue t1, ref ShovelValue t2)
         {
-            if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-                t1.IntegerValue = t1.IntegerValue / t2.IntegerValue;
-            } else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Double) {
-                t1.DoubleValue = t1.DoubleValue / t2.DoubleValue;
-            } else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Integer) {
-                t1.DoubleValue = t1.DoubleValue / t2.IntegerValue;
-            } else if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Double) {
-                t1.Kind = ShovelValue.Kinds.Double;
-                t1.DoubleValue = t1.IntegerValue / t2.DoubleValue;
+            if (t1.Kind == ShovelValue.Kinds.Integer) {
+                if (t2.Kind == ShovelValue.Kinds.Integer) {
+                    t1.Kind = ShovelValue.Kinds.Integer;
+                    t1.IntegerValue = t1.IntegerValue / t2.IntegerValue;
+                } else if (t2.Kind == ShovelValue.Kinds.Double) {
+                    t1.Kind = ShovelValue.Kinds.Double;
+                    t1.DoubleValue = t1.IntegerValue / t2.DoubleValue;
+                } else {
+                    BothNumbersError (api);
+                }
+            } else if (t1.Kind == ShovelValue.Kinds.Double) {
+                if (t2.Kind == ShovelValue.Kinds.Double) {
+                    t1.Kind = ShovelValue.Kinds.Double;
+                    t1.DoubleValue = t1.DoubleValue / t2.DoubleValue;
+                } else if (t2.Kind == ShovelValue.Kinds.Integer) {
+                    t1.Kind = ShovelValue.Kinds.Double;
+                    t1.DoubleValue = t1.DoubleValue / t2.IntegerValue;
+                } else {
+                    BothNumbersError (api);
+                }
             } else {
-                api.RaiseShovelError ("Both arguments must be numbers.");
+                BothNumbersError (api);
             }
         }
 
-        internal static ShovelValue ShiftLeft (VmApi api, ShovelValue t1, ShovelValue t2)
+        internal static void ShiftLeft (VmApi api, ref ShovelValue t1, ref ShovelValue t2)
         {
             if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.MakeInt (t1.IntegerValue << (int)t2.IntegerValue);
+                t1.IntegerValue = t1.IntegerValue << (int)t2.IntegerValue;
             } else {
                 api.RaiseShovelError ("Both arguments must be integers.");
             }
-            throw new InvalidOperationException ();
         }
 
-        internal static ShovelValue ShiftRight (VmApi api, ShovelValue t1, ShovelValue t2)
+        internal static void ShiftRight (VmApi api, ref ShovelValue t1, ref ShovelValue t2)
         {
             if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.MakeInt (t1.IntegerValue >> (int)t2.IntegerValue);
+                t1.IntegerValue = t1.IntegerValue >> (int)t2.IntegerValue;
             } else {
                 api.RaiseShovelError ("Both arguments must be integers.");
             }
-            throw new InvalidOperationException ();
         }
 
         internal static void Modulo (VmApi api, ref ShovelValue t1, ref ShovelValue t2)
@@ -204,32 +279,42 @@ namespace Shovel.Vm
             return result;
         }
 
-        internal static ShovelValue Pow (VmApi api, ShovelValue t1, ShovelValue t2)
+        internal static void Pow (VmApi api, ref ShovelValue t1, ref ShovelValue t2)
         {
-            if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.MakeInt (Expt (t1.IntegerValue, t2.IntegerValue));
-            } else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Double) {
-                return ShovelValue.MakeFloat (Math.Pow (t1.DoubleValue, t2.DoubleValue));
-            } else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.MakeFloat (Math.Pow (t1.DoubleValue, t2.IntegerValue));
-            } else if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Double) {
-                return ShovelValue.MakeFloat (Math.Pow (t1.IntegerValue, t2.DoubleValue));
+            if (t1.Kind == ShovelValue.Kinds.Integer) {
+                if (t2.Kind == ShovelValue.Kinds.Integer) {
+                    t1.Kind = ShovelValue.Kinds.Integer;
+                    t1.IntegerValue = Expt (t1.IntegerValue, t2.IntegerValue);
+                } else if (t2.Kind == ShovelValue.Kinds.Double) {
+                    t1.Kind = ShovelValue.Kinds.Double;
+                    t1.DoubleValue = Math.Pow (t1.IntegerValue, t2.DoubleValue);
+                } else {
+                    BothNumbersError (api);
+                }
+            } else if (t1.Kind == ShovelValue.Kinds.Double) {
+                if (t2.Kind == ShovelValue.Kinds.Double) {
+                    t1.Kind = ShovelValue.Kinds.Double;
+                    t1.DoubleValue = Math.Pow (t1.DoubleValue, t2.DoubleValue);
+                } else if (t2.Kind == ShovelValue.Kinds.Integer) {
+                    t1.Kind = ShovelValue.Kinds.Double;
+                    t1.DoubleValue = Math.Pow (t1.DoubleValue, t2.IntegerValue);
+                } else {
+                    BothNumbersError (api);
+                }
             } else {
-                api.RaiseShovelError ("Both arguments must be numbers.");
+                BothNumbersError (api);
             }
-            throw new InvalidOperationException ();
         }
 
-        internal static ShovelValue Floor (VmApi api, ShovelValue t1)
+        internal static void Floor (VmApi api, ref ShovelValue t1)
         {
             if (t1.Kind == ShovelValue.Kinds.Double) {
-                return ShovelValue.MakeInt ((long)Math.Floor (t1.DoubleValue));
+                t1.Kind = ShovelValue.Kinds.Integer;
+                t1.IntegerValue = (long)Math.Floor (t1.DoubleValue);
             } else if (t1.Kind == ShovelValue.Kinds.Integer) {
-                return t1;
             } else {
                 api.RaiseShovelError ("Argument must be number.");
             }
-            throw new InvalidOperationException ();
         }
 
         internal static int CompareStrings (string s1, string s2)
@@ -247,83 +332,141 @@ namespace Shovel.Vm
             }
         }
 
-        internal static ShovelValue LessThan (VmApi api, ShovelValue t1, ShovelValue t2)
+        static void LessThanError (VmApi api)
         {
-            if (t1.Kind == ShovelValue.Kinds.String && t2.Kind == ShovelValue.Kinds.String) {
-                return ShovelValue.Make (CompareStrings (t1.StringValue, t2.StringValue) == -1);
-            } else if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.Make (t1.IntegerValue < t2.IntegerValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Double) {
-                return ShovelValue.Make (t1.DoubleValue < t2.DoubleValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.Make (t1.DoubleValue < t2.IntegerValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Double) {
-                return ShovelValue.Make (t1.IntegerValue < t2.DoubleValue);
-            } else {
-                api.RaiseShovelError (
-                    "Arguments must have the same type (numbers or strings).");
-            }
-            throw new InvalidOperationException ();
+            api.RaiseShovelError (
+                "Arguments must have the same type (numbers or strings).");
         }
 
-        internal static ShovelValue LessThanOrEqual (VmApi api, ShovelValue t1, ShovelValue t2)
+        internal static void LessThan (VmApi api, ref ShovelValue t1, ref ShovelValue t2)
         {
-            if (t1.Kind == ShovelValue.Kinds.String && t2.Kind == ShovelValue.Kinds.String) {
-                int comparison = CompareStrings (t1.StringValue, t2.StringValue);
-                return ShovelValue.Make (comparison == -1 || comparison == 0);
-            } else if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.Make (t1.IntegerValue <= t2.IntegerValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Double) {
-                return ShovelValue.Make (t1.DoubleValue <= t2.DoubleValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.Make (t1.DoubleValue <= t2.IntegerValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Double) {
-                return ShovelValue.Make (t1.IntegerValue <= t2.DoubleValue);
-            } else {
-                api.RaiseShovelError (
-                    "Arguments must have the same type (numbers or strings).");
+            switch (t1.Kind) {
+            case ShovelValue.Kinds.Integer:
+                if (t2.Kind == ShovelValue.Kinds.Integer) {
+                    t1.BoolValue = t1.IntegerValue < t2.IntegerValue;
+                } else if (t2.Kind == ShovelValue.Kinds.Double) {
+                    t1.BoolValue = t1.IntegerValue < t2.DoubleValue;
+                } else {
+                    LessThanError (api);
+                }
+                break;
+            case ShovelValue.Kinds.String:
+                if (t2.Kind == ShovelValue.Kinds.String) {
+                    t1.BoolValue = CompareStrings (t1.StringValue, t2.StringValue) == -1;
+                } else {
+                    LessThanError (api);
+                }
+                break;
+            case ShovelValue.Kinds.Double:
+                if (t2.Kind == ShovelValue.Kinds.Double) {
+                    t1.BoolValue = t1.DoubleValue < t2.DoubleValue;
+                } else if (t2.Kind == ShovelValue.Kinds.Integer) {
+                    t1.BoolValue = t1.DoubleValue < t2.IntegerValue;
+                } else {
+                    LessThanError (api);
+                }
+                break;
             }
-            throw new InvalidOperationException ();
+            t1.Kind = ShovelValue.Kinds.Bool;
         }
 
-        internal static ShovelValue GreaterThan (VmApi api, ShovelValue t1, ShovelValue t2)
+        internal static void LessThanOrEqual (VmApi api, ref ShovelValue t1, ref ShovelValue t2)
         {
-            if (t1.Kind == ShovelValue.Kinds.String && t2.Kind == ShovelValue.Kinds.String) {
-                int comparison = CompareStrings (t1.StringValue, t2.StringValue);
-                return ShovelValue.Make (comparison == 1);
-            } else if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.Make (t1.IntegerValue > t2.IntegerValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Double) {
-                return ShovelValue.Make (t1.DoubleValue > t2.DoubleValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.Make (t1.DoubleValue > t2.IntegerValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Double) {
-                return ShovelValue.Make (t1.IntegerValue > t2.DoubleValue);
-            } else {
-                api.RaiseShovelError (
-                    "Arguments must have the same type (numbers or strings).");
+            switch (t1.Kind) {
+            case ShovelValue.Kinds.Integer:
+                if (t2.Kind == ShovelValue.Kinds.Integer) {
+                    t1.BoolValue = t1.IntegerValue <= t2.IntegerValue;
+                } else if (t2.Kind == ShovelValue.Kinds.Double) {
+                    t1.BoolValue = t1.IntegerValue <= t2.DoubleValue;
+                } else {
+                    LessThanError (api);
+                }
+                break;
+            case ShovelValue.Kinds.String:
+                if (t2.Kind == ShovelValue.Kinds.String) {
+                    var comparison = CompareStrings (t1.StringValue, t2.StringValue);
+                    t1.BoolValue = comparison == -1 || comparison == 0;
+                } else {
+                    LessThanError (api);
+                }
+                break;
+            case ShovelValue.Kinds.Double:
+                if (t2.Kind == ShovelValue.Kinds.Double) {
+                    t1.BoolValue = t1.DoubleValue <= t2.DoubleValue;
+                } else if (t2.Kind == ShovelValue.Kinds.Integer) {
+                    t1.BoolValue = t1.DoubleValue <= t2.IntegerValue;
+                } else {
+                    LessThanError (api);
+                }
+                break;
             }
-            throw new InvalidOperationException ();
+            t1.Kind = ShovelValue.Kinds.Bool;
         }
 
-        internal static ShovelValue GreaterThanOrEqual (VmApi api, ShovelValue t1, ShovelValue t2)
+        internal static void GreaterThan (VmApi api, ref ShovelValue t1, ref ShovelValue t2)
         {
-            if (t1.Kind == ShovelValue.Kinds.String && t2.Kind == ShovelValue.Kinds.String) {
-                int comparison = CompareStrings (t1.StringValue, t2.StringValue);
-                return ShovelValue.Make (comparison == 1 || comparison == 0);
-            } else if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.Make (t1.IntegerValue >= t2.IntegerValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Double) {
-                return ShovelValue.Make (t1.DoubleValue >= t2.DoubleValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.Make (t1.DoubleValue >= t2.IntegerValue);
-            } else if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Double) {
-                return ShovelValue.Make (t1.IntegerValue >= t2.DoubleValue);
-            } else {
-                api.RaiseShovelError (
-                    "Arguments must have the same type (numbers or strings).");
+            switch (t1.Kind) {
+            case ShovelValue.Kinds.Integer:
+                if (t2.Kind == ShovelValue.Kinds.Integer) {
+                    t1.BoolValue = t1.IntegerValue > t2.IntegerValue;
+                } else if (t2.Kind == ShovelValue.Kinds.Double) {
+                    t1.BoolValue = t1.IntegerValue > t2.DoubleValue;
+                } else {
+                    LessThanError (api);
+                }
+                break;
+            case ShovelValue.Kinds.String:
+                if (t2.Kind == ShovelValue.Kinds.String) {
+                    var comparison = CompareStrings (t1.StringValue, t2.StringValue);
+                    t1.BoolValue = comparison == 1;
+                } else {
+                    LessThanError (api);
+                }
+                break;
+            case ShovelValue.Kinds.Double:
+                if (t2.Kind == ShovelValue.Kinds.Double) {
+                    t1.BoolValue = t1.DoubleValue > t2.DoubleValue;
+                } else if (t2.Kind == ShovelValue.Kinds.Integer) {
+                    t1.BoolValue = t1.DoubleValue > t2.IntegerValue;
+                } else {
+                    LessThanError (api);
+                }
+                break;
             }
-            throw new InvalidOperationException ();
+            t1.Kind = ShovelValue.Kinds.Bool;
+        }
+
+        internal static void GreaterThanOrEqual (VmApi api, ref ShovelValue t1, ref ShovelValue t2)
+        {
+            switch (t1.Kind) {
+            case ShovelValue.Kinds.Integer:
+                if (t2.Kind == ShovelValue.Kinds.Integer) {
+                    t1.BoolValue = t1.IntegerValue >= t2.IntegerValue;
+                } else if (t2.Kind == ShovelValue.Kinds.Double) {
+                    t1.BoolValue = t1.IntegerValue >= t2.DoubleValue;
+                } else {
+                    LessThanError (api);
+                }
+                break;
+            case ShovelValue.Kinds.String:
+                if (t2.Kind == ShovelValue.Kinds.String) {
+                    var comparison = CompareStrings (t1.StringValue, t2.StringValue);
+                    t1.BoolValue = comparison == 1 || comparison == 0;
+                } else {
+                    LessThanError (api);
+                }
+                break;
+            case ShovelValue.Kinds.Double:
+                if (t2.Kind == ShovelValue.Kinds.Double) {
+                    t1.BoolValue = t1.DoubleValue >= t2.DoubleValue;
+                } else if (t2.Kind == ShovelValue.Kinds.Integer) {
+                    t1.BoolValue = t1.DoubleValue >= t2.IntegerValue;
+                } else {
+                    LessThanError (api);
+                }
+                break;
+            }
+            t1.Kind = ShovelValue.Kinds.Bool;
         }
 
         static void AreEqualError (VmApi api)
@@ -372,7 +515,7 @@ namespace Shovel.Vm
                 }
                 break;
             default:
-                AreEqualError(api);
+                AreEqualError (api);
                 break;
             }
             t1.Kind = ShovelValue.Kinds.Bool;
@@ -384,44 +527,40 @@ namespace Shovel.Vm
             t1.BoolValue = !t1.BoolValue;
         }
 
-        internal static ShovelValue LogicalNot (VmApi api, ShovelValue argument)
+        internal static void LogicalNot (VmApi api, ref ShovelValue argument)
         {
             if (argument.Kind == ShovelValue.Kinds.Bool) {
-                return ShovelValue.Make (!argument.BoolValue);
+                argument.BoolValue = !argument.BoolValue;
             } else {
                 api.RaiseShovelError ("Argument must be boolean.");
-                throw new InvalidOperationException ();
             }
         }
 
-        internal static ShovelValue BitwiseAnd (VmApi api, ShovelValue t1, ShovelValue t2)
+        internal static void BitwiseAnd (VmApi api, ref ShovelValue t1, ref ShovelValue t2)
         {
             if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.MakeInt (t1.IntegerValue & t2.IntegerValue);
+                t1.IntegerValue = t1.IntegerValue & t2.IntegerValue;
             } else {
                 api.RaiseShovelError ("Both arguments must be integers.");
             }
-            throw new InvalidOperationException ();
         }
 
-        internal static ShovelValue BitwiseOr (VmApi api, ShovelValue t1, ShovelValue t2)
+        internal static void BitwiseOr (VmApi api, ref ShovelValue t1, ref ShovelValue t2)
         {
             if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.MakeInt (t1.IntegerValue | t2.IntegerValue);
+                t1.IntegerValue = t1.IntegerValue | t2.IntegerValue;
             } else {
                 api.RaiseShovelError ("Both arguments must be integers.");
             }
-            throw new InvalidOperationException ();
         }
 
-        internal static ShovelValue BitwiseXor (VmApi api, ShovelValue t1, ShovelValue t2)
+        internal static void BitwiseXor (VmApi api, ref ShovelValue t1, ref ShovelValue t2)
         {
             if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-                return ShovelValue.MakeInt (t1.IntegerValue ^ t2.IntegerValue);
+                t1.IntegerValue = t1.IntegerValue ^ t2.IntegerValue;
             } else {
                 api.RaiseShovelError ("Both arguments must be integers.");
             }
-            throw new InvalidOperationException ();
         }
 
         static ShovelValue HashConstructor (VmApi api, ShovelValue[] args, int start, int length)
@@ -443,7 +582,7 @@ namespace Shovel.Vm
             return ShovelValue.Make (result);
         }
 
-        internal static ShovelValue HasKey (VmApi api, ShovelValue hash, ShovelValue key)
+        internal static void HasKey (VmApi api, ref ShovelValue hash, ref ShovelValue key)
         {
             if (hash.Kind != ShovelValue.Kinds.Hash) {
                 api.RaiseShovelError ("First argument must be a hash table.");
@@ -451,17 +590,19 @@ namespace Shovel.Vm
             if (key.Kind != ShovelValue.Kinds.String) {
                 api.RaiseShovelError ("Second argument must be a string.");
             }
-            return ShovelValue.Make (hash.HashValue.ContainsKey (key));
+            hash.BoolValue = hash.HashValue.ContainsKey (key);
+            hash.Kind = ShovelValue.Kinds.Bool;
         }
 
-        internal static ShovelValue Keys (VmApi api, ShovelValue hash)
+        internal static void Keys (VmApi api, ref ShovelValue hash)
         {
             if (hash.Kind != ShovelValue.Kinds.Hash) {
                 api.RaiseShovelError ("First argument must be a hash table.");
             }
             var result = new List<ShovelValue> ();
             result.AddRange (hash.HashValue.Keys);
-            return ShovelValue.Make (result);
+            hash.ArrayValue = result;
+            hash.Kind = ShovelValue.Kinds.Array;
         }
 
         static ShovelValue ArrayConstructor (VmApi api, ShovelValue[] args, int start, int length)
@@ -485,30 +626,29 @@ namespace Shovel.Vm
             return ShovelValue.Make (result);
         }
 
-        static void CheckVector (VmApi api, ShovelValue vector)
+        static void CheckVector (VmApi api, ref ShovelValue vector)
         {
             if (vector.Kind != ShovelValue.Kinds.Array) {
                 api.RaiseShovelError ("First argument must be a vector.");
             }
         }
 
-        internal static ShovelValue ArrayPush (VmApi api, ShovelValue array, ShovelValue value)
+        internal static void ArrayPush (VmApi api, ref ShovelValue array, ref ShovelValue value)
         {
-            CheckVector (api, array);
+            CheckVector (api, ref array);
             array.ArrayValue.Add (value);
-            return value;
+            array = value;
         }
 
-        internal static ShovelValue ArrayPop (VmApi api, ShovelValue array)
+        internal static void ArrayPop (VmApi api, ref ShovelValue array)
         {
-            CheckVector (api, array);
+            CheckVector (api, ref array);
             var vector = array.ArrayValue;
             if (vector.Count == 0) {
                 api.RaiseShovelError ("Can't pop from an empty array.");
             }
-            var result = vector [vector.Count - 1];
+            array = vector [vector.Count - 1];
             vector.RemoveAt (vector.Count - 1);
-            return result;
         }
 
         internal static void ArrayOrHashGet 
@@ -538,7 +678,7 @@ namespace Shovel.Vm
             }
         }
 
-        internal static ShovelValue HashGetDot (VmApi api, ShovelValue hash, ShovelValue index)
+        internal static void HashGetDot (VmApi api, ref ShovelValue hash, ref ShovelValue index)
         {
             if (hash.Kind != ShovelValue.Kinds.Hash) {
                 api.RaiseShovelError ("First argument must be a hash table.");
@@ -549,40 +689,41 @@ namespace Shovel.Vm
             if (!hash.HashValue.ContainsKey (index)) {
                 api.RaiseShovelError ("Key not found in hash table.");
             }
-            return hash.HashValue [index];
+            hash = hash.HashValue [index];
         }
 
-        internal static ShovelValue ArrayOrHashSet (VmApi api, ShovelValue arrayOrHashOrString, ShovelValue index, ShovelValue value)
+        internal static void ArrayOrHashSet (
+            VmApi api, ref ShovelValue arrayOrHashOrString, ref ShovelValue index, ref ShovelValue value)
         {
             if (arrayOrHashOrString.Kind == ShovelValue.Kinds.Array) {
                 if (index.Kind == ShovelValue.Kinds.Integer) {
                     arrayOrHashOrString.ArrayValue [(int)index.IntegerValue] = value;
-                    return value;
+                    arrayOrHashOrString = value;
                 } else {
                     api.RaiseShovelError ("Setting an array element requires an integer index.");
                 }
             } else if (arrayOrHashOrString.Kind == ShovelValue.Kinds.Hash) {
                 if (index.Kind == ShovelValue.Kinds.String) {
                     arrayOrHashOrString.HashValue [index] = value;
-                    return value;
+                    arrayOrHashOrString = value;
                 } else {
                     api.RaiseShovelError ("Setting a hash table value requires a key that is a string.");
                 }
             } else {
                 api.RaiseShovelError ("First argument must be a hash or an array.");
             }
-            throw new InvalidOperationException ();
         }
 
-        internal static ShovelValue GetLength (VmApi api, ShovelValue arrayOrString)
+        internal static void GetLength (VmApi api, ref ShovelValue arrayOrString)
         {
             if (arrayOrString.Kind == ShovelValue.Kinds.Array) {
-                return ShovelValue.MakeInt (arrayOrString.ArrayValue.Count);
+                arrayOrString.Kind = ShovelValue.Kinds.Integer;
+                arrayOrString.IntegerValue = arrayOrString.ArrayValue.Count;
             } else if (arrayOrString.Kind == ShovelValue.Kinds.String) {
-                return ShovelValue.MakeInt ((long)arrayOrString.StringValue.Length);
+                arrayOrString.Kind = ShovelValue.Kinds.Integer;
+                arrayOrString.IntegerValue = (long)arrayOrString.StringValue.Length;
             } else {
                 api.RaiseShovelError ("Argument must be a string or an array.");
-                throw new InvalidOperationException ();
             }
         }
 
@@ -761,39 +902,47 @@ namespace Shovel.Vm
             return ShovelValue.MakeInt ((long)(date - unixEpoch).TotalSeconds);
         }
 
-        internal static ShovelValue IsString (VmApi api, ShovelValue obj)
+        internal static void IsString (VmApi api, ref ShovelValue obj)
         {
-            return ShovelValue.Make (obj.Kind == ShovelValue.Kinds.String);
+            obj.BoolValue = obj.Kind == ShovelValue.Kinds.String;
+            obj.Kind = ShovelValue.Kinds.Bool;
         }
 
-        internal static ShovelValue IsHash (VmApi api, ShovelValue obj)
+        internal static void IsHash (VmApi api, ref ShovelValue obj)
         {
-            return ShovelValue.Make (obj.Kind == ShovelValue.Kinds.Hash);
+            obj.BoolValue = obj.Kind == ShovelValue.Kinds.Hash;
+            obj.Kind = ShovelValue.Kinds.Bool;
         }
 
-        internal static ShovelValue IsBool (VmApi api, ShovelValue obj)
+        internal static void IsBool (VmApi api, ref ShovelValue obj)
         {
-            return ShovelValue.Make (obj.Kind == ShovelValue.Kinds.Bool);
+            obj.BoolValue = obj.Kind == ShovelValue.Kinds.Bool;
+            obj.Kind = ShovelValue.Kinds.Bool;
         }
 
-        internal static ShovelValue IsArray (VmApi api, ShovelValue obj)
+        internal static void IsArray (VmApi api, ref ShovelValue obj)
         {
-            return ShovelValue.Make (obj.Kind == ShovelValue.Kinds.Array);
+            obj.BoolValue = obj.Kind == ShovelValue.Kinds.Array;
+            obj.Kind = ShovelValue.Kinds.Bool;
         }
 
-        internal static ShovelValue IsNumber (VmApi api, ShovelValue obj)
+        internal static void IsNumber (VmApi api, ref ShovelValue obj)
         {
-            return ShovelValue.Make (obj.Kind == ShovelValue.Kinds.Integer || obj.Kind == ShovelValue.Kinds.Double);
+            obj.BoolValue = 
+                obj.Kind == ShovelValue.Kinds.Integer || obj.Kind == ShovelValue.Kinds.Double;
+            obj.Kind = ShovelValue.Kinds.Bool;
         }
 
-        internal static ShovelValue IsInteger (VmApi api, ShovelValue obj)
+        internal static void IsInteger (VmApi api, ref ShovelValue obj)
         {
-            return ShovelValue.Make (obj.Kind == ShovelValue.Kinds.Integer);
+            obj.BoolValue = obj.Kind == ShovelValue.Kinds.Integer;
+            obj.Kind = ShovelValue.Kinds.Bool;
         }
 
-        internal static ShovelValue IsCallable (VmApi api, ShovelValue obj)
+        internal static void IsCallable (VmApi api, ref ShovelValue obj)
         {
-            return ShovelValue.Make (obj.Kind == ShovelValue.Kinds.Callable);
+            obj.BoolValue = obj.Kind == ShovelValue.Kinds.Callable;
+            obj.Kind = ShovelValue.Kinds.Bool;
         }
 
         internal static ShovelValue ShovelString (VmApi api, ShovelValue obj)
