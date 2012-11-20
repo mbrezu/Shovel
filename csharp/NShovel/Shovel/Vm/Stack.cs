@@ -41,9 +41,8 @@ namespace Shovel
 
 		public ShovelValue PopTop ()
 		{
-			var result = Top ();
-			this.length --;
-			return result;
+            this.length --;
+            return this.storage[length];
 		}
 
 		public void Pop()

@@ -188,7 +188,7 @@ namespace Shovel.Vm
                         }
                     }
                 }
-                if (instruction.Opcode == Instruction.Opcodes.Args) {
+                else if (instruction.Opcode == Instruction.Opcodes.Args) {
                     var args = (int)instruction.Arguments;
                     if (args == 1) {
                         runActions [i - this.programCounter] = HandleArgs1;
@@ -200,6 +200,15 @@ namespace Shovel.Vm
                         runActions [i - this.programCounter] = HandleArgs3;
                         alreadyCompiled = true;
                     }
+                }
+                else if (instruction.Opcode == Instruction.Opcodes.Const) {
+                    var args = (ShovelValue)instruction.Arguments;
+                    alreadyCompiled = true;
+                    runActions [i - this.programCounter] = vm => {
+                        vm.stack.Push (args);
+                        vm.programCounter++;
+                        vm.IncrementCells (1);
+                    };
                 }
                 if (!alreadyCompiled) {
                     runActions [i - this.programCounter] = Vm.handlers [instruction.NumericOpcode];
@@ -244,7 +253,7 @@ namespace Shovel.Vm
             }
         }
 
-        bool StepVm ()
+        void StepVm ()
         {
             this.CheckVmWithoutError ();
             this.CheckTicksQuota ();
@@ -263,7 +272,6 @@ namespace Shovel.Vm
 //                }
 //                Vm.handlers [instruction.NumericOpcode] (this);
             }
-            return this.IsLive ();
         }
 
         static Action<Vm>[] handlers = new Action<Vm>[] {
@@ -333,28 +341,17 @@ namespace Shovel.Vm
         static void HandleDiv (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.Divide (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.Divide (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
     
         static void HandleMod (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.Modulo (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.Modulo (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;            
-        }
-
-        static void HandleNeq (Vm vm)
-        {
-            var start = vm.stack.Count - 2;
-            var result = Prim0.AreNotEqual (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
-            vm.stack.Pop ();
-            vm.stack.SetTop (result);
-            vm.programCounter++;
         }
 
         static void HandleApop (Vm vm)
@@ -432,18 +429,24 @@ namespace Shovel.Vm
         static void HandleGref (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.ArrayOrHashGet (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.ArrayOrHashGet (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
             vm.programCounter++;
         }
 
         static void HandleEq (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var result = Prim0.AreEqual (vm.api, vm.stack.Storage [start], vm.stack.Storage [start + 1]);
+            Prim0.AreEqual (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
-            vm.stack.SetTop (result);
+            vm.programCounter++;
+        }
+
+        static void HandleNeq (Vm vm)
+        {
+            var start = vm.stack.Count - 2;
+            Prim0.AreNotEqual (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
+            vm.stack.Pop ();
             vm.programCounter++;
         }
 
@@ -829,7 +832,7 @@ namespace Shovel.Vm
         {
             var instruction = vm.CurrentInstruction ();
             var args = (int[])instruction.Arguments;
-            vm.stack.Push (GetFromEnvironment (vm.currentEnvironment, args [0], args [1]));
+            vm.stack.Push (FindFrame (vm.currentEnvironment, args [0]).Values [args [1]]);
             vm.IncrementCells (1);
             vm.programCounter++;
         }
@@ -909,7 +912,7 @@ namespace Shovel.Vm
                 Array.Copy (
                     vm.stack.Storage, vm.stack.Count - argCount, 
                     values, 0, argCount);
-                vm.stack.PopMany(argCount);
+                vm.stack.PopMany (argCount);
                 if (returnAddress.HasValue) {
                     vm.stack.Push (returnAddress.Value);
                 }
@@ -917,38 +920,41 @@ namespace Shovel.Vm
             vm.programCounter++;
         }
 
-        static void HandleArgs1(Vm vm) {
-            if (vm.stack.TopIsReturnAddress()) {
-                vm.currentEnvironment.Frame.Values[0] = vm.stack.UnderTopOne();
-                vm.stack.UnderPopOneAndCopyTop();
+        static void HandleArgs1 (Vm vm)
+        {
+            if (vm.stack.TopIsReturnAddress ()) {
+                vm.currentEnvironment.Frame.Values [0] = vm.stack.UnderTopOne ();
+                vm.stack.UnderPopOneAndCopyTop ();
             } else {
-                vm.currentEnvironment.Frame.Values[0] = vm.stack.PopTop ();
+                vm.currentEnvironment.Frame.Values [0] = vm.stack.PopTop ();
             }
             vm.programCounter++;
         }
 
-        static void HandleArgs2(Vm vm) {
-            if (vm.stack.TopIsReturnAddress()) {
-                vm.currentEnvironment.Frame.Values[0] = vm.stack.UnderTop(2);
-                vm.currentEnvironment.Frame.Values[1] = vm.stack.UnderTop(1);
-                vm.stack.UnderPopAndCopyTop(2);
+        static void HandleArgs2 (Vm vm)
+        {
+            if (vm.stack.TopIsReturnAddress ()) {
+                vm.currentEnvironment.Frame.Values [0] = vm.stack.UnderTop (2);
+                vm.currentEnvironment.Frame.Values [1] = vm.stack.UnderTop (1);
+                vm.stack.UnderPopAndCopyTop (2);
             } else {
-                vm.currentEnvironment.Frame.Values[1] = vm.stack.PopTop ();
-                vm.currentEnvironment.Frame.Values[0] = vm.stack.PopTop ();
+                vm.currentEnvironment.Frame.Values [1] = vm.stack.PopTop ();
+                vm.currentEnvironment.Frame.Values [0] = vm.stack.PopTop ();
             }
             vm.programCounter++;
         }
 
-        static void HandleArgs3(Vm vm) {
-            if (vm.stack.TopIsReturnAddress()) {
-                vm.currentEnvironment.Frame.Values[0] = vm.stack.UnderTop(3);
-                vm.currentEnvironment.Frame.Values[1] = vm.stack.UnderTop(2);
-                vm.currentEnvironment.Frame.Values[2] = vm.stack.UnderTop(1);
-                vm.stack.UnderPopAndCopyTop(3);
+        static void HandleArgs3 (Vm vm)
+        {
+            if (vm.stack.TopIsReturnAddress ()) {
+                vm.currentEnvironment.Frame.Values [0] = vm.stack.UnderTop (3);
+                vm.currentEnvironment.Frame.Values [1] = vm.stack.UnderTop (2);
+                vm.currentEnvironment.Frame.Values [2] = vm.stack.UnderTop (1);
+                vm.stack.UnderPopAndCopyTop (3);
             } else {
-                vm.currentEnvironment.Frame.Values[2] = vm.stack.PopTop ();
-                vm.currentEnvironment.Frame.Values[1] = vm.stack.PopTop ();
-                vm.currentEnvironment.Frame.Values[0] = vm.stack.PopTop ();
+                vm.currentEnvironment.Frame.Values [2] = vm.stack.PopTop ();
+                vm.currentEnvironment.Frame.Values [1] = vm.stack.PopTop ();
+                vm.currentEnvironment.Frame.Values [0] = vm.stack.PopTop ();
             }
             vm.programCounter++;
         }
@@ -1062,7 +1068,7 @@ namespace Shovel.Vm
 
         bool IsLive ()
         {
-            return !this.ExecutionComplete () && !this.shouldTakeANap;
+            return !(this.programCounter == this.bytecode.Length || this.shouldTakeANap);
         }
 
         bool ExecutionComplete ()
