@@ -51,7 +51,14 @@ add1(3)"
 		{
 			var sources = Shovel.Api.MakeSources (
 				"test.sho", 
-				"var a = array(1, 2, 3) a[2] = a stringRepresentation(a)");
+				@"
+var fib = fn (n) {
+    if n == 0 || n == 1
+    1
+    else fib(n - 1) + fib(n - 2)
+}
+fib(10)
+");
 			Console.WriteLine (Shovel.Api.NakedRunVm(sources));
 		}
 

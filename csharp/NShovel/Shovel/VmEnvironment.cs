@@ -23,11 +23,34 @@ using System;
 
 namespace Shovel
 {
-	public class VmEnvironment
-	{
-		public VmEnvFrame Frame { get; set; }
+    public class VmEnvironment
+    {
+        public VmEnvFrame Frame { get; set; }
 
-		public VmEnvironment Next { get; set; }
-	}
+        public VmEnvironment Next { get; set; }
+
+        int uses { get; set; }
+
+        public bool IsUsed {
+            get { 
+                return this.uses > 0; 
+            }
+        }
+
+        public void IncreaseUses() {
+            this.uses ++;
+            if (this.Next != null) {
+                this.Next.IncreaseUses();
+            }
+        }
+
+        public void IncreaseUsesLocally() {
+            this.uses ++;
+        }
+
+        public void DecreaseUsesLocally() {
+            this.uses --;
+        }
+    }
 }
 
