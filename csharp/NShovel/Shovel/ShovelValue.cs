@@ -22,16 +22,9 @@ namespace Shovel
         }
         ;
 
-//        public Kinds Kind {
-//            get { return (Kinds)this.byKind;}
-//            set { this.byKind = (byte)value;}
-//        }
-
-        [FieldOffset(12)]
+        [FieldOffset(16)]
         public Kinds Kind;
 
-//        byte
-//            byKind;
         [FieldOffset(0)]
         public long
             IntegerValue;

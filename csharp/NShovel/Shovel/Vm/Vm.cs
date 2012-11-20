@@ -103,7 +103,7 @@ namespace Shovel.Vm
             return this.stack.Top ();
         }
 
-        Action<Vm> GetRun ()
+        Action<Vm> GenRun ()
         {
             Instruction.Opcodes? lastOpcode = null;
             string lastPrim0 = null;
@@ -188,6 +188,19 @@ namespace Shovel.Vm
                         }
                     }
                 }
+                if (instruction.Opcode == Instruction.Opcodes.Args) {
+                    var args = (int)instruction.Arguments;
+                    if (args == 1) {
+                        runActions [i - this.programCounter] = HandleArgs1;
+                        alreadyCompiled = true;
+                    } else if (args == 2) {
+                        runActions [i - this.programCounter] = HandleArgs2;
+                        alreadyCompiled = true;
+                    } else if (args == 3) {
+                        runActions [i - this.programCounter] = HandleArgs3;
+                        alreadyCompiled = true;
+                    }
+                }
                 if (!alreadyCompiled) {
                     runActions [i - this.programCounter] = Vm.handlers [instruction.NumericOpcode];
                 }
@@ -238,7 +251,7 @@ namespace Shovel.Vm
             this.CheckCellsQuota ();
             if (this.IsLive ()) {
                 if (this.runs [this.programCounter] == null) {
-                    this.runs [this.programCounter] = this.GetRun ();
+                    this.runs [this.programCounter] = this.GenRun ();
                 }
                 this.runs [this.programCounter] (this);
 
@@ -675,13 +688,13 @@ namespace Shovel.Vm
                 );
             }
             var callable = maybeCallable.CallableValue;
-            if (callable.UdpName != null || callable.Prim0Name != null) {
-                CallPrimitive (callable, vm, numArgs, saveReturnAddress);
-            } else {
+            if (callable.ProgramCounter.HasValue) {
                 CallFunction (callable, vm, numArgs, saveReturnAddress);
                 if (saveReturnAddress) {
                     vm.IncrementCells (1);
                 }
+            } else {
+                CallPrimitive (callable, vm, numArgs, saveReturnAddress);
             }
         }
 
@@ -760,24 +773,23 @@ namespace Shovel.Vm
 
         static void HandleFjump (Vm vm)
         {
-            var args = vm.CurrentInstruction ().Arguments;
-            vm.CheckBool ();
-            vm.JumpIf (!vm.stack.PopTop ().BoolValue, (int)args);
+            var args = (int)vm.CurrentInstruction ().Arguments;
+//            vm.CheckBool ();
+            if (!vm.stack.PopTop ().BoolValue) {
+                vm.programCounter = args;
+            } else {
+                vm.programCounter ++;
+            }
         }
 
         static void HandleTjump (Vm vm)
         {
-            var args = vm.CurrentInstruction ().Arguments;
-            vm.CheckBool ();
-            vm.JumpIf (vm.stack.PopTop ().BoolValue, (int)args);
-        }
-
-        void JumpIf (bool shouldJump, int jumpDestination)
-        {
-            if (shouldJump) {
-                this.programCounter = jumpDestination;
+            var args = (int)vm.CurrentInstruction ().Arguments;
+//            vm.CheckBool ();
+            if (vm.stack.PopTop ().BoolValue) {
+                vm.programCounter = args;
             } else {
-                this.programCounter++;
+                vm.programCounter ++;
             }
         }
 
@@ -893,13 +905,50 @@ namespace Shovel.Vm
                 if (vm.stack.Top ().Kind == ShovelValue.Kinds.ReturnAddress) {
                     returnAddress = vm.stack.PopTop ();
                 }
-                // SLOW: may be optimized with an array copy.
-                for (var i = argCount - 1; i >= 0; i--) {
-                    vm.currentEnvironment.Frame.Values [i] = vm.stack.PopTop ();
-                }
+                var values = vm.currentEnvironment.Frame.Values;
+                Array.Copy (
+                    vm.stack.Storage, vm.stack.Count - argCount, 
+                    values, 0, argCount);
+                vm.stack.PopMany(argCount);
                 if (returnAddress.HasValue) {
                     vm.stack.Push (returnAddress.Value);
                 }
+            }
+            vm.programCounter++;
+        }
+
+        static void HandleArgs1(Vm vm) {
+            if (vm.stack.TopIsReturnAddress()) {
+                vm.currentEnvironment.Frame.Values[0] = vm.stack.UnderTopOne();
+                vm.stack.UnderPopOneAndCopyTop();
+            } else {
+                vm.currentEnvironment.Frame.Values[0] = vm.stack.PopTop ();
+            }
+            vm.programCounter++;
+        }
+
+        static void HandleArgs2(Vm vm) {
+            if (vm.stack.TopIsReturnAddress()) {
+                vm.currentEnvironment.Frame.Values[0] = vm.stack.UnderTop(2);
+                vm.currentEnvironment.Frame.Values[1] = vm.stack.UnderTop(1);
+                vm.stack.UnderPopAndCopyTop(2);
+            } else {
+                vm.currentEnvironment.Frame.Values[1] = vm.stack.PopTop ();
+                vm.currentEnvironment.Frame.Values[0] = vm.stack.PopTop ();
+            }
+            vm.programCounter++;
+        }
+
+        static void HandleArgs3(Vm vm) {
+            if (vm.stack.TopIsReturnAddress()) {
+                vm.currentEnvironment.Frame.Values[0] = vm.stack.UnderTop(3);
+                vm.currentEnvironment.Frame.Values[1] = vm.stack.UnderTop(2);
+                vm.currentEnvironment.Frame.Values[2] = vm.stack.UnderTop(1);
+                vm.stack.UnderPopAndCopyTop(3);
+            } else {
+                vm.currentEnvironment.Frame.Values[2] = vm.stack.PopTop ();
+                vm.currentEnvironment.Frame.Values[1] = vm.stack.PopTop ();
+                vm.currentEnvironment.Frame.Values[0] = vm.stack.PopTop ();
             }
             vm.programCounter++;
         }

@@ -17,6 +17,28 @@ namespace Shovel
 			return this.storage [this.length - 1];
 		}
 
+        public ShovelValue UnderTop (int i)
+        {
+            return this.storage [this.length - i - 1];
+        }
+
+        public ShovelValue UnderTopOne ()
+        {
+            return this.storage [this.length - 2];
+        }
+
+        public void UnderPopOneAndCopyTop()
+        {
+            this.storage[this.length - 2] = this.storage[this.length - 1];
+            this.length --;
+        }
+
+        public void UnderPopAndCopyTop (int i)
+        {
+            this.storage[this.length - i - 1] = this.storage[this.length - 1];
+            this.length -= i;
+        }
+
 		public ShovelValue PopTop ()
 		{
 			var result = Top ();
@@ -71,6 +93,12 @@ namespace Shovel
 			array = this.storage;
 			start = this.length - n;
 		}
+
+        public bool TopIsReturnAddress ()
+        {
+            return this.storage[this.length - 1].Kind == ShovelValue.Kinds.ReturnAddress;
+        }
+
 	}
 }
 

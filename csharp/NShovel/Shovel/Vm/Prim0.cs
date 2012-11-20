@@ -81,7 +81,7 @@ namespace Shovel.Vm
 			if (t1.Kind == ShovelValue.Kinds.String && t2.Kind == ShovelValue.Kinds.String) {
 				return ShovelValue.Make (t1.StringValue + t2.StringValue);
 			} else if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-				return ShovelValue.MakeInt (Prim0.LimitResult (t1.IntegerValue + t2.IntegerValue));
+				return ShovelValue.MakeInt (t1.IntegerValue + t2.IntegerValue);
 			} else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Double) {
 				return ShovelValue.MakeFloat (t1.DoubleValue + t2.DoubleValue);
 			} else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Integer) {
@@ -100,17 +100,10 @@ namespace Shovel.Vm
 			throw new InvalidOperationException ();
 		}
 
-		const long limitMask = ((long)1 << 60) - 1;
-
-		static long LimitResult (long obj)
-		{
-			return obj & limitMask;
-		}
-
 		internal static ShovelValue Subtract (VmApi api, ShovelValue t1, ShovelValue t2)
 		{
 			if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-				return ShovelValue.MakeInt (Prim0.LimitResult (t1.IntegerValue - t2.IntegerValue));
+				return ShovelValue.MakeInt (t1.IntegerValue - t2.IntegerValue);
 			} else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Double) {
 				return ShovelValue.MakeFloat (t1.DoubleValue - t2.DoubleValue);
 			} else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Integer) {
@@ -138,7 +131,7 @@ namespace Shovel.Vm
 		internal static ShovelValue Multiply (VmApi api, ShovelValue t1, ShovelValue t2)
 		{
 			if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-				return ShovelValue.MakeInt (Prim0.LimitResult (t1.IntegerValue * t2.IntegerValue));
+				return ShovelValue.MakeInt (t1.IntegerValue * t2.IntegerValue);
 			} else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Double) {
 				return ShovelValue.MakeFloat (t1.DoubleValue * t2.DoubleValue);
 			} else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Integer) {
@@ -154,7 +147,7 @@ namespace Shovel.Vm
 		internal static ShovelValue Divide (VmApi api, ShovelValue t1, ShovelValue t2)
 		{
 			if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-				return ShovelValue.MakeInt (Prim0.LimitResult (t1.IntegerValue / t2.IntegerValue));
+				return ShovelValue.MakeInt (t1.IntegerValue / t2.IntegerValue);
 			} else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Double) {
 				return ShovelValue.MakeFloat (t1.DoubleValue / t2.DoubleValue);
 			} else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Integer) {
@@ -170,7 +163,7 @@ namespace Shovel.Vm
 		internal static ShovelValue ShiftLeft (VmApi api, ShovelValue t1, ShovelValue t2)
 		{
 			if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-				return ShovelValue.MakeInt (Prim0.LimitResult (t1.IntegerValue << (int)t2.IntegerValue));
+				return ShovelValue.MakeInt (t1.IntegerValue << (int)t2.IntegerValue);
 			} else {
 				api.RaiseShovelError ("Both arguments must be integers.");
 			}
@@ -180,7 +173,7 @@ namespace Shovel.Vm
 		internal static ShovelValue ShiftRight (VmApi api, ShovelValue t1, ShovelValue t2)
 		{
 			if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-				return ShovelValue.MakeInt (Prim0.LimitResult (t1.IntegerValue >> (int)t2.IntegerValue));
+				return ShovelValue.MakeInt (t1.IntegerValue >> (int)t2.IntegerValue);
 			} else {
 				api.RaiseShovelError ("Both arguments must be integers.");
 			}
@@ -190,7 +183,7 @@ namespace Shovel.Vm
 		internal static ShovelValue Modulo (VmApi api, ShovelValue t1, ShovelValue t2)
 		{
 			if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-				return ShovelValue.MakeInt (Prim0.LimitResult (t1.IntegerValue % t2.IntegerValue));
+				return ShovelValue.MakeInt (t1.IntegerValue % t2.IntegerValue);
 			} else {
 				api.RaiseShovelError ("Both arguments must be integers.");
 			}
@@ -215,7 +208,7 @@ namespace Shovel.Vm
 		internal static ShovelValue Pow (VmApi api, ShovelValue t1, ShovelValue t2)
 		{
 			if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-				return ShovelValue.MakeInt (Prim0.LimitResult (Expt (t1.IntegerValue, t2.IntegerValue)));
+				return ShovelValue.MakeInt (Expt (t1.IntegerValue, t2.IntegerValue));
 			} else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Double) {
 				return ShovelValue.MakeFloat (Math.Pow (t1.DoubleValue, t2.DoubleValue));
 			} else if (t1.Kind == ShovelValue.Kinds.Double && t2.Kind == ShovelValue.Kinds.Integer) {
@@ -379,7 +372,7 @@ namespace Shovel.Vm
 		internal static ShovelValue BitwiseAnd (VmApi api, ShovelValue t1, ShovelValue t2)
 		{
 			if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-				return ShovelValue.MakeInt (Prim0.LimitResult (t1.IntegerValue & t2.IntegerValue));
+				return ShovelValue.MakeInt (t1.IntegerValue & t2.IntegerValue);
 			} else {
 				api.RaiseShovelError ("Both arguments must be integers.");
 			}
@@ -389,7 +382,7 @@ namespace Shovel.Vm
 		internal static ShovelValue BitwiseOr (VmApi api, ShovelValue t1, ShovelValue t2)
 		{
 			if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-				return ShovelValue.MakeInt (Prim0.LimitResult (t1.IntegerValue | t2.IntegerValue));
+				return ShovelValue.MakeInt (t1.IntegerValue | t2.IntegerValue);
 			} else {
 				api.RaiseShovelError ("Both arguments must be integers.");
 			}
@@ -399,7 +392,7 @@ namespace Shovel.Vm
 		internal static ShovelValue BitwiseXor (VmApi api, ShovelValue t1, ShovelValue t2)
 		{
 			if (t1.Kind == ShovelValue.Kinds.Integer && t2.Kind == ShovelValue.Kinds.Integer) {
-				return ShovelValue.MakeInt (Prim0.LimitResult (t1.IntegerValue ^ t2.IntegerValue));
+				return ShovelValue.MakeInt (t1.IntegerValue ^ t2.IntegerValue);
 			} else {
 				api.RaiseShovelError ("Both arguments must be integers.");
 			}

@@ -151,6 +151,36 @@ var f = fn x block 'f' g(x) + 2
 f(1)
 ", Shovel.ShovelValue.Kinds.Integer, (long)10);
 		}
+
+        [Test]
+        public void ManyArgs2()
+        {
+            Utils.TestValue(@"
+var g = fn (a, b) a - b
+var f = fn (a, b) g(a, b) + 1
+f(1, 2)
+", Shovel.ShovelValue.Kinds.Integer, (long)0);
+        }
+
+        [Test]
+        public void ManyArgs3()
+        {
+            Utils.TestValue(@"
+var g = fn (a, b, c) (a - b) * c
+var f = fn (a, b, c) g(a, b, c) + 1
+f(1, 2, 3)
+", Shovel.ShovelValue.Kinds.Integer, (long)-2);
+        }
+
+        [Test]
+        public void ManyArgs4()
+        {
+            Utils.TestValue(@"
+var g = fn (a, b, c, d) (a - b) * (c - d)
+var f = fn (a, b, c, d) g(a, b, c, d) + 1
+f(1, 2, 3, 5)
+", Shovel.ShovelValue.Kinds.Integer, (long)3);
+        }
 	}
 }
 
