@@ -22,6 +22,7 @@
 using System;
 using NUnit.Framework;
 using System.Text;
+using Shovel.Exceptions;
 
 namespace ShovelTests
 {
@@ -66,7 +67,7 @@ namespace ShovelTests
                 FileName = "test.sho",
                 Content = text
             };
-            Utils.ExpectException<Shovel.ShovelException> (() => {
+            Utils.ExpectException<ShovelException> (() => {
                 Assert.IsNotNull (new Shovel.Compiler.Tokenizer (source).Tokens);
             },
             (ex) => {
@@ -86,7 +87,7 @@ namespace ShovelTests
                 FileName = "test.sho",
                 Content = text
             };
-            Utils.ExpectException<Shovel.ShovelException> (() => {
+            Utils.ExpectException<ShovelException> (() => {
                 Assert.IsNotNull (new Shovel.Compiler.Tokenizer (source).Tokens);
             },
             (ex) => {

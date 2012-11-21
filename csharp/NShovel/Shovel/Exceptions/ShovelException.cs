@@ -23,7 +23,7 @@
 //
 using System;
 
-namespace Shovel
+namespace Shovel.Exceptions
 {
     public class ShovelException : Exception
     {

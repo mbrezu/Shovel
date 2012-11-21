@@ -35,7 +35,7 @@ namespace Shovel
 		{
 			var bytecode = Utils.GetRawBytecode (sources);
 			if (optimize) {
-				bytecode = RawBytecodeOptimizations.Optimize (bytecode);
+				bytecode = Compiler.RawBytecodeOptimizations.Optimize (bytecode);
 			}
 			Utils.DecorateByteCode (bytecode, sources);
 			var sb = new StringBuilder ();
@@ -71,20 +71,20 @@ namespace Shovel
 		public static Instruction[] GetBytecode (List<SourceFile> sources)
 		{
 			var rawBytecode = Utils.GetRawBytecode (sources);
-			rawBytecode = RawBytecodeOptimizations.Optimize (rawBytecode);
+			rawBytecode = Compiler.RawBytecodeOptimizations.Optimize (rawBytecode);
 			var assembled = Utils.Assemble (rawBytecode);            
-			assembled = AssembledBytecodeOptimizations.Optimize (assembled);
+			assembled = Compiler.AssembledBytecodeOptimizations.Optimize (assembled);
 			return assembled;
 		}
 
 		public static MemoryStream SerializeBytecode (Instruction[] bytecode)
 		{
-			return BytecodeSerialization.SerializeBytecode (bytecode);
+			return Serialization.BytecodeSerializer.SerializeBytecode (bytecode);
 		}
 
 		public static Instruction[] DeserializeBytecode (MemoryStream ms)
 		{
-			return BytecodeSerialization.DeserializeBytecode (ms);
+			return Serialization.BytecodeSerializer.DeserializeBytecode (ms);
 		}
 
 		public static List<SourceFile> MakeSources (params string[] namesAndContents)

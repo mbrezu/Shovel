@@ -1,6 +1,6 @@
 // Copyright (c) 2012, Miron Brezuleanu
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 //     * Redistributions of source code must retain the above copyright
@@ -8,7 +8,7 @@
 //     * Redistributions in binary form must reproduce the above copyright
 //       notice, this list of conditions and the following disclaimer in the
 //       documentation and/or other materials provided with the distribution.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -20,30 +20,48 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
-using System.Collections.Generic;
 
-namespace Shovel
+namespace Shovel.Compiler.Types
 {
-	public class EnvFrame
-	{
-		public List<EnvVar> Vars { get; set; }
+    public class Token
+    {
+        public enum Types
+        {
+            Number,
+            Identifier,
+            Keyword,
+            LiteralString,
+            FileName,
+            UserDefinedPrimitive,
+            Punctuation
+        }
+        public Types Type { get; set; }
 
-		public EnvFrame ()
-		{
-			this.Vars = new List<EnvVar> ();
-		}
+        public int StartPos { get; set; }
 
-		public EnvVar EntryFor (string name)
-		{
-			foreach (var frameVar in this.Vars) {
-				if (frameVar.Name == name) {
-					return frameVar;
-				}
-			}
-			return null;
-		}
+        public int EndPos { get; set; }
 
+        public string Content { get; set; }
+		
+        public bool IsRequiredPrimitive { get; set; }
+		
+        public bool IsRelational { get; set; }
 
-	}
+        public bool IsAdderOp { get; set; }
+
+        public bool IsMultiplierOp { get; set; }
+
+        public bool IsLogicalOrOp { get; set; }
+
+        public bool IsLogicalAndOp { get; set; }
+
+        public override string ToString ()
+        {
+            return string.Format (
+                "[Token: Type={0}, StartPos={1}, EndPos={2}, Content='{3}']", 
+                Type, StartPos, EndPos, Content);
+        }
+
+    }
 }
 

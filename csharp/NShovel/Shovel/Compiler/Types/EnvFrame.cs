@@ -20,14 +20,29 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
+using System.Collections.Generic;
 
-namespace Shovel
+namespace Shovel.Compiler.Types
 {
-	public class ReturnAddress
+	public class EnvFrame
 	{
-		public VmEnvironment Environment { get; set; }
+		public List<EnvVar> Vars { get; set; }
 
-		public int ProgramCounter { get; set; }
+		public EnvFrame ()
+		{
+			this.Vars = new List<EnvVar> ();
+		}
+
+		public EnvVar EntryFor (string name)
+		{
+			foreach (var frameVar in this.Vars) {
+				if (frameVar.Name == name) {
+					return frameVar;
+				}
+			}
+			return null;
+		}
+
 
 	}
 }

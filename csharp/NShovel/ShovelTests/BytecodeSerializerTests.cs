@@ -27,7 +27,7 @@ using System.Linq;
 namespace ShovelTests
 {
 	[TestFixture]
-	public class BytecodeSerializationTests
+	public class BytecodeSerializerTests
 	{
 		[Test]
 		public void ConstInt ()

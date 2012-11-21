@@ -25,6 +25,7 @@ using System.Text;
 using System.Security.Cryptography;
 using System.IO;
 using System.Linq;
+using Shovel.Compiler.Types;
 
 namespace Shovel
 {

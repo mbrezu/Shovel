@@ -22,6 +22,7 @@
 using System;
 using NUnit.Framework;
 using System.Collections.Generic;
+using Shovel.Exceptions;
 
 namespace ShovelTests
 {
@@ -466,7 +467,7 @@ encodeTime(time)"
 		public void Panic ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "panic('test')");
-			Utils.ExpectException<Shovel.ShovelException> (() => {
+			Utils.ExpectException<ShovelException> (() => {
 				Shovel.Api.NakedRunVm (sources);
 			},
 			(ex) => {

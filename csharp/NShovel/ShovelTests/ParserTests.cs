@@ -22,18 +22,19 @@
 using System;
 using NUnit.Framework;
 using System.Text;
+using Shovel.Exceptions;
 
 namespace ShovelTests
 {
 	[TestFixture]
 	public class ParserTests
 	{
-		static void ParserErrorMessageHelper (string source, Action<Shovel.ShovelException> exceptionTest)
+		static void ParserErrorMessageHelper (string source, Action<ShovelException> exceptionTest)
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", source);
 			var tokenizer = new Shovel.Compiler.Tokenizer (sources [0]);
 			var parser = new Shovel.Compiler.Parser (tokenizer.Tokens, sources);
-			Utils.ExpectException<Shovel.ShovelException> (() => {
+			Utils.ExpectException<ShovelException> (() => {
 				foreach (var pt in parser.ParseTrees) {
 					Console.WriteLine (pt);
 				}

@@ -20,17 +20,37 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
-using System.Collections.Generic;
 
-namespace Shovel
+namespace Shovel.Vm.Types
 {
-	public class VmEnvFrame
-	{
-		public string[] VarNames { get; set; }
+    public class VmEnvironment
+    {
+        public VmEnvFrame Frame { get; set; }
 
-		public ShovelValue[] Values { get; set; }
+        public VmEnvironment Next { get; set; }
 
-		public int? IntroducedAtProgramCounter;
-	}
+        public int Uses { get; private set; }
+
+        public bool IsUsed {
+            get { 
+                return this.Uses > 0; 
+            }
+        }
+
+        public void IncreaseUses() {
+            this.Uses ++;
+            if (this.Next != null) {
+                this.Next.IncreaseUses();
+            }
+        }
+
+        public void IncreaseUsesLocally() {
+            this.Uses ++;
+        }
+
+        public void DecreaseUsesLocally() {
+            this.Uses --;
+        }
+    }
 }
 

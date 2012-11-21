@@ -22,6 +22,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Shovel.Exceptions;
+using Shovel.Compiler.Types;
 
 namespace Shovel.Compiler
 {
@@ -58,7 +60,7 @@ namespace Shovel.Compiler
 			this.CompileBlock (this.ast, this.EmptyEnv (), true, true);
 		}
 
-		void CompileAst (ParseTree ast, Environment env, bool useVal, bool more)
+		void CompileAst (ParseTree ast, Types.Environment env, bool useVal, bool more)
 		{
 			switch (ast.Label) {
 			case ParseTree.Labels.FileName:
@@ -125,7 +127,7 @@ namespace Shovel.Compiler
 			FinishInstruction (useVal, more);
 		}
 
-		void CompileBlockReturn (ParseTree ast, Environment env)
+		void CompileBlockReturn (ParseTree ast, Types.Environment env)
 		{
 			var blockName = ast.Children.ElementAt (0);
 			var result = ast.Children.ElementAt (1);
@@ -134,7 +136,7 @@ namespace Shovel.Compiler
 			this.Gen (Instruction.Opcodes.BlockReturn, null, ast);
 		}
 
-		void CompileNamedBlock (ParseTree ast, Environment env, bool more)
+		void CompileNamedBlock (ParseTree ast, Types.Environment env, bool more)
 		{
 			var blockName = ast.Children.ElementAt (0);
 			var blockContents = ast.Children.ElementAt (1);
@@ -155,7 +157,7 @@ namespace Shovel.Compiler
 			return String.Format ("{0}{1}", prefix, this.labelCounter);
 		}
 
-		void CompileAtom (ParseTree ast, Environment env, bool useVal, bool more)
+		void CompileAtom (ParseTree ast, Types.Environment env, bool useVal, bool more)
 		{
 			if (useVal) {
 				this.Gen (
@@ -270,7 +272,7 @@ namespace Shovel.Compiler
 			return false;
 		}
 
-		void CompileFuncall (ParseTree ast, Environment env, bool useVal, bool more)
+		void CompileFuncall (ParseTree ast, Types.Environment env, bool useVal, bool more)
 		{
 			foreach (var child in ast.Children.Skip(1)) {
 				this.CompileAst (child, env, true, true);
@@ -299,7 +301,7 @@ namespace Shovel.Compiler
 			FinishInstruction (useVal, more);
 		}
 
-		void CompileName (ParseTree ast, Environment env, bool useVal, bool more)
+		void CompileName (ParseTree ast, Types.Environment env, bool useVal, bool more)
 		{
 			var varName = ast.Content;
 			this.Gen (Instruction.Opcodes.Lget,
@@ -308,7 +310,7 @@ namespace Shovel.Compiler
 			this.FinishInstruction (useVal, more);
 		}
 
-		int[] FindName (string varName, Environment env, int startPos, int endPos, int frameNumber = 0)
+		int[] FindName (string varName, Types.Environment env, int startPos, int endPos, int frameNumber = 0)
 		{
 			if (env == null) {
 				var message = String.Format ("Undefined variable '{0}'.", varName);
@@ -350,7 +352,7 @@ namespace Shovel.Compiler
             };
 		}
 
-		void CompileIf (ParseTree ast, Environment env, bool useVal, bool more)
+		void CompileIf (ParseTree ast, Types.Environment env, bool useVal, bool more)
 		{
 			if (more) {
 				var l1 = this.GenLabel ();
@@ -378,7 +380,7 @@ namespace Shovel.Compiler
 			}
 		}
 
-		void CompileSet (ParseTree ast, Environment env, bool useVal, bool more)
+		void CompileSet (ParseTree ast, Types.Environment env, bool useVal, bool more)
 		{
 			var leftHandSide = ast.Children.First ();
 			if (leftHandSide.Label == ParseTree.Labels.Name) {
@@ -433,7 +435,7 @@ namespace Shovel.Compiler
 			return false;
 		}
 
-		void CompileSetVar (string name, Environment env, bool useVal, bool more, ParseTree astForPos)
+		void CompileSetVar (string name, Types.Environment env, bool useVal, bool more, ParseTree astForPos)
 		{
 			this.Gen (
                 Instruction.Opcodes.Lset,
@@ -442,7 +444,7 @@ namespace Shovel.Compiler
 			this.FinishInstruction (useVal, more);
 		}
 
-		void CompileFn (ParseTree ast, Environment env, bool useVal, bool more)
+		void CompileFn (ParseTree ast, Types.Environment env, bool useVal, bool more)
 		{
 			if (useVal) {
 				var fn = this.GenLabel ("FN");
@@ -464,7 +466,7 @@ namespace Shovel.Compiler
 			}
 		}
 
-		void CompileFnBody (ParseTree args, ParseTree body, Environment env)
+		void CompileFnBody (ParseTree args, ParseTree body, Types.Environment env)
 		{
 			if (args.Children.Count () > 0) {
 				var newEnv = this.EmptyEnv ();
@@ -484,7 +486,7 @@ namespace Shovel.Compiler
 			}
 		}
 
-		void ExtendFrame (Environment env, string name, ParseTree nameAst)
+		void ExtendFrame (Types.Environment env, string name, ParseTree nameAst)
 		{
 			var topFrame = env.Frame;
 			var currentStartPos = nameAst.StartPos;
@@ -508,7 +510,7 @@ namespace Shovel.Compiler
 			}
 		}
 
-		void CompileVar (ParseTree ast, Environment env, bool useVal, bool more)
+		void CompileVar (ParseTree ast, Types.Environment env, bool useVal, bool more)
 		{
 			var nameAst = ast.Children.ElementAt (0);
 			var name = nameAst.Content;
@@ -517,7 +519,7 @@ namespace Shovel.Compiler
 			this.CompileSetVar (name, env, useVal, more, ast);
 		}
 
-		void CompileBlockMeat (IEnumerable<ParseTree> ast, Environment env, bool useVal, bool more)
+		void CompileBlockMeat (IEnumerable<ParseTree> ast, Types.Environment env, bool useVal, bool more)
 		{
 			if (ast.Count () > 0) {
 				var newVars = ast.Where (child => child.Label == ParseTree.Labels.Var);
@@ -576,7 +578,7 @@ namespace Shovel.Compiler
 			return null;
 		}
 
-		void CompileBlock (IEnumerable<ParseTree> ast, Environment env, bool useVal, bool more)
+		void CompileBlock (IEnumerable<ParseTree> ast, Types.Environment env, bool useVal, bool more)
 		{
 			int? meatStart = PositionOf (ast, pt => pt.Label != ParseTree.Labels.FileName, false);
 			int? meatEnd = PositionOf (ast, pt => pt.Label != ParseTree.Labels.FileName, true);
@@ -601,7 +603,7 @@ namespace Shovel.Compiler
 		}
 
 		void CompileStatements (
-            Environment env,
+            Types.Environment env,
             IEnumerable<ParseTree> dropValueAsts, ParseTree valueAst,
             bool more)
 		{
@@ -611,9 +613,9 @@ namespace Shovel.Compiler
 			this.CompileAst (valueAst, env, true, more);
 		}
 
-		Environment EmptyEnv ()
+		Types.Environment EmptyEnv ()
 		{
-			return new Environment ();
+			return new Types.Environment ();
 		}
 
 		void Gen (Instruction.Opcodes opcode,

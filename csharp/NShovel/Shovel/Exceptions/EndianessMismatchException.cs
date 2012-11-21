@@ -21,18 +21,10 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 
-namespace Shovel
+namespace Shovel.Exceptions
 {
-	public class EnvVar
+	public class EndianessMismatchException : Exception
 	{
-		public string Name { get; set; }
-
-		public int Place { get; set; }
-
-		public string FileName { get; set; }
-
-		public int StartPos { get; set; }
 	}
-
 }
 

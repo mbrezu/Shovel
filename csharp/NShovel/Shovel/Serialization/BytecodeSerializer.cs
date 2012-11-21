@@ -24,10 +24,11 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Linq;
+using Shovel.Exceptions;
 
-namespace Shovel
+namespace Shovel.Serialization
 {
-	public static class BytecodeSerialization
+	public static class BytecodeSerializer
 	{
 		static byte[] minusOne = BitConverter.GetBytes ((int)-1);
 

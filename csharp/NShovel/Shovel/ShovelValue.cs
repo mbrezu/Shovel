@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using Shovel.Vm.Types;
 
 namespace Shovel
 {

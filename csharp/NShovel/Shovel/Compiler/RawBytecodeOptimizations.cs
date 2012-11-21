@@ -20,50 +20,42 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
+using System.Collections.Generic;
 
-namespace Shovel
+namespace Shovel.Compiler
 {
-	internal static class AssembledBytecodeOptimizations
+	internal static class RawBytecodeOptimizations
 	{
-		internal static Instruction[] Optimize (Instruction[] bytecode)
+		internal static List<Instruction> Optimize(List<Instruction> bytecode)
 		{
-			bytecode = JumpPropagation (bytecode);
+			bytecode = OptimizeLsetPopLget(bytecode);
 			return bytecode;
 		}
 
-		private static Instruction[] JumpPropagation (Instruction[] bytecode)
-		{
-			foreach (var instruction in bytecode) {
-				if (instruction.Opcode == Instruction.Opcodes.Jump
-					|| instruction.Opcode == Instruction.Opcodes.Tjump
-					|| instruction.Opcode == Instruction.Opcodes.Fjump) {
-					instruction.Arguments = FollowJump (instruction, bytecode);
-				}
-			}
-			return bytecode;
-		}
-
-		static int FollowJump (Instruction instruction, Instruction[] bytecode)
-		{
-			var pc = (int)instruction.Arguments;
-			if (pc >= bytecode.Length) {
-				return pc;
-			}
-			var newInstruction = bytecode [pc];
-			if (newInstruction.Opcode == Instruction.Opcodes.Jump) {
-				return FollowJump (newInstruction, bytecode);
-			} else if (newInstruction.Opcode == Instruction.Opcodes.Const && pc + 1 < bytecode.Length) {
-				if (newInstruction.Arguments is bool) {
-					var nextInstruction = bytecode[pc+1];
-					if ((bool)newInstruction.Arguments && nextInstruction.Opcode == Instruction.Opcodes.Tjump) {
-						return FollowJump(nextInstruction, bytecode);
-					} else if (!(bool)newInstruction.Arguments && nextInstruction.Opcode == Instruction.Opcodes.Fjump) {
-						return FollowJump(nextInstruction, bytecode);
+		private static List<Instruction> OptimizeLsetPopLget(List<Instruction> bytecode)
+        {
+			var result = new List<Instruction>();
+			var i = 0;
+			while (i < bytecode.Count) {
+				var instruction = bytecode[i];
+				if (instruction.Opcode == Instruction.Opcodes.Lset && i <= bytecode.Count - 3) {
+					var lsetArgs = (int[])instruction.Arguments;
+					var next = bytecode[i+1];
+					var next2 = bytecode[i+2];
+					if (next.Opcode == Instruction.Opcodes.Pop && next2.Opcode == Instruction.Opcodes.Lget) {
+						var lgetArgs = (int[])next2.Arguments;
+						if (lsetArgs[0] == lgetArgs[0] && lsetArgs[1] == lgetArgs[1]) {
+							result.Add (instruction);
+							i += 3;
+							continue;
+						}
 					}
 				}
+				result.Add (instruction);
+				i++;
 			}
-			return pc;
-		}
+            return result;
+        }
 
 	}
 }

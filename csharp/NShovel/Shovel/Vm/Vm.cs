@@ -24,6 +24,9 @@ using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 using System.Globalization;
+using Shovel.Exceptions;
+using Shovel.Vm.Types;
+using Shovel.Compiler.Types;
 
 namespace Shovel.Vm
 {

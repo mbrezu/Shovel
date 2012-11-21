@@ -22,6 +22,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Shovel.Exceptions;
+using Shovel.Compiler.Types;
 
 namespace Shovel.Compiler
 {

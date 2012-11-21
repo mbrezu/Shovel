@@ -22,7 +22,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Shovel
+namespace Shovel.Vm.Types
 {
 	public class Callable
 	{

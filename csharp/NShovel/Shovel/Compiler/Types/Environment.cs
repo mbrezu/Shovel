@@ -21,7 +21,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 
-namespace Shovel
+namespace Shovel.Compiler.Types
 {
 	public class Environment
 	{

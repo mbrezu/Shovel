@@ -36,41 +36,46 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Compiler\Tokenizer.cs" />
-    <Compile Include="Token.cs" />
     <Compile Include="SourceFile.cs" />
-    <Compile Include="ShovelException.cs" />
-    <Compile Include="Position.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="Compiler\Parser.cs" />
-    <Compile Include="ParseTree.cs" />
     <Compile Include="Compiler\CodeGenerator.cs" />
     <Compile Include="Instruction.cs" />
-    <Compile Include="EnvFrame.cs" />
-    <Compile Include="EnvVar.cs" />
-    <Compile Include="Environment.cs" />
     <Compile Include="Api.cs" />
     <Compile Include="Vm\Vm.cs" />
-    <Compile Include="VmEnvironment.cs" />
-    <Compile Include="VmEnvFrame.cs" />
     <Compile Include="Vm\Prim0.cs" />
-    <Compile Include="ReturnAddress.cs" />
-    <Compile Include="NamedBlock.cs" />
-    <Compile Include="Callable.cs" />
-    <Compile Include="VmApi.cs" />
-    <Compile Include="BytecodeSerialization.cs" />
-    <Compile Include="EndianessMismatchException.cs" />
-    <Compile Include="ShovelCellQuotaExceededException.cs" />
-    <Compile Include="BrokenDataException.cs" />
-    <Compile Include="VersionNotSupportedException.cs" />
     <Compile Include="Vm\Stack.cs" />
-    <Compile Include="RawBytecodeOptimizations.cs" />
-    <Compile Include="AssembledBytecodeOptimizations.cs" />
     <Compile Include="ShovelValue.cs" />
+    <Compile Include="Serialization\BytecodeSerializer.cs" />
+    <Compile Include="Serialization\VmStateSerializer.cs" />
+    <Compile Include="Compiler\AssembledBytecodeOptimizations.cs" />
+    <Compile Include="Exceptions\ShovelCellQuotaExceededException.cs" />
+    <Compile Include="Exceptions\VersionNotSupportedException.cs" />
+    <Compile Include="Exceptions\ShovelException.cs" />
+    <Compile Include="Exceptions\EndianessMismatchException.cs" />
+    <Compile Include="Exceptions\BrokenDataException.cs" />
+    <Compile Include="Compiler\Types\EnvFrame.cs" />
+    <Compile Include="Compiler\Types\Environment.cs" />
+    <Compile Include="Compiler\Types\EnvVar.cs" />
+    <Compile Include="Vm\Types\NamedBlock.cs" />
+    <Compile Include="Compiler\Types\ParseTree.cs" />
+    <Compile Include="Compiler\Types\Position.cs" />
+    <Compile Include="Vm\Types\Callable.cs" />
+    <Compile Include="Compiler\Types\Token.cs" />
+    <Compile Include="Vm\Types\VmApi.cs" />
+    <Compile Include="Vm\Types\VmEnvFrame.cs" />
+    <Compile Include="Vm\Types\VmEnvironment.cs" />
+    <Compile Include="Vm\Types\ReturnAddress.cs" />
+    <Compile Include="Compiler\RawBytecodeOptimizations.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <Folder Include="Compiler\" />
     <Folder Include="Vm\" />
+    <Folder Include="Serialization\" />
+    <Folder Include="Exceptions\" />
+    <Folder Include="Compiler\Types\" />
+    <Folder Include="Vm\Types\" />
   </ItemGroup>
   <ProjectExtensions>
     <MonoDevelop>
