@@ -67,6 +67,7 @@
     <Compile Include="Vm\Types\VmEnvironment.cs" />
     <Compile Include="Vm\Types\ReturnAddress.cs" />
     <Compile Include="Compiler\RawBytecodeOptimizations.cs" />
+    <Compile Include="Serialization\Utils.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

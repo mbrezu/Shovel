@@ -32,69 +32,18 @@ namespace Shovel.Serialization
 	{
 		static byte[] minusOne = BitConverter.GetBytes ((int)-1);
 
-		static void WriteBytes (Stream s, byte[] bytes)
-		{
-			s.Write (bytes, 0, bytes.Length);
-		}
-
-		static byte[] sixteenZeroes = new byte[16];
-
-		static private MemoryStream SerializeWithMd5CheckSum (Action<Stream> body)
-		{
-			var ms = new MemoryStream ();
-			WriteBytes (ms, sixteenZeroes);
-			ms.WriteByte (Utils.Endianess ());
-			WriteBytes (ms, BitConverter.GetBytes ((int)Shovel.Api.Version));
-			body (ms);
-			using (var md5 = MD5.Create()) {
-				ms.Seek (0, SeekOrigin.Begin);
-				var md5Bytes = md5.ComputeHash (ms);
-				ms.Seek (0, SeekOrigin.Begin);
-				WriteBytes (ms, md5Bytes);
-			}
-			return ms;
-		}
-
 		static internal Instruction[] DeserializeBytecode (MemoryStream ms)
 		{
-			return (Instruction[])DeserializeWithMd5CheckSum (ms, str => {
+			return (Instruction[])Utils.DeserializeWithMd5CheckSum (ms, str => {
 				return DeserializeBytecodeImpl (str);
 			}
 			);
 		}
 
-		static private object DeserializeWithMd5CheckSum (MemoryStream ms, Func<Stream, object> body)
-		{
-			// Check MD5 checksum.
-			ms.Seek (0, SeekOrigin.Begin);
-			byte[] expectedMd5 = new byte[16];
-			ms.Read (expectedMd5, 0, expectedMd5.Length);
-			ms.Seek (0, SeekOrigin.Begin);
-			WriteBytes (ms, sixteenZeroes);
-			using (var md5 = MD5.Create()) {
-				ms.Seek (0, SeekOrigin.Begin);
-				var actualMd5 = md5.ComputeHash (ms);
-				if (!expectedMd5.SequenceEqual (actualMd5)) {
-					throw new BrokenDataException ();
-				}
-			}	
-			ms.Seek (0, SeekOrigin.Begin);
-			WriteBytes (ms, expectedMd5);
-			// Check endianess.
-			if (ms.ReadByte () != Utils.Endianess ()) {
-				throw new EndianessMismatchException ();
-			}
-			// Check version.
-			if (ReadInt (ms) > Shovel.Api.Version) {
-				throw new VersionNotSupportedException ();
-			}
-			return body (ms);
-		}
-
 		static private object DeserializeBytecodeImpl (Stream s)
 		{
 			// Read the number of instructions.
-			int instructionsCount = ReadInt (s);
+			int instructionsCount = Utils.ReadInt (s);
 			// Allocate the array of instructions.
 			var result = new Instruction[instructionsCount];
 			// Fill in instructions.
@@ -104,23 +53,9 @@ namespace Shovel.Serialization
 			return result;
 		}
 
-		static int ReadInt (Stream ms)
-		{
-			var bytes = new byte[4];
-			ms.Read (bytes, 0, 4);
-			return BitConverter.ToInt32 (bytes, 0);
-		}
-
-		static long ReadLong(Stream ms)
-		{
-			var bytes = new byte[8];
-			ms.Read (bytes, 0, 8);
-			return BitConverter.ToInt64 (bytes, 0);
-		}
-
 		static internal MemoryStream SerializeBytecode (Instruction[] bytecode)
 		{
-			return SerializeWithMd5CheckSum (str => {
+			return Utils.SerializeWithMd5CheckSum (str => {
 				SerializeBytecodeImplementation (str, bytecode);
 			}
 			);
@@ -128,12 +63,12 @@ namespace Shovel.Serialization
 
 		static private void SerializeBytecodeImplementation (Stream ms, Instruction[] bytecode)
 		{
-			WriteBytes (ms, BitConverter.GetBytes ((int)bytecode.Length));
+			Utils.WriteBytes (ms, BitConverter.GetBytes ((int)bytecode.Length));
 			foreach (var instruction in bytecode) {
-				WriteBytes (ms, BitConverter.GetBytes ((int)instruction.NumericOpcode));
+				Utils.WriteBytes (ms, BitConverter.GetBytes ((int)instruction.NumericOpcode));
 				SerializeNullableInt (ms, instruction.StartPos);
 				SerializeNullableInt (ms, instruction.EndPos);
-				WriteBytes (ms, BitConverter.GetBytes ((int)instruction.Opcode));
+				Utils.WriteBytes (ms, BitConverter.GetBytes ((int)instruction.Opcode));
 				WriteArguments (ms, instruction);
 			}
 		}
@@ -141,10 +76,10 @@ namespace Shovel.Serialization
 		static Instruction ReadInstruction (Stream s)
 		{
 			var instruction = new Instruction ();
-			instruction.NumericOpcode = ReadInt (s);
+			instruction.NumericOpcode = Utils.ReadInt (s);
 			instruction.StartPos = DeserializeNullableInt (s);
 			instruction.EndPos = DeserializeNullableInt (s);
-			var opcodeInt = ReadInt (s);
+			var opcodeInt = Utils.ReadInt (s);
 			instruction.Opcode = (Instruction.Opcodes)opcodeInt;
 			ReadArguments (s, instruction);
 			return instruction;
@@ -156,11 +91,11 @@ namespace Shovel.Serialization
 			if (bytes.Length < 256) {
 				stream.WriteByte (1);
 				stream.WriteByte ((byte)bytes.Length);
-				WriteBytes (stream, bytes);
+				Utils.WriteBytes (stream, bytes);
 			} else {
 				stream.WriteByte (4);
-				WriteBytes (stream, BitConverter.GetBytes ((int)bytes.Length));
-				WriteBytes (stream, bytes);
+				Utils.WriteBytes (stream, BitConverter.GetBytes ((int)bytes.Length));
+				Utils.WriteBytes (stream, bytes);
 			}
 		}
 
@@ -173,12 +108,12 @@ namespace Shovel.Serialization
 				s.Read (bytes, 0, size);
 				return Encoding.UTF8.GetString (bytes);
 			} else if (disc == 4) {
-				var size = ReadInt (s);
+				var size = Utils.ReadInt (s);
 				var bytes = new byte[size];
 				s.Read (bytes, 0, size);
 				return Encoding.UTF8.GetString (bytes);
 			} else {
-				Utils.Panic ();
+				Shovel.Utils.Panic ();
 				return null;
 			}
 		}
@@ -187,9 +122,9 @@ namespace Shovel.Serialization
 		{
 			stream.WriteByte ((byte)sv.Kind);
 			if (sv.Kind == ShovelValue.Kinds.Integer) {
-				WriteBytes (stream, BitConverter.GetBytes (sv.IntegerValue));
+				Utils.WriteBytes (stream, BitConverter.GetBytes (sv.IntegerValue));
 			} else if (sv.Kind == ShovelValue.Kinds.Double) {
-				WriteBytes (stream, BitConverter.GetBytes (sv.IntegerValue));
+				Utils.WriteBytes (stream, BitConverter.GetBytes (sv.IntegerValue));
 			} else if (sv.Kind == ShovelValue.Kinds.String) {
 				WriteString (stream, sv.StringValue);
 			} else if (sv.Kind == ShovelValue.Kinds.Bool) {
@@ -197,7 +132,7 @@ namespace Shovel.Serialization
 			} else if (sv.Kind == ShovelValue.Kinds.Null) {
 				// Do nothing.
 			} else {
-				Utils.Panic ();
+				Shovel.Utils.Panic ();
 			}
 		}
 
@@ -206,8 +141,10 @@ namespace Shovel.Serialization
 			var result = ShovelValue.Make ();
 			result.Kind = (ShovelValue.Kinds)stream.ReadByte ();
 			if (result.Kind == ShovelValue.Kinds.Integer) {
-				result.IntegerValue = ReadLong (stream);
+				result.IntegerValue = Utils.ReadLong (stream);
 			} else if (result.Kind == ShovelValue.Kinds.Double) {
+                // FIXME: these allocate a lot of byte[] objects.
+                // Should find a way to avoid this (have the caller pass the byte[]?).
 				var bytes = new byte[8];
 				stream.Read (bytes, 0, 8);
 				result.DoubleValue = BitConverter.ToDouble (bytes, 0);
@@ -218,7 +155,7 @@ namespace Shovel.Serialization
 			} else if (result.Kind == ShovelValue.Kinds.Null) {
 				// Do nothing.
 			} else {
-				Utils.Panic ();
+				Shovel.Utils.Panic ();
 			}
 			return result;
 		}
@@ -227,7 +164,7 @@ namespace Shovel.Serialization
 		{
 			switch (instruction.Opcode) {
 			case Instruction.Opcodes.VmVersion:
-				instruction.Arguments = ReadInt (s);
+				instruction.Arguments = Utils.ReadInt (s);
 				break;
 			case Instruction.Opcodes.VmSourcesMd5:
 				instruction.Arguments = ReadString (s);
@@ -248,25 +185,25 @@ namespace Shovel.Serialization
 				instruction.Arguments = ReadConst (s);
 				break;
 			case Instruction.Opcodes.Block:
-				instruction.Arguments = ReadInt (s);
+				instruction.Arguments = Utils.ReadInt (s);
 				break;
 			case Instruction.Opcodes.Label:
-				Utils.Panic ();
+				Shovel.Utils.Panic ();
 				break;
 			case Instruction.Opcodes.Call:
-				instruction.Arguments = ReadInt (s);
+				instruction.Arguments = Utils.ReadInt (s);
 				break;
 			case Instruction.Opcodes.CallJ:
-				instruction.Arguments = ReadInt (s);
+				instruction.Arguments = Utils.ReadInt (s);
 				break;
 			case Instruction.Opcodes.Lget:
 				instruction.Arguments = ReadArrayOfTwoInts (s);
 				break;
 			case Instruction.Opcodes.Fjump:
-				instruction.Arguments = ReadInt (s);
+				instruction.Arguments = Utils.ReadInt (s);
 				break;
 			case Instruction.Opcodes.Jump:
-				instruction.Arguments = ReadInt (s);
+				instruction.Arguments = Utils.ReadInt (s);
 				break;
 			case Instruction.Opcodes.Lset:
 				instruction.Arguments = ReadArrayOfTwoInts (s);
@@ -278,10 +215,10 @@ namespace Shovel.Serialization
 				instruction.Arguments = ReadArrayOfStrings (s);
 				break;
 			case Instruction.Opcodes.Args:
-				instruction.Arguments = ReadInt (s);
+				instruction.Arguments = Utils.ReadInt (s);
 				break;
 			case Instruction.Opcodes.Tjump:
-				instruction.Arguments = ReadInt (s);
+				instruction.Arguments = Utils.ReadInt (s);
 				break;
 			}
 		}
@@ -290,7 +227,7 @@ namespace Shovel.Serialization
 		{
 			switch (instruction.Opcode) {
 			case Instruction.Opcodes.VmVersion:
-				WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
+				Utils.WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
 				break;
 			case Instruction.Opcodes.VmSourcesMd5:
 				WriteString (stream, (string)instruction.Arguments);
@@ -311,25 +248,25 @@ namespace Shovel.Serialization
 				WriteConst (stream, (ShovelValue)instruction.Arguments);
 				break;
 			case Instruction.Opcodes.Block:
-				WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
+				Utils.WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
 				break;
 			case Instruction.Opcodes.Label:
-				Utils.Panic ();
+				Shovel.Utils.Panic ();
 				break;
 			case Instruction.Opcodes.Call:
-				WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
+				Utils.WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
 				break;
 			case Instruction.Opcodes.CallJ:
-				WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
+				Utils.WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
 				break;
 			case Instruction.Opcodes.Lget:
 				WriteArrayOfTwoInts (stream, instruction.Arguments);
 				break;
 			case Instruction.Opcodes.Fjump:
-				WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
+				Utils.WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
 				break;
 			case Instruction.Opcodes.Jump:
-				WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
+				Utils.WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
 				break;
 			case Instruction.Opcodes.Lset:
 				WriteArrayOfTwoInts (stream, instruction.Arguments);
@@ -341,17 +278,17 @@ namespace Shovel.Serialization
 				WriteArrayOfStrings (stream, (string[])instruction.Arguments);
 				break;
 			case Instruction.Opcodes.Args:
-				WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
+				Utils.WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
 				break;
 			case Instruction.Opcodes.Tjump:
-				WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
+				Utils.WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));
 				break;
 			}
 		}
 
 		static void WriteArrayOfStrings (Stream stream, string[] strings)
 		{
-			WriteBytes (stream, BitConverter.GetBytes ((int)strings.Length));
+			Utils.WriteBytes (stream, BitConverter.GetBytes ((int)strings.Length));
 			foreach (var str in strings) {
 				WriteString (stream, str);
 			}
@@ -359,7 +296,7 @@ namespace Shovel.Serialization
 
 		static string[] ReadArrayOfStrings (Stream stream)
 		{
-			var count = ReadInt (stream);
+			var count = Utils.ReadInt (stream);
 			var result = new string[count];
 			for (var i = 0; i < count; i++) {
 				result [i] = ReadString (stream);
@@ -370,30 +307,30 @@ namespace Shovel.Serialization
 		static void WriteArrayOfTwoInts (Stream stream, object arguments)
 		{
 			var array = (int[])arguments;
-			WriteBytes (stream, BitConverter.GetBytes (array [0]));
-			WriteBytes (stream, BitConverter.GetBytes (array [1]));
+			Utils.WriteBytes (stream, BitConverter.GetBytes (array [0]));
+			Utils.WriteBytes (stream, BitConverter.GetBytes (array [1]));
 		}
 
 		static int[] ReadArrayOfTwoInts (Stream stream)
 		{
 			var array = new int[2];
-			array [0] = ReadInt (stream);
-			array [1] = ReadInt (stream);
+			array [0] = Utils.ReadInt (stream);
+			array [1] = Utils.ReadInt (stream);
 			return array;
 		}
 
 		static void SerializeNullableInt (Stream stream, int? nullableInt)
 		{
 			if (nullableInt.HasValue) {
-				WriteBytes (stream, BitConverter.GetBytes (nullableInt.Value));
+				Utils.WriteBytes (stream, BitConverter.GetBytes (nullableInt.Value));
 			} else {
-				WriteBytes (stream, minusOne);
+				Utils.WriteBytes (stream, minusOne);
 			}
 		}
 
 		static int? DeserializeNullableInt (Stream s)
 		{
-			var candidate = ReadInt (s);
+			var candidate = Utils.ReadInt (s);
 			if (candidate == -1) {
 				return null;
 			} else {

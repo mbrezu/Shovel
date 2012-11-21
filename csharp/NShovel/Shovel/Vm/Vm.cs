@@ -27,11 +27,13 @@ using System.Globalization;
 using Shovel.Exceptions;
 using Shovel.Vm.Types;
 using Shovel.Compiler.Types;
+using System.IO;
 
 namespace Shovel.Vm
 {
     public class Vm
     {
+        #region Private Storage
         Instruction[] bytecode = null;
         int programCounter = 0;
         VmEnvironment currentEnvironment = null;
@@ -49,7 +51,9 @@ namespace Shovel.Vm
         long? untilNextNapTicksQuota = null;
         Action<Vm>[] runs = null;
         VmApi api = null;
+        #endregion
 
+        #region Public API
         public static Vm RunVm (
             Instruction[] bytecode, 
             List<SourceFile> sources = null,
@@ -74,8 +78,7 @@ namespace Shovel.Vm
             vm.totalTicksQuota = totalTicksQuota;
             vm.untilNextNapTicksQuota = untilNextNapTicksQuota;
             if (state != null) {
-                // TODO: implement state serialization/deserialization.
-                throw new NotImplementedException ();
+                vm.DeserializeState (state);
             }
             if (userPrimitives != null) {
                 foreach (var udp in userPrimitives) {
@@ -104,6 +107,43 @@ namespace Shovel.Vm
                 Utils.Panic ();
             }
             return this.stack.Top ();
+        }
+
+        #endregion
+
+        #region Assembly-internal API
+        internal void SerializeState (Stream s)
+        {
+            CheckVmWithoutError ();
+            var ser = new Serialization.VmStateSerializer ();
+            var usedStack = this.stack.GetUsedStack ();
+            int stackIndex = ser.Serialize (usedStack);
+            int envIndex = ser.Serialize (this.currentEnvironment);
+            Serialization.Utils.WriteBytes (s, BitConverter.GetBytes (stackIndex));
+            Serialization.Utils.WriteBytes (s, BitConverter.GetBytes (envIndex));
+            Serialization.Utils.WriteBytes (s, BitConverter.GetBytes (this.programCounter));
+            ser.WriteToStream (s);
+        }
+        #endregion
+
+        #region Private Helper Functions
+        void DeserializeState (byte[] serializedState)
+        {
+            using (var ms = new MemoryStream(serializedState)) {
+                Serialization.Utils.DeserializeWithMd5CheckSum (ms, str => {
+                    var stackIndex = Serialization.Utils.ReadInt(str);
+                    var envIndex = Serialization.Utils.ReadInt(str);
+                    this.programCounter = Serialization.Utils.ReadInt(str);
+                    var ser = new Serialization.VmStateSerializer();
+                    ser.Deserialize (str, reader => {
+                        this.stack = new Stack((ShovelValue[])reader(stackIndex));
+                        this.currentEnvironment = (VmEnvironment)reader(envIndex);
+                    }
+                    );
+                    return null;
+                }
+                );
+            }
         }
 
         Action<Vm> GenRun ()
@@ -1215,6 +1255,7 @@ namespace Shovel.Vm
                 throw new ShovelCellQuotaExceededException ();
             }
         }
+        #endregion
     }
 }
 

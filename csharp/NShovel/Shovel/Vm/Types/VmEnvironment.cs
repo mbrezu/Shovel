@@ -29,7 +29,7 @@ namespace Shovel.Vm.Types
 
         public VmEnvironment Next { get; set; }
 
-        public int Uses { get; private set; }
+        public int Uses { get; set; }
 
         public bool IsUsed {
             get { 

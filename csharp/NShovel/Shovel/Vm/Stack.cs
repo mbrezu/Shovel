@@ -7,10 +7,24 @@ namespace Shovel
 		ShovelValue[] storage;
 		int length;
 
+        public ShovelValue[] GetUsedStack ()
+        {
+            var result = new ShovelValue[this.length];
+            Array.Copy (this.storage, result, this.length);
+            return result;
+        }
+
 		public Stack ()
 		{
 			this.storage = new ShovelValue[1024];
 		}
+
+        public Stack(ShovelValue[] existingValues) 
+        {
+            this.storage = new ShovelValue[existingValues.Length * 2];
+            this.length = existingValues.Length;
+            Array.Copy (existingValues, this.storage, this.length);
+        }
 
 		public ShovelValue Top ()
 		{
@@ -63,7 +77,7 @@ namespace Shovel
 			}
 		}
 
-		public int Count {
+        public int Count {
 			get { return this.length;}
 		}
 

@@ -357,11 +357,6 @@ namespace Shovel
             }
         }
 
-        static internal byte Endianess()
-        {
-            return (byte)(BitConverter.IsLittleEndian ? 1 : 0);
-        }
-
 		static internal HashSet<int> GetNumericLabels(Instruction[] bytecode) {
 			var result = new HashSet<int>();
 			foreach (var instruction in bytecode) {
