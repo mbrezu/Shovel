@@ -89,6 +89,17 @@ namespace Shovel
             return null;
         }
 
+        internal static string GetSourcesMd5(Instruction[] bytecode)
+        {
+            foreach (var instruction in bytecode) {
+                if (instruction.Opcode == Instruction.Opcodes.VmSourcesMd5) {
+                    return (string)instruction.Arguments;
+                }
+            }
+            Utils.Panic();
+            return null;
+        }
+
         internal static List<string> ExtractRelevantSource(
             string[] sourceLines, Position startPos, Position endPos, string linePrefix = "")
         {

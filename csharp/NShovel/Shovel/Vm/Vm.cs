@@ -127,7 +127,10 @@ namespace Shovel.Vm
             Serialization.Utils.WriteBytes (s, BitConverter.GetBytes (stackIndex));
             Serialization.Utils.WriteBytes (s, BitConverter.GetBytes (envIndex));
             Serialization.Utils.WriteBytes (s, BitConverter.GetBytes (this.programCounter));
-            Serialization.Utils.WriteBytes (s, Encoding.UTF8.GetBytes (Utils.GetBytecodeMd5(this.bytecode)));
+            Serialization.Utils.WriteBytes (s, Encoding.UTF8.GetBytes (Utils.GetBytecodeMd5 (this.bytecode)));
+            Serialization.Utils.WriteBytes (s, Encoding.UTF8.GetBytes (Utils.GetSourcesMd5 (this.bytecode)));
+            Serialization.Utils.WriteBytes (s, BitConverter.GetBytes (this.executedTicks));
+            Serialization.Utils.WriteBytes (s, BitConverter.GetBytes (this.usedCells));
             ser.WriteToStream (s);
         }
         #endregion
@@ -141,11 +144,17 @@ namespace Shovel.Vm
                     var envIndex = Serialization.Utils.ReadInt (str);
                     this.programCounter = Serialization.Utils.ReadInt (str);
                     var bytes = new byte[32];
-                    str.Read(bytes, 0, 32);
+                    str.Read (bytes, 0, 32);
                     var actualBytecodeMd5 = Encoding.UTF8.GetString (bytes);
-                    if (actualBytecodeMd5 != Utils.GetBytecodeMd5(this.bytecode)) {
-                        throw new Exceptions.BytecodeDoesntMatchState();
+                    if (actualBytecodeMd5 != Utils.GetBytecodeMd5 (this.bytecode)) {
+                        throw new Exceptions.BytecodeDoesntMatchState ();
                     }
+                    // Read and ignore the source MD5.
+                    str.Read (bytes, 0, 32);
+                    // Read the number of ticks executed so far.
+                    this.executedTicks = Serialization.Utils.ReadLong(ms);
+                    // Read the number of used cells.
+                    this.usedCells = Serialization.Utils.ReadInt(ms);
                     var ser = new Serialization.VmStateSerializer ();
                     ser.Deserialize (str, reader => {
                         this.stack = new Stack ((Value[])reader (stackIndex));
