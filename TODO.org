@@ -201,13 +201,19 @@
 
 
 * TODO C#
-** TODO check that stack overflows are handled correctly
+** DONE check that stack overflows are handled correctly
    (the stack grows)
-** TODO implement vm state serialization
-** TODO port documentation
-** TODO optimizations
-*** TODO print the assembled code correctly (add numeric labels)
+** DONE implement vm state serialization
+** DONE port documentation
+** DONE optimizations
+*** DONE print the assembled code correctly (add numeric labels)
 *** DONE implement the Lset/Pop/Lget peep-hole optmization
 *** DONE implement jump propagation
-**** TODO verify that it works for && AND ||
-*** TODO finish converting the primitives to instructions
+**** DONE verify that it works for && AND ||
+*** DONE finish converting the primitives to instructions
+** TODO implement live objects counting
+** TODO negative testing for primitives
+** TODO documentation update
+*** TODO port the getting started guide
+*** TODO port the guess-the-number game
+*** TODO specs, check the rest of the documents
