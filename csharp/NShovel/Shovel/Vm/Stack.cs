@@ -73,7 +73,7 @@ namespace Shovel
                 // FIXME: use Array.Resize.
                 // Check for other places where Array.Resize may be useful.
 				var newStorage = new Value[this.storage.Length * 2];
-				Array.Copy (this.storage, this.storage, this.length);
+				Array.Copy (this.storage, newStorage, this.length);
 				this.storage = newStorage;
 				this.Push(value);
 			}

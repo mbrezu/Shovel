@@ -98,7 +98,11 @@ namespace Shovel.Serialization
 
         internal int Serialize (object obj)
         {
-            if (obj is Value) {
+            if (obj == null) {
+                return SerializeNull ();
+            } else if (this.hash.ContainsKey (obj)) {
+                return this.hash [obj];
+            } else if (obj is Value) {
                 return SerializeShovelValue ((Value)obj, obj);
             } else if (obj is string[]) {
                 return SerializeStringArray (obj, (string[])obj);
@@ -108,8 +112,6 @@ namespace Shovel.Serialization
                 return SerializeEnvironment ((VmEnvironment)obj, obj);
             } else if (obj is VmEnvFrame) {
                 return SerializeEnvFrame ((VmEnvFrame)obj, obj);
-            } else if (obj == null) {
-                return SerializeNull ();
             }
             Shovel.Utils.Panic ();
             throw new InvalidOperationException ();
@@ -148,11 +150,12 @@ namespace Shovel.Serialization
                     if (serArray [index] is string || serArray [index] is long || serArray [index] is double) {
                         objects [index] = serArray [index];
                     } else if (serArray [index] is Composite) {
-                        objects [index] = RebuildFromComposite ((Composite)serArray [index], reader);
+                        RebuildFromComposite (objects, index, (Composite)serArray [index], reader);
                     } else {
                         Shovel.Utils.Panic ();
+                        throw new NotImplementedException ();
                     }
-                }
+                } 
                 return objects [index];
             };
             action (reader);
@@ -285,36 +288,48 @@ namespace Shovel.Serialization
             }
         }
 
-        List<Value> RebuildShovelValueList (Composite composite, Func<int, object> reader)
+        List<Value> RebuildShovelValueList (
+            object[] objects, int index, Composite composite, Func<int, object> reader)
         {
             var result = new List<Value> ();
+            objects [index] = result;
+
             for (var i = 0; i < composite.Elements.Length; i++) {
-                result [i] = RebuildShovelValue (reader (composite.Elements [i]));
+                result.Add (RebuildShovelValue (reader (composite.Elements [i])));
             }
             return result;
         }
 
-        string[] RebuildStringArray (Composite composite, Func<int, object> reader)
+        string[] RebuildStringArray (
+            object[] objects, int index, Composite composite, Func<int, object> reader)
         {
             var result = new string[composite.Elements.Length];
+            objects [index] = result;
+
             for (var i = 0; i < composite.Elements.Length; i++) {
                 result [i] = (string)reader (composite.Elements [i]);
             }
             return result;
         }
 
-        Value[] RebuildShovelValueArray (Composite composite, Func<int, object> reader)
+        Value[] RebuildShovelValueArray (
+            object[] objects, int index, Composite composite, Func<int, object> reader)
         {
             var result = new Value[composite.Elements.Length];
+            objects [index] = result;
+
             for (var i = 0; i < composite.Elements.Length; i++) {
                 result [i] = RebuildShovelValue (reader (composite.Elements [i]));
             }
             return result;
         }
 
-        Dictionary<Value, Value> RebuildHash (Composite composite, Func<int, object> reader)
+        Dictionary<Value, Value> RebuildHash (
+            object[] objects, int index, Composite composite, Func<int, object> reader)
         {
             var result = new Dictionary<Value, Value> ();
+            objects [index] = result;
+
             for (var i = 0; i < composite.Elements.Length; i+=2) {
                 var key = RebuildShovelValue (reader (composite.Elements [i]));
                 var value = RebuildShovelValue (reader (composite.Elements [i + 1]));
@@ -323,9 +338,11 @@ namespace Shovel.Serialization
             return result;
         }
 
-        Callable RebuildCallable (Composite composite, Func<int, object> reader)
+        Callable RebuildCallable (
+            object[] objects, int index, Composite composite, Func<int, object> reader)
         {
             var result = new Callable ();
+            objects [index] = result;
 
             result.UdpName = (string)reader (composite.Elements [0]);
             result.Prim0Name = (string)reader (composite.Elements [1]);
@@ -336,9 +353,11 @@ namespace Shovel.Serialization
             return result;
         }
 
-        ReturnAddress RebuildReturnAddress (Composite composite, Func<int, object> reader)
+        ReturnAddress RebuildReturnAddress (
+            object[] objects, int index, Composite composite, Func<int, object> reader)
         {
             var result = new ReturnAddress ();
+            objects [index] = result;
 
             result.Environment = (VmEnvironment)reader (composite.Elements [0]);
             result.ProgramCounter = (int)(long)reader (composite.Elements [1]);
@@ -346,9 +365,11 @@ namespace Shovel.Serialization
             return result;
         }
 
-        NamedBlock RebuildNamedBlock (Composite composite, Func<int, object> reader)
+        NamedBlock RebuildNamedBlock (
+            object[] objects, int index, Composite composite, Func<int, object> reader)
         {
             var result = new NamedBlock ();
+            objects [index] = result;
 
             result.Name = (string)reader (composite.Elements [0]);
             result.BlockEnd = (int)(long)reader (composite.Elements [1]);
@@ -357,9 +378,11 @@ namespace Shovel.Serialization
             return result;
         }
 
-        VmEnvironment RebuildEnvironment (Composite composite, Func<int, object> reader)
+        VmEnvironment RebuildEnvironment (
+            object[] objects, int index, Composite composite, Func<int, object> reader)
         {
             var result = new VmEnvironment ();
+            objects [index] = result;
 
             result.Frame = (VmEnvFrame)reader (composite.Elements [0]);
             result.Next = (VmEnvironment)reader (composite.Elements [1]);
@@ -368,9 +391,11 @@ namespace Shovel.Serialization
             return result;
         }
 
-        VmEnvFrame RebuildEnvFrame (Composite composite, Func<int, object> reader)
+        VmEnvFrame RebuildEnvFrame (
+            object[] objects, int index, Composite composite, Func<int, object> reader)
         {
             var result = new VmEnvFrame ();
+            objects [index] = result;
 
             result.VarNames = (string[])reader (composite.Elements [0]);
             result.Values = (Value[])reader (composite.Elements [1]);
@@ -379,32 +404,40 @@ namespace Shovel.Serialization
             return result;
         }
 
-        object RebuildFromComposite (Composite composite, Func<int, object> reader)
+        void RebuildFromComposite (object[] objects, int index, Composite composite, Func<int, object> reader)
         {
             switch (composite.Kind) {
             case ObjectTypes.ShovelValueList:
-                return RebuildShovelValueList (composite, reader);
+                RebuildShovelValueList (objects, index, composite, reader);
+                break;
             case ObjectTypes.StringArray:
-                return RebuildStringArray (composite, reader);
+                RebuildStringArray (objects, index, composite, reader);
+                break;
             case ObjectTypes.ShovelValueArray:
-                return RebuildShovelValueArray (composite, reader);
+                RebuildShovelValueArray (objects, index, composite, reader);
+                break;
             case ObjectTypes.Hash:
-                return RebuildHash (composite, reader);
+                RebuildHash (objects, index, composite, reader);
+                break;
             case ObjectTypes.Callable:
-                return RebuildCallable (composite, reader);
+                RebuildCallable (objects, index, composite, reader);
+                break;
             case ObjectTypes.ReturnAddress:
-                return RebuildReturnAddress (composite, reader);
+                RebuildReturnAddress (objects, index, composite, reader);
+                break;
             case ObjectTypes.NamedBlock:
-                return RebuildNamedBlock (composite, reader);
+                RebuildNamedBlock (objects, index, composite, reader);
+                break;
             case ObjectTypes.Environment:
-                return RebuildEnvironment (composite, reader);
+                RebuildEnvironment (objects, index, composite, reader);
+                break;
             case ObjectTypes.EnvFrame:
-                return RebuildEnvFrame (composite, reader);
+                RebuildEnvFrame (objects, index, composite, reader);
+                break;
             default:
                 Shovel.Utils.Panic ();
                 break;
             }
-            throw new InvalidOperationException ();
         }
         #endregion
 
@@ -427,7 +460,7 @@ namespace Shovel.Serialization
         int SerializeOne (object obj)
         {
             if (obj == null) {
-                return SerializeNull();
+                return SerializeNull ();
             }
             this.array.Add (obj);
             return this.array.Count - 1;
@@ -439,7 +472,7 @@ namespace Shovel.Serialization
                 storeAs = obj;
             }
             if (storeAs == null) {
-                return SerializeNull();
+                return SerializeNull ();
             }
             if (this.hash.ContainsKey (storeAs)) {
                 return this.hash [storeAs];

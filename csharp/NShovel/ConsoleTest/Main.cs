@@ -73,9 +73,15 @@ var b = @readLine()
         static void SerializerTest ()
         {
             var sources = Shovel.Api.MakeSources ("test.sho", @"
-var a = ""hello, ""
-var b = @stop()
-@print(string(a + b))
+var main = fn () {
+  var arr = array(1, 2, 3, 4)
+  @print(string(arr[0]))
+  @print(string(arr[1]))
+  @stop()
+  @print(string(arr[2]))
+  @print(string(arr[3]))
+}
+main()
 "
             );
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) => {
@@ -83,27 +89,22 @@ var b = @stop()
                     Console.WriteLine (args [0].StringValue);
                 }
             };
-            bool firstCallOfStop = true;
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> stop = (api, args, result) => {
-                if (firstCallOfStop) {
-                    result.After = Shovel.UdpResult.AfterCall.NapAndRetryOnWakeUp;
-                    firstCallOfStop = false;
-                } else {
-                    result.After = Shovel.UdpResult.AfterCall.Continue;
-                    result.Result = Shovel.Value.Make ("world");
-                }
+                result.After = Shovel.UdpResult.AfterCall.Nap;
             };
             var bytecode = Shovel.Api.GetBytecode (sources);
             var userPrimitives = new Shovel.Callable[] {
                 Shovel.Callable.MakeUdp ("print", print, 1),
                 Shovel.Callable.MakeUdp ("stop", stop, 0),
             };
+            Console.WriteLine (Shovel.Api.PrintAssembledBytecode (bytecode));
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
 //            vm.WakeUp ();
 //            Shovel.Api.RunVm (vm, sources, userPrimitives);
 
             var state = Shovel.Api.SerializeVmState (vm);
             Console.WriteLine (state.Length);
+            File.WriteAllBytes ("test.bin", state);
 
             Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
         }
