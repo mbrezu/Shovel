@@ -212,7 +212,7 @@ stdlib.repeat(3, fn () {
             Assert.AreEqual ("3", log [2]);
         }
 
-        static IEnumerable<Shovel.Callable> GetPrintAndStopUdps(List<string> log, bool retryStop) 
+        static IEnumerable<Shovel.Callable> GetPrintAndStopUdps (List<string> log, bool retryStop)
         {
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) => {
                 if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
@@ -257,7 +257,7 @@ var b = ""world""
 "
             );
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps(log, false);
+            var userPrimitives = GetPrintAndStopUdps (log, false);
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
             Shovel.Api.WakeUpVm (vm);
             Shovel.Api.RunVm (vm, sources, userPrimitives);
@@ -276,7 +276,7 @@ var b = @stop()
 "
             );
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps(log, true);
+            var userPrimitives = GetPrintAndStopUdps (log, true);
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
             Shovel.Api.WakeUpVm (vm);
             Shovel.Api.RunVm (vm, sources, userPrimitives);
@@ -285,7 +285,7 @@ var b = @stop()
         }
 
         [Test]
-        public void StopSerializeWakeUpAndRetry()
+        public void StopSerializeWakeUpAndRetry ()
         {
             List<string> log = new List<string> ();
             var sources = Shovel.Api.MakeSources ("test.sho", @"
@@ -295,16 +295,16 @@ var b = @stop()
 "
             );
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps(log, true);
+            var userPrimitives = GetPrintAndStopUdps (log, true);
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
-            var state = Shovel.Api.SerializeVmState(vm);
+            var state = Shovel.Api.SerializeVmState (vm);
             Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
             Assert.AreEqual (1, log.Count);
             Assert.AreEqual ("hello, world", log [0]);
         }
 
         [Test]
-        public void StopSerializeWakeUp()
+        public void StopSerializeWakeUp ()
         {
             List<string> log = new List<string> ();
             var sources = Shovel.Api.MakeSources ("test.sho", @"
@@ -315,16 +315,16 @@ var b = ""world""
 "
             );
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps(log, false);
+            var userPrimitives = GetPrintAndStopUdps (log, false);
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
-            var state = Shovel.Api.SerializeVmState(vm);
+            var state = Shovel.Api.SerializeVmState (vm);
             Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
             Assert.AreEqual (1, log.Count);
             Assert.AreEqual ("hello, world", log [0]);
         }
 
         [Test]
-        public void CachedFramesAndSimpleObjects()
+        public void CachedFramesAndSimpleObjects ()
         {
             var sources = Shovel.Api.MakeSources ("test.sho", @"
 var makeCounter = fn () {
@@ -344,15 +344,15 @@ c2()
             );
             List<string> log = new List<string> ();
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps(log, false);
-            Shovel.Api.RunVm(bytecode, sources, userPrimitives);
-            Assert.AreEqual(2, log.Count);
-            Assert.AreEqual ("3", log[0]);
-            Assert.AreEqual ("4", log[1]);
+            var userPrimitives = GetPrintAndStopUdps (log, false);
+            Shovel.Api.RunVm (bytecode, sources, userPrimitives);
+            Assert.AreEqual (2, log.Count);
+            Assert.AreEqual ("3", log [0]);
+            Assert.AreEqual ("4", log [1]);
         }
 
         [Test]
-        public void SerializeSimpleObjects()
+        public void SerializeSimpleObjects ()
         {
             var sources = Shovel.Api.MakeSources ("test.sho", @"
 var makeCounter = fn () {
@@ -373,17 +373,17 @@ c2()
             );
             List<string> log = new List<string> ();
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps(log, false);
-            var vm = Shovel.Api.RunVm(bytecode, sources, userPrimitives);
-            var state = Shovel.Api.SerializeVmState(vm);
-            Shovel.Api.RunVm(bytecode, sources, userPrimitives, state);
-            Assert.AreEqual(2, log.Count);
-            Assert.AreEqual ("3", log[0]);
-            Assert.AreEqual ("4", log[1]);
+            var userPrimitives = GetPrintAndStopUdps (log, false);
+            var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
+            var state = Shovel.Api.SerializeVmState (vm);
+            Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
+            Assert.AreEqual (2, log.Count);
+            Assert.AreEqual ("3", log [0]);
+            Assert.AreEqual ("4", log [1]);
         }
 
         [Test]
-        public void SerializeWithReturnAddressOnStack() 
+        public void SerializeWithReturnAddressOnStack ()
         {
             var sources = Shovel.Api.MakeSources ("test.sho", @"
 var makeCounter = fn () {
@@ -407,17 +407,17 @@ main()
             );
             List<string> log = new List<string> ();
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps(log, false);
-            var vm = Shovel.Api.RunVm(bytecode, sources, userPrimitives);
-            var state = Shovel.Api.SerializeVmState(vm);
-            Shovel.Api.RunVm(bytecode, sources, userPrimitives, state);
-            Assert.AreEqual(2, log.Count);
-            Assert.AreEqual ("3", log[0]);
-            Assert.AreEqual ("4", log[1]);
+            var userPrimitives = GetPrintAndStopUdps (log, false);
+            var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
+            var state = Shovel.Api.SerializeVmState (vm);
+            Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
+            Assert.AreEqual (2, log.Count);
+            Assert.AreEqual ("3", log [0]);
+            Assert.AreEqual ("4", log [1]);
         }
 
         [Test]
-        public void SerializeWithArray() 
+        public void SerializeWithArray ()
         {
             var sources = Shovel.Api.MakeSources ("test.sho", @"
 var main = fn () {
@@ -433,19 +433,19 @@ main()
             );
             List<string> log = new List<string> ();
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps(log, false);
-            var vm = Shovel.Api.RunVm(bytecode, sources, userPrimitives);
-            var state = Shovel.Api.SerializeVmState(vm);
-            Shovel.Api.RunVm(bytecode, sources, userPrimitives, state);
-            Assert.AreEqual(4, log.Count);
-            Assert.AreEqual ("1", log[0]);
-            Assert.AreEqual ("2", log[1]);
-            Assert.AreEqual ("3", log[2]);
-            Assert.AreEqual ("4", log[3]);
+            var userPrimitives = GetPrintAndStopUdps (log, false);
+            var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
+            var state = Shovel.Api.SerializeVmState (vm);
+            Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
+            Assert.AreEqual (4, log.Count);
+            Assert.AreEqual ("1", log [0]);
+            Assert.AreEqual ("2", log [1]);
+            Assert.AreEqual ("3", log [2]);
+            Assert.AreEqual ("4", log [3]);
         }
 
         [Test]
-        public void SerializeWithHash()
+        public void SerializeWithHash ()
         {
             var sources = Shovel.Api.MakeSources ("test.sho", @"
 var main = fn () {
@@ -459,23 +459,52 @@ main()
             );
             List<string> log = new List<string> ();
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps(log, false);
-            var vm = Shovel.Api.RunVm(bytecode, sources, userPrimitives);
-            var state = Shovel.Api.SerializeVmState(vm);
-            Shovel.Api.RunVm(bytecode, sources, userPrimitives, state);
-            Assert.AreEqual(2, log.Count);
-            Assert.AreEqual ("1", log[0]);
-            Assert.AreEqual ("2", log[1]);
+            var userPrimitives = GetPrintAndStopUdps (log, false);
+            var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
+            var state = Shovel.Api.SerializeVmState (vm);
+            Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
+            Assert.AreEqual (2, log.Count);
+            Assert.AreEqual ("1", log [0]);
+            Assert.AreEqual ("2", log [1]);
         }
 
         [Test]
-        public void NonLocalReturnAndCachedFrames()
+        public void NonLocalReturnAndCachedFrames ()
         {
-            Utils.TestValue(@"
+            Utils.TestValue (@"
 var g = fn (x) if x == 3 return 'b' 10 else x
 var f = fn (x) g(x) + 3
 block 'b' f(2) + f(3)
 ", Shovel.Value.Kinds.Integer, (long)10);
+        }
+
+        [Test]
+        public void RestoreStateWithWrongBytecode ()
+        {
+            var sources = Shovel.Api.MakeSources ("test.sho", @"
+var main = fn () {
+  var h = hash('a', 1, 'b', 2)
+  @print(string(h.a))
+  @stop()
+  @print(string(h.b))
+}
+main()
+"
+            );
+            List<string> log = new List<string> ();
+            var bytecode = Shovel.Api.GetBytecode (sources);
+            var userPrimitives = GetPrintAndStopUdps (log, false);
+            var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
+            var state = Shovel.Api.SerializeVmState (vm);
+            sources = Shovel.Api.MakeSources ("test.sho", @"'hello'");
+            bytecode = Shovel.Api.GetBytecode (sources);
+            Utils.ExpectException<Shovel.Exceptions.BytecodeDoesntMatchState> (() => {
+                Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
+            }, 
+            ex => {
+                Assert.IsNotNull (ex);
+            }
+            );
         }
     }
 }
