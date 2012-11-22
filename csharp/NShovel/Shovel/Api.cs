@@ -31,10 +31,10 @@ namespace Shovel
 	{
         public static byte[] SerializeVmState (Vm.Vm vm)
         {
-            using (var s = new MemoryStream()) {
-                vm.SerializeState(s);
-                return s.ToArray();
-            }
+            var ms = Serialization.Utils.SerializeWithMd5CheckSum(str => {
+                vm.SerializeState(str);
+            });
+            return ms.ToArray();
         }
 
 		public static int Version = 1;
@@ -140,9 +140,10 @@ namespace Shovel
         public static Vm.Vm RunVm (
             Shovel.Instruction[] bytecode, 
             List<SourceFile> sources,
-            IEnumerable<Callable> userPrimitives = null)
+            IEnumerable<Callable> userPrimitives = null,
+            byte[] state = null)
         {
-            return Vm.Vm.RunVm (bytecode, sources, userPrimitives);
+            return Vm.Vm.RunVm(bytecode, sources, userPrimitives, state);
         }
 
         public static Vm.Vm RunVm (
@@ -155,6 +156,14 @@ namespace Shovel
                 sources: sources, 
                 userPrimitives: userPrimitives,
                 vm: vm);
+        }
+
+        public static Value CheckStackTop(Vm.Vm vm) {
+            return vm.CheckStackTop();
+        }
+
+        public static void WakeUpVm(Vm.Vm vm) {
+            vm.WakeUp();
         }
 
 		public static string SideBySide (string str1, string str2, int halfSize = 38)

@@ -99,11 +99,13 @@ var b = @stop()
                 Shovel.Callable.MakeUdp ("stop", stop, 0),
             };
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
-            vm.WakeUp ();
-            Shovel.Api.RunVm (vm, sources, userPrimitives);
+//            vm.WakeUp ();
+//            Shovel.Api.RunVm (vm, sources, userPrimitives);
 
-            //var state = Shovel.Api.SerializeVmState (vm);
-            //Console.WriteLine (state.Length);
+            var state = Shovel.Api.SerializeVmState (vm);
+            Console.WriteLine (state.Length);
+
+            Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
         }
 
         public static void SimpleTest ()

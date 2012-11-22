@@ -54,7 +54,7 @@ namespace Shovel.Vm
         #endregion
 
         #region Public API
-        public static Vm RunVm (
+        internal static Vm RunVm (
             Instruction[] bytecode, 
             List<SourceFile> sources = null,
             IEnumerable<Callable> userPrimitives = null,
@@ -101,12 +101,12 @@ namespace Shovel.Vm
             return vm;
         }
 
-        public void WakeUp ()
+        internal void WakeUp ()
         {
             this.shouldTakeANap = false;
         }
 
-        public Value CheckStackTop ()
+        internal Value CheckStackTop ()
         {
             if (this.stack.Count != 1) {
                 Utils.Panic ();

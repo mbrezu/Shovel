@@ -259,7 +259,7 @@ var b = ""world""
             var bytecode = Shovel.Api.GetBytecode (sources);
             var userPrimitives = GetPrintAndStopUdps(log, false);
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
-            vm.WakeUp ();
+            Shovel.Api.WakeUpVm (vm);
             Shovel.Api.RunVm (vm, sources, userPrimitives);
             Assert.AreEqual (1, log.Count);
             Assert.AreEqual ("hello, world", log [0]);
@@ -278,12 +278,49 @@ var b = @stop()
             var bytecode = Shovel.Api.GetBytecode (sources);
             var userPrimitives = GetPrintAndStopUdps(log, true);
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
-            vm.WakeUp ();
+            Shovel.Api.WakeUpVm (vm);
             Shovel.Api.RunVm (vm, sources, userPrimitives);
             Assert.AreEqual (1, log.Count);
             Assert.AreEqual ("hello, world", log [0]);
         }
 
+        [Test]
+        public void StopSerializeWakeUpAndRetry()
+        {
+            List<string> log = new List<string> ();
+            var sources = Shovel.Api.MakeSources ("test.sho", @"
+var a = ""hello, ""
+var b = @stop()
+@print(string(a + b))
+"
+            );
+            var bytecode = Shovel.Api.GetBytecode (sources);
+            var userPrimitives = GetPrintAndStopUdps(log, true);
+            var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
+            var state = Shovel.Api.SerializeVmState(vm);
+            Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
+            Assert.AreEqual (1, log.Count);
+            Assert.AreEqual ("hello, world", log [0]);
+        }
+
+        [Test]
+        public void StopSerializeWakeUp()
+        {
+            List<string> log = new List<string> ();
+            var sources = Shovel.Api.MakeSources ("test.sho", @"
+var a = ""hello, ""
+var b = ""world""
+@stop()
+@print(string(a + b))
+"
+            );
+            var bytecode = Shovel.Api.GetBytecode (sources);
+            var userPrimitives = GetPrintAndStopUdps(log, false);
+            var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
+            var state = Shovel.Api.SerializeVmState(vm);
+            Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
+            Assert.AreEqual (1, log.Count);
+            Assert.AreEqual ("hello, world", log [0]);
+        }
     }
 }
-

@@ -38,8 +38,8 @@ namespace Shovel.Serialization
             Integer,
             LongInteger,
             Double,
-            ShortArray,
-            Array,
+            ShortComposite,
+            Composite,
         }
 
         enum ObjectTypes
@@ -84,6 +84,8 @@ namespace Shovel.Serialization
                     WriteString (s, (string)obj);
                 } else if (obj is long) {
                     WriteLong (s, (long)obj);
+                } else if (obj is int) {
+                    WriteLong (s, (int)obj);
                 } else if (obj is Double) {
                     WriteDouble (s, (double)obj);
                 } else if (obj is Composite) {
@@ -99,9 +101,9 @@ namespace Shovel.Serialization
             if (obj is Value) {
                 return SerializeShovelValue ((Value)obj, obj);
             } else if (obj is string[]) {
-                return SerializeArray (obj, (string[])obj, ObjectTypes.StringArray);
+                return SerializeStringArray (obj, (string[])obj);
             } else if (obj is Value[]) {
-                return SerializeArray (obj, (Value[])obj, ObjectTypes.ShovelValueArray);
+                return SerializeShovelValueArray (obj, (Value[])obj);
             } else if (obj is VmEnvironment) {
                 return SerializeEnvironment ((VmEnvironment)obj, obj);
             } else if (obj is VmEnvFrame) {
@@ -203,7 +205,7 @@ namespace Shovel.Serialization
             return BitConverter.ToDouble (minibuf8, 0);
         }
 
-        Composite ReadArrayImpl (Stream s, int length)
+        Composite ReadCompositeImpl (Stream s, int length)
         {
             var result = new Composite ();
             result.Kind = (ObjectTypes)s.ReadByte ();
@@ -217,16 +219,16 @@ namespace Shovel.Serialization
             return result;
         }
 
-        Composite ReadShortArray (Stream s)
+        Composite ReadShortComposite (Stream s)
         {
             var length = s.ReadByte ();
-            return ReadArrayImpl (s, length);
+            return ReadCompositeImpl (s, length);
         }
 
-        Composite ReadArray (Stream s)
+        Composite ReadComposite (Stream s)
         {
             var length = ReadInteger (s);
-            return ReadArrayImpl (s, length);
+            return ReadCompositeImpl (s, length);
         }
 
         object ReadValue (Stream s)
@@ -245,10 +247,10 @@ namespace Shovel.Serialization
                 return (long)ReadLongInteger (s);
             case Types.Double:
                 return ReadDouble (s);
-            case Types.ShortArray:
-                return ReadShortArray (s);
-            case Types.Array:
-                return ReadArray (s);
+            case Types.ShortComposite:
+                return ReadShortComposite (s);
+            case Types.Composite:
+                return ReadComposite (s);
             default:
                 Shovel.Utils.Panic ();
                 throw new InvalidOperationException ();
@@ -361,7 +363,7 @@ namespace Shovel.Serialization
 
             result.Frame = (VmEnvFrame)reader (composite.Elements [0]);
             result.Next = (VmEnvironment)reader (composite.Elements [1]);
-            result.Uses = (int)(long)reader (composite.Elements [1]);
+            result.Uses = (int)(long)reader (composite.Elements [2]);
 
             return result;
         }
@@ -370,9 +372,9 @@ namespace Shovel.Serialization
         {
             var result = new VmEnvFrame ();
 
-            result.VarNames = (string[])reader(composite.Elements [0]);
-            result.Values = (Value[])reader(composite.Elements [1]);
-            result.IntroducedAtProgramCounter = (int)(long)reader(composite.Elements [2]);
+            result.VarNames = (string[])reader (composite.Elements [0]);
+            result.Values = (Value[])reader (composite.Elements [1]);
+            result.IntroducedAtProgramCounter = (int)(long)reader (composite.Elements [2]);
 
             return result;
         }
@@ -424,6 +426,9 @@ namespace Shovel.Serialization
 
         int SerializeOne (object obj)
         {
+            if (obj == null) {
+                return SerializeNull();
+            }
             this.array.Add (obj);
             return this.array.Count - 1;
         }
@@ -433,6 +438,9 @@ namespace Shovel.Serialization
             if (storeAs == null) {
                 storeAs = obj;
             }
+            if (storeAs == null) {
+                return SerializeNull();
+            }
             if (this.hash.ContainsKey (storeAs)) {
                 return this.hash [storeAs];
             }
@@ -441,15 +449,28 @@ namespace Shovel.Serialization
             return result;
         }
 
-        int SerializeArray<T> (object obj, T[] array, ObjectTypes otype)
+        int SerializeShovelValueArray (object obj, Value[] array)
         {
             var composite = new Composite { 
-                Kind = otype, 
+                Kind = ObjectTypes.ShovelValueArray,
                 Elements = new int[array.Length] 
             };
             var result = SerializeOneHashed (composite, obj);
             for (var i = 0; i < array.Length; i++) {
                 composite.Elements [i] = Serialize (array [i]);
+            }
+            return result;
+        }
+
+        int SerializeStringArray (object obj, string[] array)
+        {
+            var composite = new Composite { 
+                Kind = ObjectTypes.StringArray, 
+                Elements = new int[array.Length] 
+            };
+            var result = SerializeOneHashed (composite, obj);
+            for (var i = 0; i < array.Length; i++) {
+                composite.Elements [i] = SerializeOneHashed (array [i]);
             }
             return result;
         }
@@ -490,10 +511,10 @@ namespace Shovel.Serialization
                 Elements = new int[5] 
             };
             var result = SerializeOneHashed (composite, obj);
-            composite.Elements [0] = Serialize (callable.UdpName);
-            composite.Elements [1] = Serialize (callable.Prim0Name);
-            composite.Elements [2] = Serialize (callable.Arity);
-            composite.Elements [3] = Serialize (callable.ProgramCounter);
+            composite.Elements [0] = SerializeOneHashed (callable.UdpName);
+            composite.Elements [1] = SerializeOneHashed (callable.Prim0Name);
+            composite.Elements [2] = SerializeOne (callable.Arity);
+            composite.Elements [3] = SerializeOne (callable.ProgramCounter);
             composite.Elements [4] = Serialize (callable.Environment);
             return result;
         }
@@ -506,7 +527,7 @@ namespace Shovel.Serialization
             };
             var result = SerializeOneHashed (composite, obj);
             composite.Elements [0] = Serialize (returnAddress.Environment);
-            composite.Elements [1] = Serialize (returnAddress.ProgramCounter);
+            composite.Elements [1] = SerializeOne (returnAddress.ProgramCounter);
             return result;
         }
 
@@ -517,8 +538,8 @@ namespace Shovel.Serialization
                 Elements = new int[3] 
             };
             var result = SerializeOneHashed (composite, obj);
-            composite.Elements [0] = Serialize (namedBlock.Name);
-            composite.Elements [1] = Serialize (namedBlock.BlockEnd);
+            composite.Elements [0] = SerializeOneHashed (namedBlock.Name);
+            composite.Elements [1] = SerializeOne (namedBlock.BlockEnd);
             composite.Elements [2] = Serialize (namedBlock.Environment);
             return result;
         }
@@ -532,7 +553,7 @@ namespace Shovel.Serialization
             var result = SerializeOneHashed (composite, obj);
             composite.Elements [0] = Serialize (env.Frame);
             composite.Elements [1] = Serialize (env.Next);
-            composite.Elements [2] = Serialize (env.Uses);
+            composite.Elements [2] = SerializeOne (env.Uses);
             return result;
         }
 
@@ -545,7 +566,7 @@ namespace Shovel.Serialization
             var result = SerializeOneHashed (composite, obj);
             composite.Elements [0] = Serialize (frame.VarNames);
             composite.Elements [1] = Serialize (frame.Values);
-            composite.Elements [2] = Serialize (frame.IntroducedAtProgramCounter);
+            composite.Elements [2] = SerializeOne (frame.IntroducedAtProgramCounter);
             return result;
         }
 
@@ -613,12 +634,12 @@ namespace Shovel.Serialization
 
         void WriteComposite (Stream s, Composite composite)
         {
-            int length = composite.Elements.Length + 1;
+            int length = composite.Elements.Length;
             if (length < 255) {
-                s.WriteByte ((byte)Types.ShortArray);
+                s.WriteByte ((byte)Types.ShortComposite);
                 s.WriteByte ((byte)length);
             } else {
-                s.WriteByte ((byte)Types.Array);
+                s.WriteByte ((byte)Types.Composite);
                 Utils.WriteBytes (s, BitConverter.GetBytes (length));
             }
             s.WriteByte ((byte)composite.Kind);
