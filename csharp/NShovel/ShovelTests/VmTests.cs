@@ -468,5 +468,14 @@ main()
             Assert.AreEqual ("2", log[1]);
         }
 
+        [Test]
+        public void NonLocalReturnAndCachedFrames()
+        {
+            Utils.TestValue(@"
+var g = fn (x) if x == 3 return 'b' 10 else x
+var f = fn (x) g(x) + 3
+block 'b' f(2) + f(3)
+", Shovel.Value.Kinds.Integer, (long)10);
+        }
     }
 }

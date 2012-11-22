@@ -556,7 +556,7 @@ namespace Shovel.Compiler
 			return this.WithNewParseTree (ParseTree.Labels.If, pt => {
 				this.ConsumeToken (Token.Types.Keyword, "if");
 				var pred = this.ParseExpression ();
-				var then = this.ParseExpression ();
+				var then = this.ParseStatement ();
 				if (this.TokenIs (Token.Types.Keyword, "else")) {
 					this.NextToken ();
 					pt.Children = new ParseTree[] {

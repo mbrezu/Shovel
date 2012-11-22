@@ -32,9 +32,9 @@ namespace ConsoleTest
         public static void Main (string[] args)
         {
             //MasterMindBenchmark();
-            //SimpleTest ();
+            SimpleTest ();
             //AnotherSimpleTest ();
-            SerializerTest ();
+            //SerializerTest ();
             //UdpTest();
         }
 
@@ -112,9 +112,10 @@ main()
         public static void SimpleTest ()
         {
             var sources = Shovel.Api.MakeSources ("test.sho", @"
-var adder = fn (n) fn (x) x + n
-var add1 = adder(1)
-add1(3)"
+var g = fn (x) if x == 3 return 'b' 10 else x
+var f = fn (x) g(x) + 3
+block 'b' f(2) + f(3)
+"
             );
             Console.WriteLine (Shovel.Api.PrintRawBytecode (sources));
             Console.WriteLine (Shovel.Api.TestRunVm (sources));
