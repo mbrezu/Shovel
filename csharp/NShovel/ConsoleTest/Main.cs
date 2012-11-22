@@ -27,20 +27,20 @@ using System.Linq;
 
 namespace ConsoleTest
 {
-	class MainClass
-	{
-		public static void Main (string[] args)
-		{
-			//MasterMindBenchmark();
-			//SimpleTest ();
-			//AnotherSimpleTest ();
-            //SerializerTest();
-            UdpTest();
-		}
-
-        static void UdpTest()
+    class MainClass
+    {
+        public static void Main (string[] args)
         {
-            var sources = Shovel.Api.MakeSourcesWithStdlib("test.sho", @"
+            //MasterMindBenchmark();
+            //SimpleTest ();
+            //AnotherSimpleTest ();
+            SerializerTest ();
+            //UdpTest();
+        }
+
+        static void UdpTest ()
+        {
+            var sources = Shovel.Api.MakeSourcesWithStdlib ("test.sho", @"
 var a = 0
 stdlib.repeat(10, fn () {
     a = a + 1
@@ -49,91 +49,117 @@ stdlib.repeat(10, fn () {
 @print (""What's your name?"")
 var b = @readLine()
 @print (""Hello, "" + b)
-");
+"
+            );
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) => {
-                if (args.Length > 0 && args[0].Kind == Shovel.Value.Kinds.String) {
-                    Console.WriteLine (args[0].StringValue);
+                if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
+                    Console.WriteLine (args [0].StringValue);
                 } else {
                     Console.WriteLine ("do be doo");
                 }
             };
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> readLine = (api, args, result) => {
-                result.Result = Shovel.Value.Make (Console.ReadLine());
+                result.Result = Shovel.Value.Make (Console.ReadLine ());
             };
-            var bytecode = Shovel.Api.GetBytecode(sources);
+            var bytecode = Shovel.Api.GetBytecode (sources);
 
-            Shovel.Api.RunVm(bytecode, sources, new Shovel.Callable[] {
-                Shovel.Callable.MakeUdp("print", print, 1),
-                Shovel.Callable.MakeUdp("readLine", readLine, 0),
-            });
+            Shovel.Api.RunVm (bytecode, sources, new Shovel.Callable[] {
+                Shovel.Callable.MakeUdp ("print", print, 1),
+                Shovel.Callable.MakeUdp ("readLine", readLine, 0),
+            }
+            );
         }
 
         static void SerializerTest ()
         {
-            var sources = Shovel.Api.MakeSources("test.sho", @"
-var a = 1
-var b = 2
-");
-            var bytecode = Shovel.Api.GetBytecode(sources);
-            var vm = Shovel.Api.RunVm(bytecode, sources);
-            var state = Shovel.Api.SerializeVmState(vm);
-            Console.WriteLine (state.Length);
+            var sources = Shovel.Api.MakeSources ("test.sho", @"
+var a = ""hello, ""
+var b = @stop()
+@print(string(a + b))
+"
+            );
+            Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) => {
+                if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
+                    Console.WriteLine (args [0].StringValue);
+                }
+            };
+            bool firstCallOfStop = true;
+            Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> stop = (api, args, result) => {
+                if (firstCallOfStop) {
+                    result.After = Shovel.UdpResult.AfterCall.NapAndRetryOnWakeUp;
+                    firstCallOfStop = false;
+                } else {
+                    result.After = Shovel.UdpResult.AfterCall.Continue;
+                    result.Result = Shovel.Value.Make ("world");
+                }
+            };
+            var bytecode = Shovel.Api.GetBytecode (sources);
+            var userPrimitives = new Shovel.Callable[] {
+                Shovel.Callable.MakeUdp ("print", print, 1),
+                Shovel.Callable.MakeUdp ("stop", stop, 0),
+            };
+            var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
+            vm.WakeUp ();
+            Shovel.Api.RunVm (vm, sources, userPrimitives);
+
+            //var state = Shovel.Api.SerializeVmState (vm);
+            //Console.WriteLine (state.Length);
         }
 
-		public static void SimpleTest ()
-		{
-			var sources = Shovel.Api.MakeSources ("test.sho", @"
+        public static void SimpleTest ()
+        {
+            var sources = Shovel.Api.MakeSources ("test.sho", @"
 var adder = fn (n) fn (x) x + n
 var add1 = adder(1)
 add1(3)"
-			);
-			Console.WriteLine (Shovel.Api.PrintRawBytecode (sources));
-			Console.WriteLine (Shovel.Api.TestRunVm (sources));
-		}
+            );
+            Console.WriteLine (Shovel.Api.PrintRawBytecode (sources));
+            Console.WriteLine (Shovel.Api.TestRunVm (sources));
+        }
 
-		public static void AnotherSimpleTest ()
-		{
-			var sources = Shovel.Api.MakeSourcesWithStdlib (
-				"test.sho", 
+        public static void AnotherSimpleTest ()
+        {
+            var sources = Shovel.Api.MakeSourcesWithStdlib (
+                "test.sho", 
                 "- 8");
-			Console.WriteLine (Shovel.Api.TestRunVm(sources));
-		}
+            Console.WriteLine (Shovel.Api.TestRunVm (sources));
+        }
 
-		public static void MasterMindBenchmark ()
-		{
-//			var sources = Shovel.Api.MakeSourcesWithStdlib ("qsort", "stdlib.sort(array(1, 5, 3, 4, 2), fn (a, b) a < b)");
-			var sources = Shovel.Api.MakeSourcesWithStdlib ("mmind", Mastermind ());
-			File.WriteAllText ("test.txt", Shovel.Api.PrintAssembledBytecode (sources));
-			System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch ();
-//			sw.Reset ();
-//			sw.Start ();
-//			for (int i = 0; i < 3000; i ++) {
-//				Shovel.Api.GetBytecode (sources);
-//			}
-//			sw.Stop ();
-//			Console.WriteLine (sw.ElapsedMilliseconds / 1000.0);
-			var bytecode = Shovel.Api.GetBytecode (sources);
+        public static void MasterMindBenchmark ()
+        {
+//          var sources = Shovel.Api.MakeSourcesWithStdlib ("qsort", "stdlib.sort(array(1, 5, 3, 4, 2), fn (a, b) a < b)");
+            var sources = Shovel.Api.MakeSourcesWithStdlib ("mmind", Mastermind ());
+            File.WriteAllText ("test.txt", Shovel.Api.PrintAssembledBytecode (sources));
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch ();
+//          sw.Reset ();
+//          sw.Start ();
+//          for (int i = 0; i < 3000; i ++) {
+//              Shovel.Api.GetBytecode (sources);
+//          }
+//          sw.Stop ();
+//          Console.WriteLine (sw.ElapsedMilliseconds / 1000.0);
+            var bytecode = Shovel.Api.GetBytecode (sources);
 
-			sw.Reset ();
-			sw.Start ();
-			var result = Shovel.Api.TestRunVm (bytecode, sources);
-			sw.Stop ();
+            sw.Reset ();
+            sw.Start ();
+            var result = Shovel.Api.TestRunVm (bytecode, sources);
+            sw.Stop ();
 
-			Console.WriteLine (sw.ElapsedMilliseconds / 1000.0);
+            Console.WriteLine (sw.ElapsedMilliseconds / 1000.0);
 
-			//			var result = Shovel.Api.NakedRunVm (sources);
-			foreach (var k in result.ArrayValue) {
-				foreach (var kk in k.ArrayValue) {
-					Console.Write (kk.IntegerValue);
-					Console.Write (" ");
-				}
-				Console.WriteLine ();
-			}
-		}
+            //          var result = Shovel.Api.NakedRunVm (sources);
+            foreach (var k in result.ArrayValue) {
+                foreach (var kk in k.ArrayValue) {
+                    Console.Write (kk.IntegerValue);
+                    Console.Write (" ");
+                }
+                Console.WriteLine ();
+            }
+        }
 
-		static string Mastermind ()
-		{
-			return @"
+        static string Mastermind ()
+        {
+            return @"
     var breakNumber = fn (n) {
       array((n / 1000) % 10,
             (n / 100) % 10,
@@ -186,6 +212,6 @@ add1(3)"
     stdlib.repeat(9, fn() generateOptions())
     slice(generateOptions(), 0, 10)
 ";
-		}
-	}
+        }
+    }
 }

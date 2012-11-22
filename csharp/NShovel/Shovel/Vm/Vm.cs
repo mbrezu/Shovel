@@ -101,6 +101,11 @@ namespace Shovel.Vm
             return vm;
         }
 
+        public void WakeUp ()
+        {
+            this.shouldTakeANap = false;
+        }
+
         public Value CheckStackTop ()
         {
             if (this.stack.Count != 1) {
@@ -1183,7 +1188,7 @@ namespace Shovel.Vm
             }
             throw new ShovelException (){
                     Message = message,
-                    FileName = fileName,
+                FileName = fileName,
                     Line = line,
                     Column = column
                 };

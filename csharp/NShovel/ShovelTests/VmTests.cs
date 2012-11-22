@@ -190,25 +190,100 @@ f(1, 2, 3, 5)
                 if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
                     log.Add (args [0].StringValue);
                 } else {
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException ();
                 }
             };
-            var sources = Shovel.Api.MakeSourcesWithStdlib("test.sho", @"
+            var sources = Shovel.Api.MakeSourcesWithStdlib ("test.sho", @"
 var a = 0
 stdlib.repeat(3, fn () {
     a = a + 1
     @print(string(a))
 })
-");
-            var bytecode = Shovel.Api.GetBytecode(sources);
-            Shovel.Api.RunVm(bytecode, sources, new Shovel.Callable[] {
-                Shovel.Callable.MakeUdp("print", print, 1),
-            });
+"
+            );
+            var bytecode = Shovel.Api.GetBytecode (sources);
+            Shovel.Api.RunVm (bytecode, sources, new Shovel.Callable[] {
+                Shovel.Callable.MakeUdp ("print", print, 1),
+            }
+            );
             Assert.AreEqual (3, log.Count);
-            Assert.AreEqual ("1", log[0]);
-            Assert.AreEqual ("2", log[1]);
-            Assert.AreEqual ("3", log[2]);
+            Assert.AreEqual ("1", log [0]);
+            Assert.AreEqual ("2", log [1]);
+            Assert.AreEqual ("3", log [2]);
         }
+
+        static IEnumerable<Shovel.Callable> GetPrintAndStopUdps(List<string> log, bool retryStop) 
+        {
+            Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) => {
+                if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
+                    log.Add (args [0].StringValue);
+                } else {
+                    throw new InvalidOperationException ();
+                }
+            };
+            Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> stop;
+            if (retryStop) {
+                bool firstCallOfStop = true;
+                stop = (api, args, result) => {
+                    if (firstCallOfStop) {
+                        result.After = Shovel.UdpResult.AfterCall.NapAndRetryOnWakeUp;
+                        firstCallOfStop = false;
+                    } else {
+                        result.After = Shovel.UdpResult.AfterCall.Continue;
+                        result.Result = Shovel.Value.Make ("world");
+                    }
+                };
+
+            } else {
+                stop = (api, args, result) => {
+                    result.After = Shovel.UdpResult.AfterCall.Nap;
+                };
+            }
+            return new Shovel.Callable[] {
+                Shovel.Callable.MakeUdp ("print", print, 1),
+                Shovel.Callable.MakeUdp ("stop", stop, 0),
+            };
+        }
+
+        [Test]
+        public void StopAndWakeUp ()
+        {
+            List<string> log = new List<string> ();
+            var sources = Shovel.Api.MakeSources ("test.sho", @"
+var a = ""hello, ""
+var b = ""world""
+@stop()
+@print(string(a + b))
+"
+            );
+            var bytecode = Shovel.Api.GetBytecode (sources);
+            var userPrimitives = GetPrintAndStopUdps(log, false);
+            var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
+            vm.WakeUp ();
+            Shovel.Api.RunVm (vm, sources, userPrimitives);
+            Assert.AreEqual (1, log.Count);
+            Assert.AreEqual ("hello, world", log [0]);
+        }
+
+        [Test]
+        public void StopWakeUpAndRetry ()
+        {
+            List<string> log = new List<string> ();
+            var sources = Shovel.Api.MakeSources ("test.sho", @"
+var a = ""hello, ""
+var b = @stop()
+@print(string(a + b))
+"
+            );
+            var bytecode = Shovel.Api.GetBytecode (sources);
+            var userPrimitives = GetPrintAndStopUdps(log, true);
+            var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
+            vm.WakeUp ();
+            Shovel.Api.RunVm (vm, sources, userPrimitives);
+            Assert.AreEqual (1, log.Count);
+            Assert.AreEqual ("hello, world", log [0]);
+        }
+
     }
 }
 

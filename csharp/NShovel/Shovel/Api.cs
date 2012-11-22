@@ -145,6 +145,18 @@ namespace Shovel
             return Vm.Vm.RunVm (bytecode, sources, userPrimitives);
         }
 
+        public static Vm.Vm RunVm (
+            Vm.Vm vm, 
+            List<SourceFile> sources,
+            IEnumerable<Callable> userPrimitives = null)
+        {
+            return Vm.Vm.RunVm (
+                null, 
+                sources: sources, 
+                userPrimitives: userPrimitives,
+                vm: vm);
+        }
+
 		public static string SideBySide (string str1, string str2, int halfSize = 38)
 		{
 			return Utils.SideBySide(str1, str2, halfSize);
