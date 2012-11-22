@@ -34,7 +34,7 @@ namespace ShovelTests
 		{
 			TestBytecodeSerialization (
 				"1", 
-				obj => obj.Kind == Shovel.ShovelValue.Kinds.Integer && obj.IntegerValue == 1);
+				obj => obj.Kind == Shovel.Value.Kinds.Integer && obj.IntegerValue == 1);
 		}
 
 		[Test]
@@ -42,14 +42,14 @@ namespace ShovelTests
 		{
 			TestBytecodeSerialization (
 				"true || false", 
-				obj => obj.Kind == Shovel.ShovelValue.Kinds.Bool && obj.BoolValue);
+				obj => obj.Kind == Shovel.Value.Kinds.Bool && obj.BoolValue);
 		}
 
 		[Test]
 		public void ConstDouble ()
 		{
 			TestBytecodeSerialization (
-				"1.4", obj => obj.Kind == Shovel.ShovelValue.Kinds.Double && 1.4 == obj.DoubleValue);
+				"1.4", obj => obj.Kind == Shovel.Value.Kinds.Double && 1.4 == obj.DoubleValue);
 		}
 
 		[Test]
@@ -57,7 +57,7 @@ namespace ShovelTests
 		{
 			TestBytecodeSerialization (
 				"'test'", 
-				obj => obj.Kind == Shovel.ShovelValue.Kinds.String && "test" == obj.StringValue);
+				obj => obj.Kind == Shovel.Value.Kinds.String && "test" == obj.StringValue);
 		}
 
 		[Test]
@@ -65,7 +65,7 @@ namespace ShovelTests
 		{
 			TestBytecodeSerialization (
 				"null", 
-				obj => obj.Kind == Shovel.ShovelValue.Kinds.Null);
+				obj => obj.Kind == Shovel.Value.Kinds.Null);
 		}
 
 		[Test]
@@ -73,7 +73,7 @@ namespace ShovelTests
 		{
 			TestBytecodeSerialization (
 				Utils.FactorialOfTenProgram (), 
-				obj => obj.Kind == Shovel.ShovelValue.Kinds.Integer && (long)3628800 == obj.IntegerValue);
+				obj => obj.Kind == Shovel.Value.Kinds.Integer && (long)3628800 == obj.IntegerValue);
 		}
 
 		[Test]
@@ -81,11 +81,11 @@ namespace ShovelTests
 		{
 			TestBytecodeSerialization (
 				Utils.FibonacciOfTenProgram (), 
-				obj => obj.Kind == Shovel.ShovelValue.Kinds.Integer && (long)89 == obj.IntegerValue);
+				obj => obj.Kind == Shovel.Value.Kinds.Integer && (long)89 == obj.IntegerValue);
 		}
 
 		void TestBytecodeSerialization (
-			string program, Func<Shovel.ShovelValue, bool> resultChecker)
+			string program, Func<Shovel.Value, bool> resultChecker)
 		{
 			var fileName = "test.sho";
 			var sources = Shovel.Api.MakeSources (fileName, program);
@@ -96,7 +96,7 @@ namespace ShovelTests
 			var bytes1 = ms.ToArray ();
 			var bytes2 = Shovel.Api.SerializeBytecode (bytecode2).ToArray ();
 			Assert.IsTrue (bytes1.SequenceEqual (bytes2));
-			var result = Shovel.Api.RunVm (bytecode2, sources);
+			var result = Shovel.Api.TestRunVm (bytecode2, sources);
 			Assert.IsTrue (resultChecker (result));
 		}
 

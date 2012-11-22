@@ -45,7 +45,6 @@
     <Compile Include="Vm\Vm.cs" />
     <Compile Include="Vm\Prim0.cs" />
     <Compile Include="Vm\Stack.cs" />
-    <Compile Include="ShovelValue.cs" />
     <Compile Include="Serialization\BytecodeSerializer.cs" />
     <Compile Include="Serialization\VmStateSerializer.cs" />
     <Compile Include="Compiler\AssembledBytecodeOptimizations.cs" />
@@ -60,14 +59,16 @@
     <Compile Include="Vm\Types\NamedBlock.cs" />
     <Compile Include="Compiler\Types\ParseTree.cs" />
     <Compile Include="Compiler\Types\Position.cs" />
-    <Compile Include="Vm\Types\Callable.cs" />
     <Compile Include="Compiler\Types\Token.cs" />
-    <Compile Include="Vm\Types\VmApi.cs" />
     <Compile Include="Vm\Types\VmEnvFrame.cs" />
     <Compile Include="Vm\Types\VmEnvironment.cs" />
     <Compile Include="Vm\Types\ReturnAddress.cs" />
     <Compile Include="Compiler\RawBytecodeOptimizations.cs" />
     <Compile Include="Serialization\Utils.cs" />
+    <Compile Include="UdpResult.cs" />
+    <Compile Include="VmApi.cs" />
+    <Compile Include="Callable.cs" />
+    <Compile Include="Value.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

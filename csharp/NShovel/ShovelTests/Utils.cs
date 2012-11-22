@@ -67,39 +67,39 @@ fib(10)
 		}
 
 		internal static void TestValue (
-			string source, Shovel.ShovelValue.Kinds expectedResultType, object expectedResult)
+			string source, Shovel.Value.Kinds expectedResultType, object expectedResult)
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", source);
-			var result = Shovel.Api.NakedRunVm (sources);
+			var result = Shovel.Api.TestRunVm (sources);
 			Assert.IsTrue (result.Kind == expectedResultType);
 			switch (expectedResultType) {
-			case Shovel.ShovelValue.Kinds.Null:
+			case Shovel.Value.Kinds.Null:
 				break;
-			case Shovel.ShovelValue.Kinds.Integer:
+			case Shovel.Value.Kinds.Integer:
 				Assert.AreEqual ((long)expectedResult, result.IntegerValue);
 				break;
-			case Shovel.ShovelValue.Kinds.String:
+			case Shovel.Value.Kinds.String:
 				Assert.AreEqual ((string)expectedResult, result.StringValue);
 				break;
-			case Shovel.ShovelValue.Kinds.Double:
+			case Shovel.Value.Kinds.Double:
 				Assert.AreEqual ((double)expectedResult, result.DoubleValue);
 				break;
-			case Shovel.ShovelValue.Kinds.Bool:
+			case Shovel.Value.Kinds.Bool:
 				Assert.AreEqual ((bool)expectedResult, result.BoolValue);
 				break;
-			case Shovel.ShovelValue.Kinds.Array:
+			case Shovel.Value.Kinds.Array:
 				Assert.Fail();
 				break;
-			case Shovel.ShovelValue.Kinds.Hash:
+			case Shovel.Value.Kinds.Hash:
 				Assert.Fail();
 				break;
-			case Shovel.ShovelValue.Kinds.Callable:
+			case Shovel.Value.Kinds.Callable:
 				Assert.Fail();
 				break;
-			case Shovel.ShovelValue.Kinds.ReturnAddress:
+			case Shovel.Value.Kinds.ReturnAddress:
 				Assert.Fail();
 				break;
-			case Shovel.ShovelValue.Kinds.NamedBlock:
+			case Shovel.Value.Kinds.NamedBlock:
 				Assert.Fail();
 				break;
 			}

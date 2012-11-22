@@ -31,10 +31,54 @@ namespace ConsoleTest
 	{
 		public static void Main (string[] args)
 		{
-			MasterMindBenchmark();
+			//MasterMindBenchmark();
 			//SimpleTest ();
 			//AnotherSimpleTest ();
+            //SerializerTest();
+            UdpTest();
 		}
+
+        static void UdpTest()
+        {
+            var sources = Shovel.Api.MakeSourcesWithStdlib("test.sho", @"
+var a = 0
+stdlib.repeat(10, fn () {
+    a = a + 1
+    @print(string(a))
+})
+@print (""What's your name?"")
+var b = @readLine()
+@print (""Hello, "" + b)
+");
+            Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) => {
+                if (args.Length > 0 && args[0].Kind == Shovel.Value.Kinds.String) {
+                    Console.WriteLine (args[0].StringValue);
+                } else {
+                    Console.WriteLine ("do be doo");
+                }
+            };
+            Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> readLine = (api, args, result) => {
+                result.Result = Shovel.Value.Make (Console.ReadLine());
+            };
+            var bytecode = Shovel.Api.GetBytecode(sources);
+
+            Shovel.Api.RunVm(bytecode, sources, new Shovel.Callable[] {
+                Shovel.Callable.MakeUdp("print", print, 1),
+                Shovel.Callable.MakeUdp("readLine", readLine, 0),
+            });
+        }
+
+        static void SerializerTest ()
+        {
+            var sources = Shovel.Api.MakeSources("test.sho", @"
+var a = 1
+var b = 2
+");
+            var bytecode = Shovel.Api.GetBytecode(sources);
+            var vm = Shovel.Api.RunVm(bytecode, sources);
+            var state = Shovel.Api.SerializeVmState(vm);
+            Console.WriteLine (state.Length);
+        }
 
 		public static void SimpleTest ()
 		{
@@ -44,7 +88,7 @@ var add1 = adder(1)
 add1(3)"
 			);
 			Console.WriteLine (Shovel.Api.PrintRawBytecode (sources));
-			Console.WriteLine (Shovel.Api.NakedRunVm (sources));
+			Console.WriteLine (Shovel.Api.TestRunVm (sources));
 		}
 
 		public static void AnotherSimpleTest ()
@@ -52,7 +96,7 @@ add1(3)"
 			var sources = Shovel.Api.MakeSourcesWithStdlib (
 				"test.sho", 
                 "- 8");
-			Console.WriteLine (Shovel.Api.NakedRunVm(sources));
+			Console.WriteLine (Shovel.Api.TestRunVm(sources));
 		}
 
 		public static void MasterMindBenchmark ()
@@ -72,7 +116,7 @@ add1(3)"
 
 			sw.Reset ();
 			sw.Start ();
-			var result = Shovel.Api.RunVm (bytecode, sources);
+			var result = Shovel.Api.TestRunVm (bytecode, sources);
 			sw.Stop ();
 
 			Console.WriteLine (sw.ElapsedMilliseconds / 1000.0);

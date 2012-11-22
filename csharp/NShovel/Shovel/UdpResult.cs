@@ -21,30 +21,19 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 
-namespace Shovel.Vm.Types
+namespace Shovel
 {
-	public class VmApi
-	{
-		public Action<string> RaiseShovelError { get; private set; }
+    public class UdpResult
+    {
+        public enum AfterCall { Continue, Nap, NapAndRetryOnWakeUp }
 
-		public Action<int> TicksIncrementer { get; private set; }
+        public Value Result { get; set; }
+        public AfterCall After { get; set; }
 
-		public Action<int> CellsIncrementer { get; private set; }
-
-		// This is only useful for required primitives that allocate memory, such as 'arrayN'.
-		internal Action<int> CellsIncrementHerald { get; private set; }
-
-		internal VmApi (
-			Action<string> raiseShovelError, 
-			Action<int> ticksIncrementer,
-			Action<int> cellsIncrementer,
-			Action<int> cellsIncrementHerald)
-		{
-			this.RaiseShovelError = raiseShovelError;
-			this.TicksIncrementer = ticksIncrementer;
-			this.CellsIncrementer = cellsIncrementer;
-			this.CellsIncrementHerald = cellsIncrementHerald;
-		}
-	}
+        public UdpResult ()
+        {
+            this.After = AfterCall.Continue;
+        }
+    }
 }
 

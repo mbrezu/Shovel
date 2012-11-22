@@ -4,39 +4,39 @@ namespace Shovel
 {
 	public class Stack
 	{
-		ShovelValue[] storage;
+		Value[] storage;
 		int length;
 
-        public ShovelValue[] GetUsedStack ()
+        public Value[] GetUsedStack ()
         {
-            var result = new ShovelValue[this.length];
+            var result = new Value[this.length];
             Array.Copy (this.storage, result, this.length);
             return result;
         }
 
 		public Stack ()
 		{
-			this.storage = new ShovelValue[1024];
+			this.storage = new Value[1024];
 		}
 
-        public Stack(ShovelValue[] existingValues) 
+        public Stack(Value[] existingValues) 
         {
-            this.storage = new ShovelValue[existingValues.Length * 2];
+            this.storage = new Value[existingValues.Length * 2];
             this.length = existingValues.Length;
             Array.Copy (existingValues, this.storage, this.length);
         }
 
-		public ShovelValue Top ()
+		public Value Top ()
 		{
 			return this.storage [this.length - 1];
 		}
 
-        public ShovelValue UnderTop (int i)
+        public Value UnderTop (int i)
         {
             return this.storage [this.length - i - 1];
         }
 
-        public ShovelValue UnderTopOne ()
+        public Value UnderTopOne ()
         {
             return this.storage [this.length - 2];
         }
@@ -53,7 +53,7 @@ namespace Shovel
             this.length -= i;
         }
 
-		public ShovelValue PopTop ()
+		public Value PopTop ()
 		{
             this.length --;
             return this.storage[length];
@@ -64,13 +64,15 @@ namespace Shovel
 			this.length --;
 		}
 
-		public void Push (ShovelValue value)
+		public void Push (Value value)
 		{
 			if (this.length < this.storage.Length) {
 				this.storage [this.length] = value;
 				this.length++;
 			} else {
-				var newStorage = new ShovelValue[this.storage.Length * 2];
+                // FIXME: use Array.Resize.
+                // Check for other places where Array.Resize may be useful.
+				var newStorage = new Value[this.storage.Length * 2];
 				Array.Copy (this.storage, this.storage, this.length);
 				this.storage = newStorage;
 				this.Push(value);
@@ -81,7 +83,7 @@ namespace Shovel
 			get { return this.length;}
 		}
 
-		public ShovelValue[] Storage {
+		public Value[] Storage {
 			get { return this.storage; }
 		}
 
@@ -96,7 +98,7 @@ namespace Shovel
 			this.length -= n;
 		}
 
-		public void GetTopRange(int n, out ShovelValue[] array, out int start) 
+		public void GetTopRange(int n, out Value[] array, out int start) 
 		{
 			array = this.storage;
 			start = this.length - n;
@@ -104,7 +106,7 @@ namespace Shovel
 
         public bool TopIsReturnAddress ()
         {
-            return this.storage[this.length - 1].Kind == ShovelValue.Kinds.ReturnAddress;
+            return this.storage[this.length - 1].Kind == Value.Kinds.ReturnAddress;
         }
 
 	}

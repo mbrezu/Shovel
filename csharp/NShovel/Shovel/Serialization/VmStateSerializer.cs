@@ -96,16 +96,18 @@ namespace Shovel.Serialization
 
         internal int Serialize (object obj)
         {
-            if (obj is ShovelValue) {
-                return SerializeShovelValue ((ShovelValue)obj, obj);
+            if (obj is Value) {
+                return SerializeShovelValue ((Value)obj, obj);
             } else if (obj is string[]) {
                 return SerializeArray (obj, (string[])obj, ObjectTypes.StringArray);
-            } else if (obj is ShovelValue[]) {
-                return SerializeArray (obj, (ShovelValue[])obj, ObjectTypes.ShovelValueArray);
+            } else if (obj is Value[]) {
+                return SerializeArray (obj, (Value[])obj, ObjectTypes.ShovelValueArray);
             } else if (obj is VmEnvironment) {
                 return SerializeEnvironment ((VmEnvironment)obj, obj);
             } else if (obj is VmEnvFrame) {
                 return SerializeEnvFrame ((VmEnvFrame)obj, obj);
+            } else if (obj == null) {
+                return SerializeNull ();
             }
             Shovel.Utils.Panic ();
             throw new InvalidOperationException ();
@@ -253,37 +255,37 @@ namespace Shovel.Serialization
             }
         }
 
-        ShovelValue RebuildShovelValue (object par)
+        Value RebuildShovelValue (object par)
         {
             if (par is long) {
-                return ShovelValue.MakeInt ((long)par);
+                return Value.MakeInt ((long)par);
             } else if (par is string) {
-                return ShovelValue.Make ((string)par);
+                return Value.Make ((string)par);
             } else if (par is double) {
-                return ShovelValue.MakeFloat ((double)par);
+                return Value.MakeFloat ((double)par);
             } else if (par == null) {
-                return ShovelValue.Make ();
+                return Value.Make ();
             } else if (par is bool) {
-                return ShovelValue.Make ((bool)par);
-            } else if (par is List<ShovelValue>) {
-                return ShovelValue.Make ((List<ShovelValue>)par);
-            } else if (par is Dictionary<ShovelValue, ShovelValue>) {
-                return ShovelValue.Make ((Dictionary<ShovelValue, ShovelValue>)par);
+                return Value.Make ((bool)par);
+            } else if (par is List<Value>) {
+                return Value.Make ((List<Value>)par);
+            } else if (par is Dictionary<Value, Value>) {
+                return Value.Make ((Dictionary<Value, Value>)par);
             } else if (par is Callable) {
-                return ShovelValue.Make ((Callable)par);
+                return Value.Make ((Callable)par);
             } else if (par is ReturnAddress) {
-                return ShovelValue.Make ((ReturnAddress)par);
+                return Value.Make ((ReturnAddress)par);
             } else if (par is NamedBlock) {
-                return ShovelValue.Make ((NamedBlock)par);
+                return Value.Make ((NamedBlock)par);
             } else {
                 Shovel.Utils.Panic ();
                 throw new InvalidOperationException ();
             }
         }
 
-        List<ShovelValue> RebuildShovelValueList (Composite composite, Func<int, object> reader)
+        List<Value> RebuildShovelValueList (Composite composite, Func<int, object> reader)
         {
-            var result = new List<ShovelValue> ();
+            var result = new List<Value> ();
             for (var i = 0; i < composite.Elements.Length; i++) {
                 result [i] = RebuildShovelValue (reader (composite.Elements [i]));
             }
@@ -299,18 +301,18 @@ namespace Shovel.Serialization
             return result;
         }
 
-        ShovelValue[] RebuildShovelValueArray (Composite composite, Func<int, object> reader)
+        Value[] RebuildShovelValueArray (Composite composite, Func<int, object> reader)
         {
-            var result = new ShovelValue[composite.Elements.Length];
+            var result = new Value[composite.Elements.Length];
             for (var i = 0; i < composite.Elements.Length; i++) {
                 result [i] = RebuildShovelValue (reader (composite.Elements [i]));
             }
             return result;
         }
 
-        Dictionary<ShovelValue, ShovelValue> RebuildHash (Composite composite, Func<int, object> reader)
+        Dictionary<Value, Value> RebuildHash (Composite composite, Func<int, object> reader)
         {
-            var result = new Dictionary<ShovelValue, ShovelValue> ();
+            var result = new Dictionary<Value, Value> ();
             for (var i = 0; i < composite.Elements.Length; i+=2) {
                 var key = RebuildShovelValue (reader (composite.Elements [i]));
                 var value = RebuildShovelValue (reader (composite.Elements [i + 1]));
@@ -369,7 +371,7 @@ namespace Shovel.Serialization
             var result = new VmEnvFrame ();
 
             result.VarNames = (string[])reader(composite.Elements [0]);
-            result.Values = (ShovelValue[])reader(composite.Elements [1]);
+            result.Values = (Value[])reader(composite.Elements [1]);
             result.IntroducedAtProgramCounter = (int)(long)reader(composite.Elements [2]);
 
             return result;
@@ -452,7 +454,7 @@ namespace Shovel.Serialization
             return result;
         }
 
-        int SerializeHash (Dictionary<ShovelValue, ShovelValue> dict, object obj)
+        int SerializeHash (Dictionary<Value, Value> dict, object obj)
         {
             var composite = new Composite { 
                 Kind = ObjectTypes.Hash, 
@@ -468,7 +470,7 @@ namespace Shovel.Serialization
             return result;
         }
 
-        int SerializeList (List<ShovelValue> list, object obj)
+        int SerializeList (List<Value> list, object obj)
         {
             var composite = new Composite { 
                 Kind = ObjectTypes.ShovelValueList, 
@@ -547,28 +549,28 @@ namespace Shovel.Serialization
             return result;
         }
 
-        int SerializeShovelValue (ShovelValue sv, object obj)
+        int SerializeShovelValue (Value sv, object obj)
         {
             switch (sv.Kind) {
-            case ShovelValue.Kinds.Null:
+            case Value.Kinds.Null:
                 return SerializeNull ();
-            case ShovelValue.Kinds.Bool:
+            case Value.Kinds.Bool:
                 return SerializeBool (sv.BoolValue);
-            case ShovelValue.Kinds.String:
+            case Value.Kinds.String:
                 return SerializeOne (sv.StringValue);
-            case ShovelValue.Kinds.Integer:
+            case Value.Kinds.Integer:
                 return SerializeOne (sv.IntegerValue);
-            case ShovelValue.Kinds.Double:
+            case Value.Kinds.Double:
                 return SerializeOne (sv.DoubleValue);
-            case ShovelValue.Kinds.Array:
+            case Value.Kinds.Array:
                 return SerializeList (sv.ArrayValue, obj);
-            case ShovelValue.Kinds.Hash:
+            case Value.Kinds.Hash:
                 return SerializeHash (sv.HashValue, obj);
-            case ShovelValue.Kinds.Callable:
+            case Value.Kinds.Callable:
                 return SerializeCallable (sv.CallableValue, obj);
-            case ShovelValue.Kinds.ReturnAddress:
+            case Value.Kinds.ReturnAddress:
                 return SerializeReturnAddress (sv.ReturnAddressValue, obj);
-            case ShovelValue.Kinds.NamedBlock:
+            case Value.Kinds.NamedBlock:
                 return SerializeNamedBlock (sv.NamedBlockValue, obj);
             default:
                 Shovel.Utils.Panic ();

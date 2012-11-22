@@ -6,7 +6,7 @@ using Shovel.Vm.Types;
 namespace Shovel
 {
     [StructLayout(LayoutKind.Explicit)]
-    public struct ShovelValue
+    public struct Value
     {
         public enum Kinds
         {
@@ -39,10 +39,10 @@ namespace Shovel
         public string
             StringValue;
         [FieldOffset(8)]
-        public List<ShovelValue>
+        public List<Value>
             ArrayValue;
         [FieldOffset(8)]
-        public Dictionary<ShovelValue, ShovelValue>
+        public Dictionary<Value, Value>
             HashValue;
         [FieldOffset(8)]
         public Callable
@@ -54,80 +54,80 @@ namespace Shovel
         public NamedBlock
             NamedBlockValue;
 
-        static ShovelValue value;
+        static Value value;
 
-        public static ShovelValue Make ()
+        public static Value Make ()
         {
             return value;
         }
 
-        public static ShovelValue Make (bool b)
+        public static Value Make (bool b)
         {
-            ShovelValue result = value;
+            Value result = value;
             result.Kind = Kinds.Bool;
             result.BoolValue = b;
             return result;
         }
 
-        public static ShovelValue MakeInt (long l)
+        public static Value MakeInt (long l)
         {
-            ShovelValue result = value;
+            Value result = value;
             result.Kind = Kinds.Integer;
             result.IntegerValue = l;
             return result;
         }
 
-        public static ShovelValue Make (string s)
+        public static Value Make (string s)
         {
-            ShovelValue result = value;
+            Value result = value;
             result.Kind = Kinds.String;
             result.StringValue = s;
             return result;
         }
 
-        public static ShovelValue MakeFloat (double d)
+        public static Value MakeFloat (double d)
         {
-            ShovelValue result = value;
+            Value result = value;
             result.Kind = Kinds.Double;
             result.DoubleValue = d;
             return result;
         }
 
-        public static ShovelValue Make (List<ShovelValue> a)
+        public static Value Make (List<Value> a)
         {
-            ShovelValue result = value;
+            Value result = value;
             result.Kind = Kinds.Array;
             result.ArrayValue = a;
             return result;
         }
 
-        public static ShovelValue Make (Dictionary<ShovelValue, ShovelValue> d)
+        public static Value Make (Dictionary<Value, Value> d)
         {
-            ShovelValue result = value;
+            Value result = value;
             result.Kind = Kinds.Hash;
             result.HashValue = d;
             return result;
         }
 
-        public static ShovelValue Make (Callable c)
+        public static Value Make (Callable c)
         {
-            ShovelValue result = value;
+            Value result = value;
             result.Kind = Kinds.Callable;
             result.CallableValue = c;
             return result;
         }
 
-        public static ShovelValue Make (ReturnAddress ra)
+        public static Value Make (ReturnAddress ra)
         {
-            ShovelValue result = value;
+            Value result = value;
             result.Kind = Kinds.ReturnAddress;
             result.ReturnAddressValue = ra;
             return result;
         }
 
-        public static ShovelValue Make (NamedBlock nb)
+        public static Value Make (NamedBlock nb)
         {
-            ShovelValue result = value;
+            Value result = value;
             result.Kind = Kinds.NamedBlock;
             result.NamedBlockValue = nb;
             return result;
@@ -135,10 +135,10 @@ namespace Shovel
 
         public override bool Equals (object obj)
         {
-            if (!(obj is ShovelValue)) {
+            if (!(obj is Value)) {
                 return false;
             }
-            var sv = (ShovelValue)obj;
+            var sv = (Value)obj;
             switch (this.Kind) {
             case Kinds.String:
                 return sv.Kind == Kinds.String && this.StringValue == sv.StringValue;

@@ -29,6 +29,14 @@ namespace Shovel
 {
 	public class Api
 	{
+        public static byte[] SerializeVmState (Vm.Vm vm)
+        {
+            using (var s = new MemoryStream()) {
+                vm.SerializeState(s);
+                return s.ToArray();
+            }
+        }
+
 		public static int Version = 1;
 
 		public static string PrintRawBytecode (List<SourceFile> sources, bool optimize = false)
@@ -115,7 +123,7 @@ namespace Shovel
 			return MakeSourcesFromIEnumerable (sources);
 		}
 
-		public static ShovelValue NakedRunVm (List<SourceFile> sources)
+		public static Value TestRunVm (List<SourceFile> sources)
 		{
 			var rawBytecode = Utils.GetRawBytecode (sources);
 			var bytecode = Utils.Assemble (rawBytecode);
@@ -123,11 +131,19 @@ namespace Shovel
 			return vm.CheckStackTop ();
 		}
 
-		public static ShovelValue RunVm (Shovel.Instruction[] bytecode, List<SourceFile> sources)
-		{
-			var vm = Vm.Vm.RunVm (bytecode, sources);
-			return vm.CheckStackTop ();
-		}
+        public static Value TestRunVm (Shovel.Instruction[] bytecode, List<SourceFile> sources)
+        {
+            var vm = Vm.Vm.RunVm (bytecode, sources);
+            return vm.CheckStackTop ();
+        }
+
+        public static Vm.Vm RunVm (
+            Shovel.Instruction[] bytecode, 
+            List<SourceFile> sources,
+            IEnumerable<Callable> userPrimitives = null)
+        {
+            return Vm.Vm.RunVm (bytecode, sources, userPrimitives);
+        }
 
 		public static string SideBySide (string str1, string str2, int halfSize = 38)
 		{

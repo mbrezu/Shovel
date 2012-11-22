@@ -118,41 +118,41 @@ namespace Shovel.Serialization
 			}
 		}
 
-		static void WriteConst (Stream stream, ShovelValue sv)
+		static void WriteConst (Stream stream, Value sv)
 		{
 			stream.WriteByte ((byte)sv.Kind);
-			if (sv.Kind == ShovelValue.Kinds.Integer) {
+			if (sv.Kind == Value.Kinds.Integer) {
 				Utils.WriteBytes (stream, BitConverter.GetBytes (sv.IntegerValue));
-			} else if (sv.Kind == ShovelValue.Kinds.Double) {
+			} else if (sv.Kind == Value.Kinds.Double) {
 				Utils.WriteBytes (stream, BitConverter.GetBytes (sv.IntegerValue));
-			} else if (sv.Kind == ShovelValue.Kinds.String) {
+			} else if (sv.Kind == Value.Kinds.String) {
 				WriteString (stream, sv.StringValue);
-			} else if (sv.Kind == ShovelValue.Kinds.Bool) {
+			} else if (sv.Kind == Value.Kinds.Bool) {
 				stream.WriteByte (sv.BoolValue ? (byte)1 : (byte)0);
-			} else if (sv.Kind == ShovelValue.Kinds.Null) {
+			} else if (sv.Kind == Value.Kinds.Null) {
 				// Do nothing.
 			} else {
 				Shovel.Utils.Panic ();
 			}
 		}
 
-		static ShovelValue ReadConst (Stream stream)
+		static Value ReadConst (Stream stream)
 		{
-			var result = ShovelValue.Make ();
-			result.Kind = (ShovelValue.Kinds)stream.ReadByte ();
-			if (result.Kind == ShovelValue.Kinds.Integer) {
+			var result = Value.Make ();
+			result.Kind = (Value.Kinds)stream.ReadByte ();
+			if (result.Kind == Value.Kinds.Integer) {
 				result.IntegerValue = Utils.ReadLong (stream);
-			} else if (result.Kind == ShovelValue.Kinds.Double) {
+			} else if (result.Kind == Value.Kinds.Double) {
                 // FIXME: these allocate a lot of byte[] objects.
                 // Should find a way to avoid this (have the caller pass the byte[]?).
 				var bytes = new byte[8];
 				stream.Read (bytes, 0, 8);
 				result.DoubleValue = BitConverter.ToDouble (bytes, 0);
-			} else if (result.Kind == ShovelValue.Kinds.String) {
+			} else if (result.Kind == Value.Kinds.String) {
 				result.StringValue = ReadString(stream);
-			} else if (result.Kind == ShovelValue.Kinds.Bool) {
+			} else if (result.Kind == Value.Kinds.Bool) {
 				result.BoolValue = stream.ReadByte() == 1;
-			} else if (result.Kind == ShovelValue.Kinds.Null) {
+			} else if (result.Kind == Value.Kinds.Null) {
 				// Do nothing.
 			} else {
 				Shovel.Utils.Panic ();
@@ -245,7 +245,7 @@ namespace Shovel.Serialization
 				WriteString (stream, (string)instruction.Arguments);
 				break;
 			case Instruction.Opcodes.Const:
-				WriteConst (stream, (ShovelValue)instruction.Arguments);
+				WriteConst (stream, (Value)instruction.Arguments);
 				break;
 			case Instruction.Opcodes.Block:
 				Utils.WriteBytes (stream, BitConverter.GetBytes ((int)instruction.Arguments));

@@ -452,7 +452,7 @@ namespace Shovel.Compiler
 
 		ParseTree ParsePrimitive ()
 		{
-			this.RequireTokenType (Token.Types.Identifier);
+			this.RequireTokenType (Token.Types.UserDefinedPrimitive);
 			return this.TokenAsParseTree (ParseTree.Labels.UserDefinedPrimitive);
 		}
 

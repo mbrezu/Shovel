@@ -178,27 +178,27 @@ namespace Shovel.Compiler
 					double doubleResult;
 					long longResult;
 					if (long.TryParse (content, out longResult)) {
-						return ShovelValue.MakeInt (longResult);
+						return Value.MakeInt (longResult);
 					} else if (double.TryParse (content, out doubleResult)) {
-						return ShovelValue.MakeFloat (doubleResult);
+						return Value.MakeFloat (doubleResult);
 					}
 				}
 				Utils.Panic ();
 				return null;
 			case ParseTree.Labels.String:
-				return ShovelValue.Make (content.Substring (1, content.Length - 2));
+				return Value.Make (content.Substring (1, content.Length - 2));
 			case ParseTree.Labels.Bool:
 				switch (content) {
 				case "true":
-					return ShovelValue.Make (true);
+					return Value.Make (true);
 				case "false":
-					return ShovelValue.Make (false);
+					return Value.Make (false);
 				default:
 					Utils.Panic ();
 					return null;
 				}
 			case ParseTree.Labels.Void:
-				return ShovelValue.Make ();
+				return Value.Make ();
 			default:
 				Utils.Panic ();
 				return null;
@@ -217,7 +217,7 @@ namespace Shovel.Compiler
 
 		void CompileUserDefinedPrimitive (ParseTree ast, bool useVal, bool more)
 		{
-			this.Gen (Instruction.Opcodes.Prim, ast.Content, ast);
+			this.Gen (Instruction.Opcodes.Prim, ast.Content.Substring(1), ast);
 			FinishInstruction (useVal, more);
 		}
 
