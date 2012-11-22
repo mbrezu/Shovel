@@ -127,6 +127,7 @@ namespace Shovel.Vm
             Serialization.Utils.WriteBytes (s, BitConverter.GetBytes (stackIndex));
             Serialization.Utils.WriteBytes (s, BitConverter.GetBytes (envIndex));
             Serialization.Utils.WriteBytes (s, BitConverter.GetBytes (this.programCounter));
+            Serialization.Utils.WriteBytes (s, Encoding.UTF8.GetBytes (Utils.GetBytecodeMd5(this.bytecode)));
             ser.WriteToStream (s);
         }
         #endregion
@@ -139,6 +140,12 @@ namespace Shovel.Vm
                     var stackIndex = Serialization.Utils.ReadInt (str);
                     var envIndex = Serialization.Utils.ReadInt (str);
                     this.programCounter = Serialization.Utils.ReadInt (str);
+                    var bytes = new byte[32];
+                    str.Read(bytes, 0, 32);
+                    var actualBytecodeMd5 = Encoding.UTF8.GetString (bytes);
+                    if (actualBytecodeMd5 != Utils.GetBytecodeMd5(this.bytecode)) {
+                        throw new Exceptions.BytecodeDoesntMatchState();
+                    }
                     var ser = new Serialization.VmStateSerializer ();
                     ser.Deserialize (str, reader => {
                         this.stack = new Stack ((Value[])reader (stackIndex));

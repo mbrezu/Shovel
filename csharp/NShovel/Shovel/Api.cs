@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace Shovel
 {
@@ -82,6 +83,7 @@ namespace Shovel
 			rawBytecode = Compiler.RawBytecodeOptimizations.Optimize (rawBytecode);
 			var assembled = Utils.Assemble (rawBytecode);            
 			assembled = Compiler.AssembledBytecodeOptimizations.Optimize (assembled);
+            Utils.SetBytecodeMd5(assembled, Utils.Md5AsString(Utils.ComputeBytecodeMd5(assembled)));
 			return assembled;
 		}
 

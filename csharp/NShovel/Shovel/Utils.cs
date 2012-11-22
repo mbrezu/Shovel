@@ -31,7 +31,7 @@ namespace Shovel
 {
     internal static class Utils
     {
-        internal static string ComputeSourcesMd5(List<SourceFile> sources)
+        internal static byte[] ComputeSourcesMd5(List<SourceFile> sources)
         {
             using (MemoryStream ms = new MemoryStream())
             {
@@ -41,18 +41,52 @@ namespace Shovel
                     ms.Write(bytes, 0, bytes.Length);
                 }
                 ms.Seek(0, SeekOrigin.Begin);
-                byte[] hash;
                 using (MD5 md5Hash = MD5.Create())
                 {
-                    hash = md5Hash.ComputeHash(ms);
+                    return md5Hash.ComputeHash(ms);
                 }
-                var sb = new StringBuilder();
-                foreach (var b in hash)
-                {
-                    sb.AppendFormat("{0:X2}", b);
-                }
-                return sb.ToString();
             }
+        }
+
+        internal static string Md5AsString(byte[] hash) 
+        {
+            var sb = new StringBuilder();
+            foreach (var b in hash)
+            {
+                sb.AppendFormat("{0:X2}", b);
+            }
+            return sb.ToString();
+
+        }
+
+        internal static byte[] ComputeBytecodeMd5(Instruction[] bytecode)
+        {
+            var ms = Api.SerializeBytecode(bytecode);
+            using (var md5 = MD5.Create()) {
+                ms.Seek(0, SeekOrigin.Begin);
+                return md5.ComputeHash(ms);
+            }
+        }
+
+        internal static void SetBytecodeMd5 (Instruction[] bytecode, string md5)
+        {
+            foreach (var instruction in bytecode) {
+                if (instruction.Opcode == Instruction.Opcodes.VmBytecodeMd5) {
+                    instruction.Arguments = md5;
+                    return;
+                }
+            }
+        }
+
+        internal static string GetBytecodeMd5(Instruction[] bytecode) 
+        {
+            foreach (var instruction in bytecode) {
+                if (instruction.Opcode == Instruction.Opcodes.VmBytecodeMd5) {
+                    return (string)instruction.Arguments;
+                }
+            }
+            Utils.Panic();
+            return null;
         }
 
         internal static List<string> ExtractRelevantSource(
@@ -357,29 +391,29 @@ namespace Shovel
             }
         }
 
-		static internal HashSet<int> GetNumericLabels(Instruction[] bytecode) {
-			var result = new HashSet<int>();
-			foreach (var instruction in bytecode) {
-				switch (instruction.Opcode) {
-				case Instruction.Opcodes.Jump:
-					result.Add((int)instruction.Arguments);
-					break;
-				case Instruction.Opcodes.Fjump:
-					result.Add((int)instruction.Arguments);
-					break;				
-				case Instruction.Opcodes.Fn:
-					result.Add (((int[])instruction.Arguments)[0]);
-					break;
-				case Instruction.Opcodes.Block:
-					result.Add((int)instruction.Arguments);
-					break;
-				case Instruction.Opcodes.Tjump:
-					result.Add((int)instruction.Arguments);
-					break;
-				}
-			}
-			return result;
-		}
+        static internal HashSet<int> GetNumericLabels(Instruction[] bytecode) {
+            var result = new HashSet<int>();
+            foreach (var instruction in bytecode) {
+                switch (instruction.Opcode) {
+                case Instruction.Opcodes.Jump:
+                    result.Add((int)instruction.Arguments);
+                    break;
+                case Instruction.Opcodes.Fjump:
+                    result.Add((int)instruction.Arguments);
+                    break;              
+                case Instruction.Opcodes.Fn:
+                    result.Add (((int[])instruction.Arguments)[0]);
+                    break;
+                case Instruction.Opcodes.Block:
+                    result.Add((int)instruction.Arguments);
+                    break;
+                case Instruction.Opcodes.Tjump:
+                    result.Add((int)instruction.Arguments);
+                    break;
+                }
+            }
+            return result;
+        }
 
         static internal string ShovelStdlib()
         {
@@ -503,28 +537,28 @@ var stdlib = {
 }";
         }
 
-		internal static string SideBySide (string str1, string str2, int halfSize = 38)
-		{
-			string[] lines1 = str1.Split ('\n');
-			string[] lines2 = str2.Split ('\n');
-			var sb = new StringBuilder();
-			var formatString = String.Format ("{{0,-{0}}}{{1,-{1}}}\n", halfSize, halfSize);
-			for (int i = 0; i < Math.Max (lines1.Length, lines2.Length); i++) {
-				string half1, half2;
-				if (i < lines1.Length) {
-					half1 = lines1[i];
-				} else {
-					half1 = "";
-				}
-				if (i < lines2.Length) {
-					half2 = lines2[i];
-				} else {
-					half2 = "";
-				}
-				sb.AppendFormat (formatString, half1, half2);
-			}
-			return sb.ToString();
-		}
+        internal static string SideBySide (string str1, string str2, int halfSize = 38)
+        {
+            string[] lines1 = str1.Split ('\n');
+            string[] lines2 = str2.Split ('\n');
+            var sb = new StringBuilder();
+            var formatString = String.Format ("{{0,-{0}}}{{1,-{1}}}\n", halfSize, halfSize);
+            for (int i = 0; i < Math.Max (lines1.Length, lines2.Length); i++) {
+                string half1, half2;
+                if (i < lines1.Length) {
+                    half1 = lines1[i];
+                } else {
+                    half1 = "";
+                }
+                if (i < lines2.Length) {
+                    half2 = lines2[i];
+                } else {
+                    half2 = "";
+                }
+                sb.AppendFormat (formatString, half1, half2);
+            }
+            return sb.ToString();
+        }
 
 
 

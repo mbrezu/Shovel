@@ -32,9 +32,9 @@ namespace ConsoleTest
         public static void Main (string[] args)
         {
             //MasterMindBenchmark();
-            SimpleTest ();
+            //SimpleTest ();
             //AnotherSimpleTest ();
-            //SerializerTest ();
+            SerializerTest ();
             //UdpTest();
         }
 

@@ -55,7 +55,7 @@ namespace Shovel.Compiler
 		{
 			this.bytecode = new List<Instruction> ();
 			this.Gen (Instruction.Opcodes.VmVersion, Api.Version);
-			this.Gen (Instruction.Opcodes.VmSourcesMd5, Utils.ComputeSourcesMd5 (sources));
+			this.Gen (Instruction.Opcodes.VmSourcesMd5, Utils.Md5AsString(Utils.ComputeSourcesMd5 (sources)));
 			this.Gen (Instruction.Opcodes.VmBytecodeMd5, "?");
 			this.CompileBlock (this.ast, this.EmptyEnv (), true, true);
 		}

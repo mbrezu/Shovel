@@ -69,6 +69,7 @@
     <Compile Include="VmApi.cs" />
     <Compile Include="Callable.cs" />
     <Compile Include="Value.cs" />
+    <Compile Include="Exceptions\BytecodeDoesntMatchState.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
