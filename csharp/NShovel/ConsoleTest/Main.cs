@@ -31,10 +31,10 @@ namespace ConsoleTest
     {
         public static void Main (string[] args)
         {
-            //MasterMindBenchmark();
+            MasterMindBenchmark();
             //SimpleTest ();
             //AnotherSimpleTest ();
-            SerializerTest ();
+            //SerializerTest ();
             //UdpTest();
         }
 

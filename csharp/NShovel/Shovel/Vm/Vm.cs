@@ -280,6 +280,8 @@ namespace Shovel.Vm
                 foreach (var action in runActions) {
                     action (vm);
                 }
+                vm.executedTicks += runActions.Length;
+                vm.executedTicksSinceLastNap += runActions.Length;
             };
         }
 
@@ -1157,14 +1159,35 @@ namespace Shovel.Vm
             return this.programCounter == this.bytecode.Length;
         }
 
+        int CountCells ()
+        {
+            throw new NotImplementedException ();
+        }
+
         void CheckCellsQuota ()
         {
-            // FIXME: Check cells quota.
+            if (this.cellsQuota.HasValue) {
+                if (this.usedCells > this.cellsQuota.Value) {
+                    this.usedCells = this.CountCells();
+                    if (this.usedCells > this.cellsQuota.Value) {
+                        throw new Shovel.Exceptions.ShovelCellQuotaExceededException();
+                    }
+                }
+            }
         }
 
         void CheckTicksQuota ()
         {
-            // FIXME: Check ticks quota.
+            if (this.totalTicksQuota.HasValue) {
+                if (this.executedTicks > this.totalTicksQuota.Value) {
+                    throw new Shovel.Exceptions.ShovelCellQuotaExceededException();
+                }
+            }
+            if (this.untilNextNapTicksQuota.HasValue) {
+                if (this.executedTicksSinceLastNap > this.untilNextNapTicksQuota) {
+                    this.shouldTakeANap = true;
+                }
+            }
         }
 
         void CheckVmWithoutError ()

@@ -70,6 +70,7 @@
     <Compile Include="Callable.cs" />
     <Compile Include="Value.cs" />
     <Compile Include="Exceptions\BytecodeDoesntMatchState.cs" />
+    <Compile Include="Exceptions\ShovelTicksQuotaExceededException.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
