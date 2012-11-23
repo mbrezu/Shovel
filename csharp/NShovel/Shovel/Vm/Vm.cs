@@ -151,6 +151,7 @@ namespace Shovel.Vm
             var usedStack = this.stack.GetUsedStack ();
             int stackIndex = ser.Serialize (usedStack);
             int envIndex = ser.Serialize (this.currentEnvironment);
+            Serialization.Utils.WriteBytes (s, BitConverter.GetBytes (Shovel.Api.Version));
             Serialization.Utils.WriteBytes (s, BitConverter.GetBytes (stackIndex));
             Serialization.Utils.WriteBytes (s, BitConverter.GetBytes (envIndex));
             Serialization.Utils.WriteBytes (s, BitConverter.GetBytes (this.programCounter));
@@ -167,6 +168,10 @@ namespace Shovel.Vm
         {
             using (var ms = new MemoryStream(serializedState)) {
                 Serialization.Utils.DeserializeWithMd5CheckSum (ms, str => {
+                    var version = Serialization.Utils.ReadInt (str);
+                    if (version > Shovel.Api.Version) {
+                        throw new Exceptions.VersionNotSupportedException();
+                    }
                     var stackIndex = Serialization.Utils.ReadInt (str);
                     var envIndex = Serialization.Utils.ReadInt (str);
                     this.programCounter = Serialization.Utils.ReadInt (str);
