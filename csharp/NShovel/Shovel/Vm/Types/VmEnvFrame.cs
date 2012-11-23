@@ -24,13 +24,13 @@ using System.Collections.Generic;
 
 namespace Shovel.Vm.Types
 {
-	public class VmEnvFrame
+	internal class VmEnvFrame
 	{
-		public string[] VarNames { get; set; }
+		internal string[] VarNames { get; set; }
 
-		public Value[] Values { get; set; }
+		internal Value[] Values { get; set; }
 
-		public int? IntroducedAtProgramCounter;
+		internal int? IntroducedAtProgramCounter;
 	}
 }
 

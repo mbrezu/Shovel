@@ -38,6 +38,6 @@ Global
 		{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A} = {73CE6BD1-2D61-4200-A54E-271CB11C1513}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = Demos\GuessTheNumberLocal\GuessTheNumberLocal.csproj
+		StartupItem = ConsoleTest\ConsoleTest.csproj
 	EndGlobalSection
 EndGlobal

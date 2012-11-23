@@ -212,7 +212,8 @@
 **** DONE verify that it works for && AND ||
 *** DONE finish converting the primitives to instructions
 ** DONE implement live objects counting
-** TODO catch exceptions thrown from user-defined primitives
+** DONE catch exceptions thrown from user-defined primitives
+** TODO check version when loading saved state
 ** TODO negative testing for primitives
 ** TODO documentation update
 *** TODO port the getting started guide

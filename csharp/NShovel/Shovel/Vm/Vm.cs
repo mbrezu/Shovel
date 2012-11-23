@@ -54,9 +54,22 @@ namespace Shovel.Vm
         #endregion
 
         #region Public API
+
+        internal ShovelException ProgrammingError {
+            get {
+                return programmingError;
+            }
+        }
+
+        internal Exception UserDefinedPrimitiveError {
+            get {
+                return userDefinedPrimitiveError;
+            }
+        }
+
         internal int UsedCells {
             get {
-                this.usedCells = CountCells();
+                this.usedCells = CountCells ();
                 return usedCells;
             }
         }
@@ -105,15 +118,11 @@ namespace Shovel.Vm
                 }
             }
             vm.executedTicksSinceLastNap = 0;
-            try {
-                vm.api = new VmApi (
+            vm.api = new VmApi (
                     raiseShovelError: vm.RaiseShovelError, 
                     ticksIncrementer: vm.IncrementTicks,
                     cellsIncrementer: vm.IncrementCells,
                     cellsIncrementHerald: vm.IncrementCellsHerald);
-            } catch (ShovelException ex) {
-                vm.programmingError = ex;
-            }
             do {
             } while (vm.StepVm());
             return vm;
@@ -337,23 +346,27 @@ namespace Shovel.Vm
 
         bool StepVm ()
         {
-            this.CheckVmWithoutError ();
-            this.CheckQuotas ();
             if (this.IsLive ()) {
-                if (this.runs [this.programCounter] == null) {
-                    this.runs [this.programCounter] = this.GenRun ();
+                this.CheckVmWithoutError ();
+                this.CheckQuotas ();
+                try {
+                    if (this.runs [this.programCounter] == null) {
+                        this.runs [this.programCounter] = this.GenRun ();
+                    }
+                    this.runs [this.programCounter] (this);
+
+                    //                var instruction = this.CurrentInstruction ();
+                    //                Console.WriteLine ("*****");
+                    //                Console.WriteLine (instruction.ToString ());
+                    //                for (var i = 0; i < this.stack.Count; i++) {
+                    //                    Console.WriteLine (DumpShovelValue (this.api, this.stack.Storage [i]));
+                    //                }
+                    //                Vm.handlers [instruction.NumericOpcode] (this);
+                    return true;
+                } catch (ShovelException ex) {
+                    this.programmingError = ex;
+                    return false;
                 }
-                this.runs [this.programCounter] (this);
-
-//                var instruction = this.CurrentInstruction ();
-//                Console.WriteLine ("*****");
-//                Console.WriteLine (instruction.ToString ());
-//                for (var i = 0; i < this.stack.Count; i++) {
-//                    Console.WriteLine (DumpShovelValue (this.api, this.stack.Storage [i]));
-//                }
-//                Vm.handlers [instruction.NumericOpcode] (this);
-
-                return true;
             } else {
                 return false;
             }
@@ -835,10 +848,12 @@ namespace Shovel.Vm
                 var udpResult = new UdpResult ();
                 Value[] args = new Value[numArgs];
                 Array.Copy (vm.stack.Storage, start, args, 0, numArgs);
-                // FIXME: catch exceptions from the user defined primitive
-                // and set the vm.userDefinedPrimitiveError, put the vm to sleep
-                // etc. if an exception is thrown out of the user defined primitive.
-                callable.UserDefinedPrimitive (vm.api, args, udpResult);
+                try {
+                    callable.UserDefinedPrimitive (vm.api, args, udpResult);
+                } catch (Exception ex) {
+                    vm.userDefinedPrimitiveError = ex;
+                    vm.shouldTakeANap = true;
+                }
                 switch (udpResult.After) {
                 case UdpResult.AfterCall.Continue:
                     vm.stack.Pop ();

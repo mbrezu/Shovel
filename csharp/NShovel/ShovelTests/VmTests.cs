@@ -584,13 +584,27 @@ c1()
             Assert.IsFalse (Shovel.Api.VmIsLive (vm));
             Assert.IsFalse (Shovel.Api.VmExecutionComplete (vm));
             Shovel.Api.WakeUpVm (vm);
-            Shovel.Api.RunVm (vm, sources, ticksUntilNextNapQuota: 20);
+            Shovel.Api.RunVm (vm, sources, ticksUntilNextNapQuota: 10);
             Assert.IsFalse (Shovel.Api.VmIsLive (vm));
             Assert.IsFalse (Shovel.Api.VmExecutionComplete (vm));
             Shovel.Api.WakeUpVm (vm);
             Shovel.Api.RunVm (vm, sources, ticksUntilNextNapQuota: 20);
             Assert.IsFalse (Shovel.Api.VmIsLive (vm));
             Assert.IsTrue (Shovel.Api.VmExecutionComplete (vm));
+        }
+
+        [Test]
+        public void UdpError()
+        {
+            var sources = Shovel.Api.MakeSources ("test.sho", @"
+@print(100)
+"
+            );
+            List<string> log = new List<string> ();
+            var bytecode = Shovel.Api.GetBytecode (sources);
+            var userPrimitives = GetPrintAndStopUdps (log, false);
+            var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
+            Assert.IsNotNull(Shovel.Api.VmUserDefinedPrimitiveError(vm));
         }
     }
 }

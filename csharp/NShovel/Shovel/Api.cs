@@ -25,11 +25,14 @@ using System.Text;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using Shovel.Exceptions;
 
 namespace Shovel
 {
     public class Api
     {
+        public static int Version = 1;
+
         public static byte[] SerializeVmState (Vm.Vm vm)
         {
             var ms = Serialization.Utils.SerializeWithMd5CheckSum (str => {
@@ -39,7 +42,15 @@ namespace Shovel
             return ms.ToArray ();
         }
 
-        public static int Version = 1;
+        public static ShovelException VmProgrammingError (Shovel.Vm.Vm vm)
+        {
+            return vm.ProgrammingError;
+        }
+
+        public static Exception VmUserDefinedPrimitiveError (Shovel.Vm.Vm vm)
+        {
+            return vm.UserDefinedPrimitiveError;
+        }
 
         public static string PrintRawBytecode (List<SourceFile> sources, bool optimize = false)
         {

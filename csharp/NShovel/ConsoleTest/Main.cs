@@ -119,36 +119,20 @@ main()
                 }
             };
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> stop = (api, args, result) => {
-                    result.After = Shovel.UdpResult.AfterCall.Nap;
-                };
+                result.After = Shovel.UdpResult.AfterCall.Nap;
+            };
             return new Shovel.Callable[] {
                 Shovel.Callable.MakeUdp ("print", print, 1),
                 Shovel.Callable.MakeUdp ("stop", stop, 0),
             };
         }
 
-
         public static void SimpleTest ()
         {
-            var sources = Shovel.Api.MakeSources ("test.sho", @"
-var makeCounter = fn () {
-  var counter = 0
-  fn () counter = counter + 1
-}
-var c1 = makeCounter()
-block 'c' {
-  block 'b' {
-    c1()
-  }
-}
-c1()
-c1()
-"
-            );
-            var bytecode = Shovel.Api.GetBytecode (sources);
-            var vm = Shovel.Api.RunVm (bytecode, sources);
-            Console.WriteLine (Shovel.Api.VmUsedCells(vm));
-            Console.WriteLine (Shovel.Api.VmExecutedTicks(vm));
+            var sources = Shovel.Api.MakeSources ("test.sho", "@print(10)");
+            var bytecode = Shovel.Api.GetBytecode(sources);
+            var udps = GetPrintAndStopUdps();
+            var vm = Shovel.Api.RunVm (bytecode, sources, udps);
         }
 
         public static void AnotherSimpleTest ()

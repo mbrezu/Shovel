@@ -467,13 +467,12 @@ encodeTime(time)"
 		public void Panic ()
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "panic('test')");
-			Utils.ExpectException<ShovelException> (() => {
-				Shovel.Api.TestRunVm (sources);
-			},
-			(ex) => {
-				Assert.AreEqual ("test", ex.Message);
-			}
-			);
+            var bytecode = Shovel.Api.GetBytecode(sources);
+            var vm = Shovel.Api.RunVm (bytecode, sources);
+            Assert.IsNotNull (Shovel.Api.VmProgrammingError(vm));
+            Assert.IsTrue (Shovel.Api.VmProgrammingError(vm) is ShovelException);
+            var ex = (ShovelException)Shovel.Api.VmProgrammingError(vm);
+            Assert.AreEqual("test", ex.Message);
 		}
 
 		[Test]

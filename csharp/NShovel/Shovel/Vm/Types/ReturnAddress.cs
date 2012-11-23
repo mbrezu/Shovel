@@ -23,11 +23,11 @@ using System;
 
 namespace Shovel.Vm.Types
 {
-	public class ReturnAddress
+	internal class ReturnAddress
 	{
-		public VmEnvironment Environment { get; set; }
+		internal VmEnvironment Environment { get; set; }
 
-		public int ProgramCounter { get; set; }
+		internal int ProgramCounter { get; set; }
 
 	}
 }

@@ -23,32 +23,32 @@ using System;
 
 namespace Shovel.Vm.Types
 {
-    public class VmEnvironment
+    internal class VmEnvironment
     {
-        public VmEnvFrame Frame { get; set; }
+        internal VmEnvFrame Frame { get; set; }
 
-        public VmEnvironment Next { get; set; }
+        internal VmEnvironment Next { get; set; }
 
-        public int Uses { get; set; }
+        internal int Uses { get; set; }
 
-        public bool IsUsed {
+        internal bool IsUsed {
             get { 
                 return this.Uses > 0; 
             }
         }
 
-        public void IncreaseUses() {
+        internal void IncreaseUses() {
             this.Uses ++;
             if (this.Next != null) {
                 this.Next.IncreaseUses();
             }
         }
 
-        public void IncreaseUsesLocally() {
+        internal void IncreaseUsesLocally() {
             this.Uses ++;
         }
 
-        public void DecreaseUsesLocally() {
+        internal void DecreaseUsesLocally() {
             this.Uses --;
         }
     }
