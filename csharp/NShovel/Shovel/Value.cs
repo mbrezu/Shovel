@@ -45,13 +45,13 @@ namespace Shovel
         public Dictionary<Value, Value>
             HashValue;
         [FieldOffset(8)]
-        public Callable
+        internal Callable
             CallableValue;
         [FieldOffset(8)]
-        public ReturnAddress
+        internal ReturnAddress
             ReturnAddressValue;
         [FieldOffset(8)]
-        public NamedBlock
+        internal NamedBlock
             NamedBlockValue;
 
         static Value value;
@@ -109,7 +109,7 @@ namespace Shovel
             return result;
         }
 
-        public static Value Make (Callable c)
+        internal static Value Make (Callable c)
         {
             Value result = value;
             result.Kind = Kinds.Callable;
@@ -117,7 +117,7 @@ namespace Shovel
             return result;
         }
 
-        public static Value Make (ReturnAddress ra)
+        internal static Value Make (ReturnAddress ra)
         {
             Value result = value;
             result.Kind = Kinds.ReturnAddress;
@@ -125,7 +125,7 @@ namespace Shovel
             return result;
         }
 
-        public static Value Make (NamedBlock nb)
+        internal static Value Make (NamedBlock nb)
         {
             Value result = value;
             result.Kind = Kinds.NamedBlock;
