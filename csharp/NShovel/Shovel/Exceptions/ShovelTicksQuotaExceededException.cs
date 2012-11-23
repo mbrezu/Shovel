@@ -23,7 +23,7 @@ using System;
 
 namespace Shovel.Exceptions
 {
-    public class ShovelTicksQuotaExceededException
+    public class ShovelTicksQuotaExceededException : Exception
     {
         public ShovelTicksQuotaExceededException ()
         {

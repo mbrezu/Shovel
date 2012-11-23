@@ -28,110 +28,111 @@ using System.Security.Cryptography;
 
 namespace Shovel
 {
-	public class Api
-	{
+    public class Api
+    {
         public static byte[] SerializeVmState (Vm.Vm vm)
         {
-            var ms = Serialization.Utils.SerializeWithMd5CheckSum(str => {
-                vm.SerializeState(str);
-            });
-            return ms.ToArray();
+            var ms = Serialization.Utils.SerializeWithMd5CheckSum (str => {
+                vm.SerializeState (str);
+            }
+            );
+            return ms.ToArray ();
         }
 
-		public static int Version = 1;
+        public static int Version = 1;
 
-		public static string PrintRawBytecode (List<SourceFile> sources, bool optimize = false)
-		{
-			var bytecode = Utils.GetRawBytecode (sources);
-			if (optimize) {
-				bytecode = Compiler.RawBytecodeOptimizations.Optimize (bytecode);
-			}
-			Utils.DecorateByteCode (bytecode, sources);
-			var sb = new StringBuilder ();
-			foreach (var instruction in bytecode) {
-				sb.Append (instruction.ToString ());
-			}
-			return sb.ToString ();
-		}
+        public static string PrintRawBytecode (List<SourceFile> sources, bool optimize = false)
+        {
+            var bytecode = Utils.GetRawBytecode (sources);
+            if (optimize) {
+                bytecode = Compiler.RawBytecodeOptimizations.Optimize (bytecode);
+            }
+            Utils.DecorateByteCode (bytecode, sources);
+            var sb = new StringBuilder ();
+            foreach (var instruction in bytecode) {
+                sb.Append (instruction.ToString ());
+            }
+            return sb.ToString ();
+        }
 
-		public static string PrintAssembledBytecode (List<SourceFile> sources)
-		{
-			var bytecode = Shovel.Api.GetBytecode (sources);
-			Utils.DecorateByteCode (bytecode, sources);
-			return PrintAssembledBytecode(bytecode);
-		}
+        public static string PrintAssembledBytecode (List<SourceFile> sources)
+        {
+            var bytecode = Shovel.Api.GetBytecode (sources);
+            Utils.DecorateByteCode (bytecode, sources);
+            return PrintAssembledBytecode (bytecode);
+        }
 
-		public static string PrintAssembledBytecode(Instruction[] bytecode)
-		{
-			var labels = Utils.GetNumericLabels (bytecode);
-			var sb = new StringBuilder ();
-			for (var i = 0; i < bytecode.Length; i++) {
-				if (labels.Contains (i)) {
-					sb.AppendLine (String.Format ("{0}:", i));
-				}
-				sb.Append (bytecode [i].ToString ());
-			}
-			if (labels.Contains (bytecode.Length)) {
-				sb.AppendLine (String.Format ("{0}:", bytecode.Length));
-			}
-			return sb.ToString ();
-		}
+        public static string PrintAssembledBytecode (Instruction[] bytecode)
+        {
+            var labels = Utils.GetNumericLabels (bytecode);
+            var sb = new StringBuilder ();
+            for (var i = 0; i < bytecode.Length; i++) {
+                if (labels.Contains (i)) {
+                    sb.AppendLine (String.Format ("{0}:", i));
+                }
+                sb.Append (bytecode [i].ToString ());
+            }
+            if (labels.Contains (bytecode.Length)) {
+                sb.AppendLine (String.Format ("{0}:", bytecode.Length));
+            }
+            return sb.ToString ();
+        }
 
-		public static Instruction[] GetBytecode (List<SourceFile> sources)
-		{
-			var rawBytecode = Utils.GetRawBytecode (sources);
-			rawBytecode = Compiler.RawBytecodeOptimizations.Optimize (rawBytecode);
-			var assembled = Utils.Assemble (rawBytecode);            
-			assembled = Compiler.AssembledBytecodeOptimizations.Optimize (assembled);
-            Utils.SetBytecodeMd5(assembled, Utils.Md5AsString(Utils.ComputeBytecodeMd5(assembled)));
-			return assembled;
-		}
+        public static Instruction[] GetBytecode (List<SourceFile> sources)
+        {
+            var rawBytecode = Utils.GetRawBytecode (sources);
+            rawBytecode = Compiler.RawBytecodeOptimizations.Optimize (rawBytecode);
+            var assembled = Utils.Assemble (rawBytecode);            
+            assembled = Compiler.AssembledBytecodeOptimizations.Optimize (assembled);
+            Utils.SetBytecodeMd5 (assembled, Utils.Md5AsString (Utils.ComputeBytecodeMd5 (assembled)));
+            return assembled;
+        }
 
-		public static MemoryStream SerializeBytecode (Instruction[] bytecode)
-		{
-			return Serialization.BytecodeSerializer.SerializeBytecode (bytecode);
-		}
+        public static MemoryStream SerializeBytecode (Instruction[] bytecode)
+        {
+            return Serialization.BytecodeSerializer.SerializeBytecode (bytecode);
+        }
 
-		public static Instruction[] DeserializeBytecode (MemoryStream ms)
-		{
-			return Serialization.BytecodeSerializer.DeserializeBytecode (ms);
-		}
+        public static Instruction[] DeserializeBytecode (MemoryStream ms)
+        {
+            return Serialization.BytecodeSerializer.DeserializeBytecode (ms);
+        }
 
-		public static List<SourceFile> MakeSources (params string[] namesAndContents)
-		{
-			return MakeSourcesFromIEnumerable (namesAndContents);
-		}
+        public static List<SourceFile> MakeSources (params string[] namesAndContents)
+        {
+            return MakeSourcesFromIEnumerable (namesAndContents);
+        }
 
-		public static List<SourceFile> MakeSourcesFromIEnumerable (IEnumerable<string> namesAndContents)
-		{
-			List<SourceFile> result = new List<SourceFile> ();
-			for (var i = 0; i < namesAndContents.Count(); i += 2) {
-				result.Add (new SourceFile ()
+        public static List<SourceFile> MakeSourcesFromIEnumerable (IEnumerable<string> namesAndContents)
+        {
+            List<SourceFile> result = new List<SourceFile> ();
+            for (var i = 0; i < namesAndContents.Count(); i += 2) {
+                result.Add (new SourceFile ()
                 {
                     FileName = namesAndContents.ElementAt(i),
                     Content = namesAndContents.ElementAt(i + 1)
                 }
-				);
-			}
-			return result;
-		}
+                );
+            }
+            return result;
+        }
 
-		public static List<SourceFile> MakeSourcesWithStdlib (params string[] namesAndContents)
-		{
-			List<string> sources = new List<string> ();
-			sources.Add ("stdlib.sho");
-			sources.Add (Utils.ShovelStdlib ());
-			sources.AddRange (namesAndContents);
-			return MakeSourcesFromIEnumerable (sources);
-		}
+        public static List<SourceFile> MakeSourcesWithStdlib (params string[] namesAndContents)
+        {
+            List<string> sources = new List<string> ();
+            sources.Add ("stdlib.sho");
+            sources.Add (Utils.ShovelStdlib ());
+            sources.AddRange (namesAndContents);
+            return MakeSourcesFromIEnumerable (sources);
+        }
 
-		public static Value TestRunVm (List<SourceFile> sources)
-		{
-			var rawBytecode = Utils.GetRawBytecode (sources);
-			var bytecode = Utils.Assemble (rawBytecode);
-			var vm = Vm.Vm.RunVm (bytecode, sources);
-			return vm.CheckStackTop ();
-		}
+        public static Value TestRunVm (List<SourceFile> sources)
+        {
+            var rawBytecode = Utils.GetRawBytecode (sources);
+            var bytecode = Utils.Assemble (rawBytecode);
+            var vm = Vm.Vm.RunVm (bytecode, sources);
+            return vm.CheckStackTop ();
+        }
 
         public static Value TestRunVm (Shovel.Instruction[] bytecode, List<SourceFile> sources)
         {
@@ -143,36 +144,74 @@ namespace Shovel
             Shovel.Instruction[] bytecode, 
             List<SourceFile> sources,
             IEnumerable<Callable> userPrimitives = null,
-            byte[] state = null)
+            byte[] state = null,
+            int? totalTicksQuota = null,
+            int? ticksUntilNextNapQuota = null,
+            int? usedCellsQuota = null)
         {
-            return Vm.Vm.RunVm(bytecode, sources, userPrimitives, state);
+            return Vm.Vm.RunVm (
+                bytecode, sources, userPrimitives, state, 
+                null, usedCellsQuota, totalTicksQuota, ticksUntilNextNapQuota);
         }
 
         public static Vm.Vm RunVm (
             Vm.Vm vm, 
             List<SourceFile> sources,
-            IEnumerable<Callable> userPrimitives = null)
+            IEnumerable<Callable> userPrimitives = null,
+            int? totalTicksQuota = null,
+            int? ticksUntilNextNapQuota = null,
+            int? usedCellsQuota = null)
         {
             return Vm.Vm.RunVm (
                 null, 
                 sources: sources, 
                 userPrimitives: userPrimitives,
-                vm: vm);
+                vm: vm,
+                cellsQuota: usedCellsQuota,
+                totalTicksQuota: totalTicksQuota,
+                untilNextNapTicksQuota: ticksUntilNextNapQuota);
         }
 
-        public static Value CheckStackTop(Vm.Vm vm) {
-            return vm.CheckStackTop();
+        public static Value CheckStackTop (Vm.Vm vm)
+        {
+            return vm.CheckStackTop ();
         }
 
-        public static void WakeUpVm(Vm.Vm vm) {
-            vm.WakeUp();
+        public static void WakeUpVm (Vm.Vm vm)
+        {
+            vm.WakeUp ();
         }
 
-		public static string SideBySide (string str1, string str2, int halfSize = 38)
-		{
-			return Utils.SideBySide(str1, str2, halfSize);
-		}
+        public static bool VmIsLive (Vm.Vm vm)
+        {
+            return vm.IsLive();
+        }
 
-	}
+        public static bool VmExecutionComplete(Vm.Vm vm)
+        {
+            return vm.ExecutionComplete();
+        }
+
+        public static int VmUsedCells (Vm.Vm vm)
+        {
+            return vm.UsedCells;
+        }
+
+        public static long VmExecutedTicks (Vm.Vm vm)
+        {
+            return vm.ExecutedTicks;
+        }
+
+        public static long VmExecutedTicksSinceLastNap (Vm.Vm vm)
+        {
+            return vm.ExecutedTicksSinceLastNap;
+        }
+
+        public static string SideBySide (string str1, string str2, int halfSize = 38)
+        {
+            return Utils.SideBySide (str1, str2, halfSize);
+        }
+
+    }
 }
 

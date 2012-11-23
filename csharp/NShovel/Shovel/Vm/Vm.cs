@@ -54,6 +54,25 @@ namespace Shovel.Vm
         #endregion
 
         #region Public API
+        internal int UsedCells {
+            get {
+                this.usedCells = CountCells();
+                return usedCells;
+            }
+        }
+
+        internal long ExecutedTicks {
+            get {
+                return executedTicks;
+            }
+        }
+
+        internal long ExecutedTicksSinceLastNap {
+            get {
+                return executedTicksSinceLastNap;
+            }
+        }
+
         internal static Vm RunVm (
             Instruction[] bytecode, 
             List<SourceFile> sources = null,
@@ -95,9 +114,8 @@ namespace Shovel.Vm
             } catch (ShovelException ex) {
                 vm.programmingError = ex;
             }
-            while (vm.IsLive()) {
-                vm.StepVm ();
-            }
+            do {
+            } while (vm.StepVm());
             return vm;
         }
 
@@ -152,9 +170,9 @@ namespace Shovel.Vm
                     // Read and ignore the source MD5.
                     str.Read (bytes, 0, 32);
                     // Read the number of ticks executed so far.
-                    this.executedTicks = Serialization.Utils.ReadLong(ms);
+                    this.executedTicks = Serialization.Utils.ReadLong (ms);
                     // Read the number of used cells.
-                    this.usedCells = Serialization.Utils.ReadInt(ms);
+                    this.usedCells = Serialization.Utils.ReadInt (ms);
                     var ser = new Serialization.VmStateSerializer ();
                     ser.Deserialize (str, reader => {
                         this.stack = new Stack ((Value[])reader (stackIndex));
@@ -317,11 +335,10 @@ namespace Shovel.Vm
             }
         }
 
-        void StepVm ()
+        bool StepVm ()
         {
             this.CheckVmWithoutError ();
-            this.CheckTicksQuota ();
-            this.CheckCellsQuota ();
+            this.CheckQuotas ();
             if (this.IsLive ()) {
                 if (this.runs [this.programCounter] == null) {
                     this.runs [this.programCounter] = this.GenRun ();
@@ -335,6 +352,10 @@ namespace Shovel.Vm
 //                    Console.WriteLine (DumpShovelValue (this.api, this.stack.Storage [i]));
 //                }
 //                Vm.handlers [instruction.NumericOpcode] (this);
+
+                return true;
+            } else {
+                return false;
             }
         }
 
@@ -953,6 +974,7 @@ namespace Shovel.Vm
             var result = new VmEnvironment () {
                 Frame = frame,
             };
+            vm.IncrementCells (args.Length * 3 + 5);
             instruction.Cache = result;
             return result;
         }
@@ -1149,40 +1171,202 @@ namespace Shovel.Vm
             vm.programCounter++;
         }
 
-        bool IsLive ()
+        internal bool IsLive ()
         {
             return !(this.programCounter == this.bytecode.Length || this.shouldTakeANap);
         }
 
-        bool ExecutionComplete ()
+        internal bool ExecutionComplete ()
         {
             return this.programCounter == this.bytecode.Length;
         }
 
-        int CountCells ()
+        int CountCellsSvList (List<Value> list, HashSet<object> visited)
         {
-            throw new NotImplementedException ();
+            var sum = list.Count;
+            visited.Add (list);
+            foreach (var el in list) {
+                sum += CountCellsImpl (el, visited);
+            }
+            return sum;
         }
 
-        void CheckCellsQuota ()
+        int CountCellsHash (Dictionary<Value, Value> hash, HashSet<object> visited)
+        {
+            var sum = hash.Count * 2;
+            visited.Add (hash);
+            foreach (var kv in hash) {
+                sum += CountCellsImpl (kv.Key, visited);
+                sum += CountCellsImpl (kv.Value, visited);
+            }
+            return sum;
+        }
+
+        int CountCellsString (string s)
+        {
+            if (s == null) {
+                return 0;
+            } else {
+                return s.Length;
+            }
+        }
+
+        int CountCellsNullableInt (int? i)
+        {
+            if (i.HasValue) {
+                return 1;
+            } else {
+                return 0;
+            }
+        }
+
+        int CountCellsCallable (Callable callable, HashSet<object> visited)
+        {
+            var sum = 5;
+            visited.Add (callable);
+            sum += CountCellsString (callable.UdpName);
+            sum += CountCellsString (callable.Prim0Name);
+            sum += CountCellsImpl (callable.Environment, visited);
+            return sum;
+        }
+
+        int CountCellsReturnAddress (ReturnAddress returnAddress, HashSet<object> visited)
+        {
+            var sum = 2;
+            visited.Add (returnAddress);
+
+            sum += CountCellsImpl (returnAddress.Environment, visited);
+
+            return sum;
+        }
+
+        int CountCellsNamedBlock (NamedBlock namedBlock, HashSet<object> visited)
+        {
+            var sum = 3;
+            visited.Add (namedBlock);
+
+            sum += CountCellsString (namedBlock.Name);
+            sum += CountCellsImpl (namedBlock.Environment, visited);
+
+            return sum;
+        }
+
+        int CountCellsSvArray (Value[] values, HashSet<object> visited)
+        {
+            var sum = values.Length;
+            visited.Add (values);
+            foreach (var el in values) {
+                sum += CountCellsImpl (el, visited);
+            }
+            return sum;
+        }
+
+        int CountCellsEnvironment (VmEnvironment env, HashSet<object> visited)
+        {
+            var sum = 3;
+            visited.Add (env);
+
+            sum += CountCellsImpl (env.Frame, visited);
+            sum += CountCellsImpl (env.Next, visited);
+
+            return sum;
+        }
+
+        int CountCellsEnvFrame (VmEnvFrame envFrame, HashSet<object> visited)
+        {
+            var sum = 3;
+            visited.Add (envFrame);
+
+            sum += CountCellsImpl (envFrame.VarNames, visited);
+            sum += CountCellsImpl (envFrame.Values, visited);
+
+            return sum;
+        }
+
+        int CountCellsStringArray (string[] strings, HashSet<object> visited)
+        {
+            var sum = strings.Length;
+            visited.Add (strings);
+            foreach (var str in strings) {
+                sum += CountCellsString (str);
+            }
+
+            return sum;
+        }
+
+        int CountCellsImpl (object obj, HashSet<object> visited)
+        {
+            if (obj == null) {
+                return 0;
+            } else if (obj is Value) {
+                var sv = (Value)obj;
+                switch (sv.Kind) {
+                case Value.Kinds.Null:
+                    return 1;
+                case Value.Kinds.Integer:
+                    return 1;
+                case Value.Kinds.String:
+                    return sv.StringValue.Length + 1;
+                case Value.Kinds.Double:
+                    return 1;
+                case Value.Kinds.Bool:
+                    return 1;
+                case Value.Kinds.Array:
+                    return 1 + CountCellsSvList (sv.ArrayValue, visited);
+                case Value.Kinds.Hash:
+                    return 1 + CountCellsHash (sv.HashValue, visited);
+                case Value.Kinds.Callable:
+                    return 1 + CountCellsCallable (sv.CallableValue, visited);
+                case Value.Kinds.ReturnAddress:
+                    return 1 + CountCellsReturnAddress (sv.ReturnAddressValue, visited);
+                case Value.Kinds.NamedBlock:
+                    return 1 + CountCellsNamedBlock (sv.NamedBlockValue, visited);
+                default:
+                    Utils.Panic ();
+                    return 0;
+                }
+            } else if (visited.Contains (obj)) {
+                return 0;
+            } else if (obj is Value[]) {
+                return CountCellsSvArray ((Value[])obj, visited);
+            } else if (obj is List<Value>) {
+                return CountCellsSvList ((List<Value>)obj, visited);
+            } else if (obj is VmEnvironment) {
+                return CountCellsEnvironment ((VmEnvironment)obj, visited);
+            } else if (obj is VmEnvFrame) {
+                return CountCellsEnvFrame ((VmEnvFrame)obj, visited);
+            } else if (obj is string[]) {
+                return CountCellsStringArray ((string[])obj, visited);
+            } else {
+                Utils.Panic ();
+                return 0;
+            }
+        }
+
+        int CountCells ()
+        {
+            var visited = new HashSet<object> ();
+            return CountCellsImpl (this.stack.GetUsedStack (), visited) 
+                + CountCellsImpl (this.currentEnvironment, visited);
+        }
+
+        void CheckQuotas ()
         {
             if (this.cellsQuota.HasValue) {
                 if (this.usedCells > this.cellsQuota.Value) {
-                    this.usedCells = this.CountCells();
+                    this.usedCells = this.CountCells ();
                     if (this.usedCells > this.cellsQuota.Value) {
-                        throw new Shovel.Exceptions.ShovelCellQuotaExceededException();
+                        throw new Shovel.Exceptions.ShovelCellQuotaExceededException ();
                     }
                 }
             }
-        }
 
-        void CheckTicksQuota ()
-        {
             if (this.totalTicksQuota.HasValue) {
                 if (this.executedTicks > this.totalTicksQuota.Value) {
-                    throw new Shovel.Exceptions.ShovelCellQuotaExceededException();
+                    throw new Shovel.Exceptions.ShovelTicksQuotaExceededException ();
                 }
             }
+
             if (this.untilNextNapTicksQuota.HasValue) {
                 if (this.executedTicksSinceLastNap > this.untilNextNapTicksQuota) {
                     this.shouldTakeANap = true;

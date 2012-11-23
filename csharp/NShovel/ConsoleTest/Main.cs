@@ -31,8 +31,8 @@ namespace ConsoleTest
     {
         public static void Main (string[] args)
         {
-            MasterMindBenchmark();
-            //SimpleTest ();
+            //MasterMindBenchmark();
+            SimpleTest ();
             //AnotherSimpleTest ();
             //SerializerTest ();
             //UdpTest();
@@ -109,16 +109,46 @@ main()
             Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
         }
 
+        static IEnumerable<Shovel.Callable> GetPrintAndStopUdps ()
+        {
+            Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) => {
+                if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
+                    Console.WriteLine (args [0].StringValue);
+                } else {
+                    throw new InvalidOperationException ();
+                }
+            };
+            Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> stop = (api, args, result) => {
+                    result.After = Shovel.UdpResult.AfterCall.Nap;
+                };
+            return new Shovel.Callable[] {
+                Shovel.Callable.MakeUdp ("print", print, 1),
+                Shovel.Callable.MakeUdp ("stop", stop, 0),
+            };
+        }
+
+
         public static void SimpleTest ()
         {
             var sources = Shovel.Api.MakeSources ("test.sho", @"
-var g = fn (x) if x == 3 return 'b' 10 else x
-var f = fn (x) g(x) + 3
-block 'b' f(2) + f(3)
+var makeCounter = fn () {
+  var counter = 0
+  fn () counter = counter + 1
+}
+var c1 = makeCounter()
+block 'c' {
+  block 'b' {
+    c1()
+  }
+}
+c1()
+c1()
 "
             );
-            Console.WriteLine (Shovel.Api.PrintRawBytecode (sources));
-            Console.WriteLine (Shovel.Api.TestRunVm (sources));
+            var bytecode = Shovel.Api.GetBytecode (sources);
+            var vm = Shovel.Api.RunVm (bytecode, sources);
+            Console.WriteLine (Shovel.Api.VmUsedCells(vm));
+            Console.WriteLine (Shovel.Api.VmExecutedTicks(vm));
         }
 
         public static void AnotherSimpleTest ()

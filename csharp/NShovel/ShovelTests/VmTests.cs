@@ -506,5 +506,91 @@ main()
             }
             );
         }
+
+        [Test]
+        public void CellsQuota ()
+        {
+            var sources = Shovel.Api.MakeSources ("test.sho", @"
+var makeCounter = fn () {
+  var counter = 0
+  fn () counter = counter + 1
+}
+var c1 = makeCounter()
+block 'c' {
+  block 'b' {
+    c1()
+  }
+}
+"
+            );
+            var bytecode = Shovel.Api.GetBytecode (sources);
+            Utils.ExpectException<Shovel.Exceptions.ShovelCellQuotaExceededException> (() => {
+                Shovel.Api.RunVm (bytecode, sources, usedCellsQuota: 30);
+            },
+            (ex) => {
+                Assert.IsNotNull (ex);
+            }
+            );
+        }
+
+        [Test]
+        public void ExecutedTicksQuota ()
+        {
+            var sources = Shovel.Api.MakeSources ("test.sho", @"
+var makeCounter = fn () {
+  var counter = 0
+  fn () counter = counter + 1
+}
+var c1 = makeCounter()
+block 'c' {
+  block 'b' {
+    c1()
+  }
+}
+c1()
+c1()
+"
+            );
+            var bytecode = Shovel.Api.GetBytecode (sources);
+            Utils.ExpectException<Shovel.Exceptions.ShovelTicksQuotaExceededException> (() => {
+                Shovel.Api.RunVm (bytecode, sources, totalTicksQuota: 20);
+            },
+            (ex) => {
+                Assert.IsNotNull (ex);
+            }
+            );
+        }
+
+        [Test]
+        public void TicksUntilNextNapQuota ()
+        {
+            var sources = Shovel.Api.MakeSources ("test.sho", @"
+var makeCounter = fn () {
+  var counter = 0
+  fn () counter = counter + 1
+}
+var c1 = makeCounter()
+block 'c' {
+  block 'b' {
+    c1()
+  }
+}
+c1()
+c1()
+"
+            );
+            var bytecode = Shovel.Api.GetBytecode (sources);
+            var vm = Shovel.Api.RunVm (bytecode, sources, ticksUntilNextNapQuota: 20);
+            Assert.IsFalse (Shovel.Api.VmIsLive (vm));
+            Assert.IsFalse (Shovel.Api.VmExecutionComplete (vm));
+            Shovel.Api.WakeUpVm (vm);
+            Shovel.Api.RunVm (vm, sources, ticksUntilNextNapQuota: 20);
+            Assert.IsFalse (Shovel.Api.VmIsLive (vm));
+            Assert.IsFalse (Shovel.Api.VmExecutionComplete (vm));
+            Shovel.Api.WakeUpVm (vm);
+            Shovel.Api.RunVm (vm, sources, ticksUntilNextNapQuota: 20);
+            Assert.IsFalse (Shovel.Api.VmIsLive (vm));
+            Assert.IsTrue (Shovel.Api.VmExecutionComplete (vm));
+        }
     }
 }
