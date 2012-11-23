@@ -7,9 +7,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleTest", "ConsoleTest\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShovelTests", "ShovelTests\ShovelTests.csproj", "{870A0A6D-70E9-4BBD-8B15-49C0A33F05DB}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Support", "Support", "{8D909F49-B0A2-4F22-9AEC-BB891BDB3970}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Demos", "Demos", "{73CE6BD1-2D61-4200-A54E-271CB11C1513}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libraries", "Libraries", "{4FA9E24B-4E9F-47F0-8D47-86A79CAAE933}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GuessTheNumberLocal", "Demos\GuessTheNumberLocal\GuessTheNumberLocal.csproj", "{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,11 +29,15 @@ Global
 		{870A0A6D-70E9-4BBD-8B15-49C0A33F05DB}.Debug|x86.Build.0 = Debug|x86
 		{870A0A6D-70E9-4BBD-8B15-49C0A33F05DB}.Release|x86.ActiveCfg = Release|x86
 		{870A0A6D-70E9-4BBD-8B15-49C0A33F05DB}.Release|x86.Build.0 = Release|x86
+		{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A}.Debug|x86.ActiveCfg = Debug|x86
+		{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A}.Debug|x86.Build.0 = Debug|x86
+		{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A}.Release|x86.ActiveCfg = Release|x86
+		{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{4FA9E24B-4E9F-47F0-8D47-86A79CAAE933} = {8D909F49-B0A2-4F22-9AEC-BB891BDB3970}
+		{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A} = {73CE6BD1-2D61-4200-A54E-271CB11C1513}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = ConsoleTest\ConsoleTest.csproj
+		StartupItem = Demos\GuessTheNumberLocal\GuessTheNumberLocal.csproj
 	EndGlobalSection
 EndGlobal
