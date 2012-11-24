@@ -32,6 +32,7 @@ namespace Shovel
     public class Api
     {
         static int version = 1;
+
         public static int Version {
             get {
                 return version;
@@ -112,6 +113,13 @@ namespace Shovel
         public static Instruction[] DeserializeBytecode (MemoryStream ms)
         {
             return Serialization.BytecodeSerializer.DeserializeBytecode (ms);
+        }
+
+        public static Instruction[] DeserializeBytecode (byte[] bytes)
+        {
+            using (MemoryStream ms = new MemoryStream(bytes)) {
+                return Serialization.BytecodeSerializer.DeserializeBytecode (ms);
+            }
         }
 
         public static List<SourceFile> MakeSources (params string[] namesAndContents)
@@ -200,12 +208,12 @@ namespace Shovel
 
         public static bool VmIsLive (Vm.Vm vm)
         {
-            return vm.IsLive();
+            return vm.IsLive ();
         }
 
-        public static bool VmExecutionComplete(Vm.Vm vm)
+        public static bool VmExecutionComplete (Vm.Vm vm)
         {
-            return vm.ExecutionComplete();
+            return vm.ExecutionComplete ();
         }
 
         public static int VmUsedCells (Vm.Vm vm)

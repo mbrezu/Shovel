@@ -20,20 +20,19 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
-using System.Net;
-using System.IO;
 using System.Text;
-using System.Web;
 using System.Collections.Generic;
-using System.Threading;
+using System.Net;
+using System.Web;
+using System.IO;
 
-namespace _02_GuessTheNumberWebOne
+namespace _03_GuessTheNumberWebMany
 {
     class MainClass
     {
-        static List<Shovel.SourceFile> ProgramSources ()
+        static string Program ()
         {
-            var program = @"
+            return @"
 var game = fn () {
   var secretNumber = floor(@random() * 100 + 1)
   var attempt = 0
@@ -61,13 +60,17 @@ var game = fn () {
 
 game()
 ";
+        }
+
+        static List<Shovel.SourceFile> ProgramSources (string program)
+        {
             return Shovel.Api.MakeSources ("guess.sho", program);
         }
 
         static Shovel.Instruction[] ProgramBytecode ()
         {
             try {
-                return Shovel.Api.GetBytecode (ProgramSources ());
+                return Shovel.Api.GetBytecode (ProgramSources (Program ()));
             } catch (Shovel.Exceptions.ShovelException shex) {
                 Console.WriteLine (shex.Message);
                 return null;
@@ -82,63 +85,58 @@ game()
         }
         ;
 
-        static ReadStates readState = ReadStates.None;
-        static string userInput = null;
-        static StringBuilder pageContent = new StringBuilder ();
-        static byte[] shovelVmState = null;
-
-        static IEnumerable<Shovel.Callable> Udps ()
+        static IEnumerable<Shovel.Callable> Udps (Session session, string userInput)
         {
             var rng = new Random ();
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) =>
             {
                 if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
-                    pageContent.Append ("<span>");
-                    pageContent.Append (HttpUtility.HtmlEncode (args [0].StringValue));
-                    pageContent.Append ("</span>");
+                    session.PageContent.Append ("<span>");
+                    session.PageContent.Append (HttpUtility.HtmlEncode (args [0].StringValue));
+                    session.PageContent.Append ("</span>");
                 }
             };
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> printLn = (api, args, result) =>
             {
                 if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
-                    pageContent.Append ("<span>");
-                    pageContent.Append (HttpUtility.HtmlEncode (args [0].StringValue));
-                    pageContent.Append ("</span><br/>");
+                    session.PageContent.Append ("<span>");
+                    session.PageContent.Append (HttpUtility.HtmlEncode (args [0].StringValue));
+                    session.PageContent.Append ("</span><br/>");
                 }
             };
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> readInt = (api, args, result) =>
             {
-                if (readState == ReadStates.None) {
+                if (session.ReadState == Session.ReadStates.None) {
                     result.After = Shovel.UdpResult.AfterCall.NapAndRetryOnWakeUp;
-                    readState = ReadStates.ReadInteger;
-                } else if (readState == ReadStates.ReadInteger) {
+                    session.ReadState = Session.ReadStates.ReadInteger;
+                } else if (session.ReadState == Session.ReadStates.ReadInteger) {
                     int dummy;
                     if (!int.TryParse (userInput, out dummy)) {
                         dummy = 0;
                     }
                     result.Result = Shovel.Value.MakeInt (dummy);
-                    readState = ReadStates.None;
-                    pageContent.Append (HttpUtility.HtmlEncode (userInput));
-                    pageContent.Append ("<br/>");
+                    session.ReadState = Session.ReadStates.None;
+                    session.PageContent.Append (HttpUtility.HtmlEncode (userInput));
+                    session.PageContent.Append ("<br/>");
                 } else {
                     throw new InvalidOperationException ();
                 }
             };
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> readChar = (api, args, result) =>
             {
-                if (readState == ReadStates.None) {
+                if (session.ReadState == Session.ReadStates.None) {
                     result.After = Shovel.UdpResult.AfterCall.NapAndRetryOnWakeUp;
-                    readState = ReadStates.ReadChar;
-                } else if (readState == ReadStates.ReadChar) {
+                    session.ReadState = Session.ReadStates.ReadChar;
+                } else if (session.ReadState == Session.ReadStates.ReadChar) {
                     var line = userInput;
                     if (line.Length > 0) {
                         result.Result = Shovel.Value.Make (line.Substring (0, 1));
                     } else {
                         result.Result = Shovel.Value.Make ("");
                     }
-                    readState = ReadStates.None;
-                    pageContent.Append (HttpUtility.HtmlEncode (userInput));
-                    pageContent.Append ("<br/>");
+                    session.ReadState = Session.ReadStates.None;
+                    session.PageContent.Append (HttpUtility.HtmlEncode (userInput));
+                    session.PageContent.Append ("<br/>");
                 } else {
                     throw new InvalidOperationException ();
                 }
@@ -156,26 +154,47 @@ game()
             };
         }
 
-        private static void ServeGuessNumberRequest (HttpListenerContext ctx)
+        static Session FreshSession (FileSystemDatabase fsd)
+        {
+            var session = new Session ();
+            session.Id = fsd.GetFreshId ();
+            session.ShovelVmSources = Program ();
+            session.ShovelVmBytecode = Shovel.Api.SerializeBytecode (ProgramBytecode ()).ToArray ();
+            return session;
+        }
+
+        private static void ServeGuessNumberRequest (HttpListenerContext ctx, FileSystemDatabase fsd)
         {
             ctx.Response.ContentType = "text/html";
-            userInput = ctx.Request.QueryString ["input"];
-            var bytecode = Shovel.Api.GetBytecode (ProgramSources ());
-            var vm = Shovel.Api.RunVm (bytecode, ProgramSources (), Udps (), shovelVmState);
-            if (Shovel.Api.VmExecutionComplete (vm)) {
-                shovelVmState = null;
-                pageContent = new StringBuilder ();
-                userInput = null;
-                readState = ReadStates.None;
-                vm = Shovel.Api.RunVm (bytecode, ProgramSources (), Udps (), shovelVmState);
+            var userInput = ctx.Request.QueryString ["input"];
+            int sessionId = 0;
+            var sessionIdStr = ctx.Request.QueryString ["sessionid"];
+            int.TryParse (sessionIdStr, out sessionId);
+            Session session = null;
+            if (sessionId != 0) {
+                session = Session.Load (fsd, sessionId);
             }
-            shovelVmState = Shovel.Api.SerializeVmState (vm);
+            if (session == null) {
+                session = FreshSession(fsd);
+            }
+            var vm = Shovel.Api.RunVm (
+                Shovel.Api.DeserializeBytecode (session.ShovelVmBytecode), 
+                ProgramSources (Program ()), 
+                Udps (session, userInput), 
+                session.ShovelVmState);
+            if (Shovel.Api.VmExecutionComplete (vm)) {
+                session = FreshSession(fsd);
+            } else {
+                session.ShovelVmState = Shovel.Api.SerializeVmState (vm);
+            }
+            session.Save (fsd);
             using (var sw = new StreamWriter(ctx.Response.OutputStream)) {
                 sw.Write ("<!DOCTYPE html>\n");
-                sw.Write (pageContent.ToString ());
+                sw.Write (session.PageContent.ToString ());
                 sw.Write ("<form action='/' method='get'>");
                 sw.Write ("<input type='text' name='input' id='shovel-input'/>");
                 sw.Write ("<input type='submit' value='Submit'/>");
+                sw.Write (String.Format ("<input type='hidden' name='sessionid' value='{0}' id='shovel-input'/>", session.Id));
                 sw.Write ("</form>");
                 sw.Write ("<script>\n");
                 sw.Write ("document.getElementById('shovel-input').focus()\n");
@@ -198,13 +217,14 @@ game()
             hl.Prefixes.Add ("http://localhost:8080/");
             hl.Start ();
             var requestNo = 1;
+            var fsd = new FileSystemDatabase ("db");
             while (hl.IsListening) {
                 var ctx = hl.GetContext ();
 
                 Console.WriteLine ("Serving a request ({0} {1}).", requestNo, ctx.Request.Url.AbsolutePath);
 
                 if (ctx.Request.Url.AbsolutePath == "/") {
-                    ServeGuessNumberRequest (ctx);
+                    ServeGuessNumberRequest (ctx, fsd);
                 } else {
                     ctx.Response.OutputStream.Close ();
                 }
