@@ -9,7 +9,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShovelTests", "ShovelTests\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Demos", "Demos", "{73CE6BD1-2D61-4200-A54E-271CB11C1513}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GuessTheNumberLocal", "Demos\GuessTheNumberLocal\GuessTheNumberLocal.csproj", "{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "01_GuessTheNumberLocal", "Demos\GuessTheNumberLocal\01_GuessTheNumberLocal.csproj", "{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "02_GuessTheNumberWebOne", "Demos\GuessTheNumberWebOne\02_GuessTheNumberWebOne.csproj", "{CA486400-F8E0-41CF-AE9E-193BCE4963B4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,6 +31,10 @@ Global
 		{870A0A6D-70E9-4BBD-8B15-49C0A33F05DB}.Debug|x86.Build.0 = Debug|x86
 		{870A0A6D-70E9-4BBD-8B15-49C0A33F05DB}.Release|x86.ActiveCfg = Release|x86
 		{870A0A6D-70E9-4BBD-8B15-49C0A33F05DB}.Release|x86.Build.0 = Release|x86
+		{CA486400-F8E0-41CF-AE9E-193BCE4963B4}.Debug|x86.ActiveCfg = Debug|x86
+		{CA486400-F8E0-41CF-AE9E-193BCE4963B4}.Debug|x86.Build.0 = Debug|x86
+		{CA486400-F8E0-41CF-AE9E-193BCE4963B4}.Release|x86.ActiveCfg = Release|x86
+		{CA486400-F8E0-41CF-AE9E-193BCE4963B4}.Release|x86.Build.0 = Release|x86
 		{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A}.Debug|x86.ActiveCfg = Debug|x86
 		{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A}.Debug|x86.Build.0 = Debug|x86
 		{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A}.Release|x86.ActiveCfg = Release|x86
@@ -36,8 +42,9 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A} = {73CE6BD1-2D61-4200-A54E-271CB11C1513}
+		{CA486400-F8E0-41CF-AE9E-193BCE4963B4} = {73CE6BD1-2D61-4200-A54E-271CB11C1513}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = Demos\GuessTheNumberLocal\GuessTheNumberLocal.csproj
+		StartupItem = Demos\GuessTheNumberWebOne\02_GuessTheNumberWebOne.csproj
 	EndGlobalSection
 EndGlobal

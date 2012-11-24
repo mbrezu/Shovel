@@ -133,7 +133,8 @@ namespace Shovel.Serialization
             for (var i = 0; i < length; i++) {
                 serArray [i] = ReadValue (s);
             }
-            Func<int, object> reader = (index) => {
+            Func<int, object> reader = null;
+            reader = (index) => {
                 if (index < 0) {
                     if (index == -1) {
                         return null;
