@@ -7,8 +7,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{CA486400-F8E0-41CF-AE9E-193BCE4963B4}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>GuessTheNumberWebOne</RootNamespace>
-    <AssemblyName>GuessTheNumberWebOne</AssemblyName>
+    <RootNamespace>_02_GuessTheNumberWebOne</RootNamespace>
+    <AssemblyName>_02_GuessTheNumberWebOne</AssemblyName>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>

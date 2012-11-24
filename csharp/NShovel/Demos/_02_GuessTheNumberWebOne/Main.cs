@@ -6,7 +6,7 @@ using System.Web;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace GuessTheNumberWebOne
+namespace _02_GuessTheNumberWebOne
 {
     class MainClass
     {

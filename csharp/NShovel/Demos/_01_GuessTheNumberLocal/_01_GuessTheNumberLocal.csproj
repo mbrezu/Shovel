@@ -7,8 +7,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>GuessTheNumberLocal</RootNamespace>
-    <AssemblyName>GuessTheNumberLocal</AssemblyName>
+    <RootNamespace>_01_GuessTheNumberLocal</RootNamespace>
+    <AssemblyName>_01_GuessTheNumberLocal</AssemblyName>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>

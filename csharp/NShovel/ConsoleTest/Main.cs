@@ -146,7 +146,7 @@ main()
             var sources = Shovel.Api.MakeSources ("test.sho", "@print(10)");
             var bytecode = Shovel.Api.GetBytecode(sources);
             var udps = GetPrintAndStopUdps();
-            var vm = Shovel.Api.RunVm (bytecode, sources, udps);
+            Shovel.Api.RunVm (bytecode, sources, udps);
         }
 
         public static void AnotherSimpleTest ()

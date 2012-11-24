@@ -9,9 +9,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShovelTests", "ShovelTests\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Demos", "Demos", "{73CE6BD1-2D61-4200-A54E-271CB11C1513}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "01_GuessTheNumberLocal", "Demos\GuessTheNumberLocal\01_GuessTheNumberLocal.csproj", "{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "_01_GuessTheNumberLocal", "Demos\_01_GuessTheNumberLocal\_01_GuessTheNumberLocal.csproj", "{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "02_GuessTheNumberWebOne", "Demos\GuessTheNumberWebOne\02_GuessTheNumberWebOne.csproj", "{CA486400-F8E0-41CF-AE9E-193BCE4963B4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "_02_GuessTheNumberWebOne", "Demos\_02_GuessTheNumberWebOne\_02_GuessTheNumberWebOne.csproj", "{CA486400-F8E0-41CF-AE9E-193BCE4963B4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +45,6 @@ Global
 		{CA486400-F8E0-41CF-AE9E-193BCE4963B4} = {73CE6BD1-2D61-4200-A54E-271CB11C1513}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = Demos\GuessTheNumberWebOne\02_GuessTheNumberWebOne.csproj
+		StartupItem = Demos\_02_GuessTheNumberWebOne\_02_GuessTheNumberWebOne.csproj
 	EndGlobalSection
 EndGlobal

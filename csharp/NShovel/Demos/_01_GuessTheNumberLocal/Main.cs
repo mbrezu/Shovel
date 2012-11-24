@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace GuessTheNumberLocal
+namespace _01_GuessTheNumberLocal
 {
     class MainClass
     {
