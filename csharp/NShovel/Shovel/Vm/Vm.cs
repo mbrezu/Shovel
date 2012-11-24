@@ -1430,7 +1430,7 @@ namespace Shovel.Vm
                 }
             }
             throw new ShovelException (){
-                    Message = message,
+                    Message = sb.ToString(),
                 FileName = fileName,
                     Line = line,
                     Column = column

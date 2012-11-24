@@ -472,7 +472,7 @@ encodeTime(time)"
             Assert.IsNotNull (Shovel.Api.VmProgrammingError(vm));
             Assert.IsTrue (Shovel.Api.VmProgrammingError(vm) is ShovelException);
             var ex = (ShovelException)Shovel.Api.VmProgrammingError(vm);
-            Assert.AreEqual("test", ex.Message);
+            Assert.AreEqual("test", ex.Message.Substring(0, 4));
 		}
 
 		[Test]

@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "_02_GuessTheNumberWebOne", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "_03_GuessTheNumberWebMany", "Demos\_03_GuessTheNumberWebMany\_03_GuessTheNumberWebMany.csproj", "{63BB5D10-737D-4E92-B06A-E01022F066ED}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "_04_GuessTheNumberTurnTheTables", "Demos\_04_GuessTheNumberTurnTheTables\_04_GuessTheNumberTurnTheTables.csproj", "{CC9F3241-DFFE-4373-850A-766CC223C37D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -41,6 +43,10 @@ Global
 		{CA486400-F8E0-41CF-AE9E-193BCE4963B4}.Debug|x86.Build.0 = Debug|x86
 		{CA486400-F8E0-41CF-AE9E-193BCE4963B4}.Release|x86.ActiveCfg = Release|x86
 		{CA486400-F8E0-41CF-AE9E-193BCE4963B4}.Release|x86.Build.0 = Release|x86
+		{CC9F3241-DFFE-4373-850A-766CC223C37D}.Debug|x86.ActiveCfg = Debug|x86
+		{CC9F3241-DFFE-4373-850A-766CC223C37D}.Debug|x86.Build.0 = Debug|x86
+		{CC9F3241-DFFE-4373-850A-766CC223C37D}.Release|x86.ActiveCfg = Release|x86
+		{CC9F3241-DFFE-4373-850A-766CC223C37D}.Release|x86.Build.0 = Release|x86
 		{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A}.Debug|x86.ActiveCfg = Debug|x86
 		{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A}.Debug|x86.Build.0 = Debug|x86
 		{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A}.Release|x86.ActiveCfg = Release|x86
@@ -50,8 +56,9 @@ Global
 		{D02CE7FF-F75D-4859-9D4C-C10ECFC0A80A} = {73CE6BD1-2D61-4200-A54E-271CB11C1513}
 		{CA486400-F8E0-41CF-AE9E-193BCE4963B4} = {73CE6BD1-2D61-4200-A54E-271CB11C1513}
 		{63BB5D10-737D-4E92-B06A-E01022F066ED} = {73CE6BD1-2D61-4200-A54E-271CB11C1513}
+		{CC9F3241-DFFE-4373-850A-766CC223C37D} = {73CE6BD1-2D61-4200-A54E-271CB11C1513}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = Demos\_03_GuessTheNumberWebMany\_03_GuessTheNumberWebMany.csproj
+		StartupItem = Demos\_04_GuessTheNumberTurnTheTables\_04_GuessTheNumberTurnTheTables.csproj
 	EndGlobalSection
 EndGlobal
