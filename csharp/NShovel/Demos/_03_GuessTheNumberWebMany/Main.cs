@@ -174,8 +174,10 @@ game()
             if (sessionId != 0) {
                 session = Session.Load (fsd, sessionId);
             }
+            bool freshSession = false;
             if (session == null) {
-                session = FreshSession(fsd);
+                session = FreshSession (fsd);
+                freshSession = true;
             }
             var vm = Shovel.Api.RunVm (
                 Shovel.Api.DeserializeBytecode (session.ShovelVmBytecode), 
@@ -183,22 +185,26 @@ game()
                 Udps (session, userInput), 
                 session.ShovelVmState);
             if (Shovel.Api.VmExecutionComplete (vm)) {
-                session = FreshSession(fsd);
+                ctx.Response.Redirect ("/");
             } else {
                 session.ShovelVmState = Shovel.Api.SerializeVmState (vm);
-            }
-            session.Save (fsd);
-            using (var sw = new StreamWriter(ctx.Response.OutputStream)) {
-                sw.Write ("<!DOCTYPE html>\n");
-                sw.Write (session.PageContent.ToString ());
-                sw.Write ("<form action='/' method='get'>");
-                sw.Write ("<input type='text' name='input' id='shovel-input'/>");
-                sw.Write ("<input type='submit' value='Submit'/>");
-                sw.Write (String.Format ("<input type='hidden' name='sessionid' value='{0}' id='shovel-input'/>", session.Id));
-                sw.Write ("</form>");
-                sw.Write ("<script>\n");
-                sw.Write ("document.getElementById('shovel-input').focus()\n");
-                sw.Write ("</script>\n");
+                // FIXME: Uncomment the next statement to fix the 'back button bug'.
+//                if (!freshSession) {
+//                    session.Id = fsd.GetFreshId ();
+//                }
+                session.Save (fsd);
+                using (var sw = new StreamWriter(ctx.Response.OutputStream)) {
+                    sw.Write ("<!DOCTYPE html>\n");
+                    sw.Write (session.PageContent.ToString ());
+                    sw.Write ("<form action='/' method='get'>");
+                    sw.Write ("<input type='text' name='input' id='shovel-input'/>");
+                    sw.Write ("<input type='submit' value='Submit'/>");
+                    sw.Write (String.Format ("<input type='hidden' name='sessionid' value='{0}' id='shovel-input'/>", session.Id));
+                    sw.Write ("</form>");
+                    sw.Write ("<script>\n");
+                    sw.Write ("document.getElementById('shovel-input').focus()\n");
+                    sw.Write ("</script>\n");
+                }
             }
             ctx.Response.OutputStream.Close ();
         }
