@@ -42,6 +42,11 @@ namespace Shovel.Serialization
 
 		static private object DeserializeBytecodeImpl (Stream s)
 		{
+            // Read the version and throw if it's not supported.
+            int version = Utils.ReadInt(s);
+            if (version > Shovel.Api.Version) {
+                throw new Exceptions.VersionNotSupportedException();
+            }
 			// Read the number of instructions.
 			int instructionsCount = Utils.ReadInt (s);
 			// Allocate the array of instructions.
@@ -63,6 +68,7 @@ namespace Shovel.Serialization
 
 		static private void SerializeBytecodeImplementation (Stream ms, Instruction[] bytecode)
 		{
+            Utils.WriteBytes (ms, BitConverter.GetBytes (Shovel.Api.Version));
 			Utils.WriteBytes (ms, BitConverter.GetBytes ((int)bytecode.Length));
 			foreach (var instruction in bytecode) {
 				Utils.WriteBytes (ms, BitConverter.GetBytes ((int)instruction.NumericOpcode));

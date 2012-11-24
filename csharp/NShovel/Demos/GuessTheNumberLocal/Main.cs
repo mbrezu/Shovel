@@ -36,8 +36,12 @@ var game = fn () {
 game()
 ";
             var sources = Shovel.Api.MakeSources ("test.sho", program);
-            var bytecode = Shovel.Api.GetBytecode (sources);
-            Shovel.Api.RunVm (bytecode, sources, Udps ());
+            try {
+                var bytecode = Shovel.Api.GetBytecode (sources);
+                Shovel.Api.RunVm (bytecode, sources, Udps ());
+            } catch (Shovel.Exceptions.ShovelException shex) {
+                Console.WriteLine (shex.Message);
+            }
         }
 
         public static IEnumerable<Shovel.Callable> Udps ()

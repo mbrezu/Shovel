@@ -32,9 +32,9 @@ namespace ConsoleTest
         public static void Main (string[] args)
         {
             //MasterMindBenchmark();
-            SimpleTest ();
+            //SimpleTest ();
             //AnotherSimpleTest ();
-            //SerializerTest ();
+            SerializerTest ();
             //UdpTest();
         }
 
@@ -73,10 +73,17 @@ var b = @readLine()
         static void SerializerTest ()
         {
             var sources = Shovel.Api.MakeSources ("test.sho", @"
+var makeCounter = fn () {
+  var counter = 0
+  fn () counter = counter + 1
+}
 var main = fn () {
+  var c1 = makeCounter()
   var arr = array(1, 2, 3, 4)
   @print(string(arr[0]))
   @print(string(arr[1]))
+  c1()
+  @print(string(c1()))
   @stop()
   @print(string(arr[2]))
   @print(string(arr[3]))
@@ -99,10 +106,17 @@ main()
             };
             Console.WriteLine (Shovel.Api.PrintAssembledBytecode (bytecode));
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
-//            vm.WakeUp ();
-//            Shovel.Api.RunVm (vm, sources, userPrimitives);
 
+            var sw = new System.Diagnostics.Stopwatch ();
+            sw.Start ();
             var state = Shovel.Api.SerializeVmState (vm);
+            for (var i = 0; i < 9999; i++) {
+                state = Shovel.Api.SerializeVmState (vm);
+            }
+            sw.Stop ();
+            Console.WriteLine ("Serialization time: {0}",sw.ElapsedMilliseconds / 1000.0);
+
+
             Console.WriteLine (state.Length);
             File.WriteAllBytes ("test.bin", state);
 
