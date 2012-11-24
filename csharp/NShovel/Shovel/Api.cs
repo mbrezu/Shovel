@@ -31,7 +31,12 @@ namespace Shovel
 {
     public class Api
     {
-        public static int Version = 1;
+        static int version = 1;
+        public static int Version {
+            get {
+                return version;
+            }
+        }
 
         public static byte[] SerializeVmState (Vm.Vm vm)
         {
