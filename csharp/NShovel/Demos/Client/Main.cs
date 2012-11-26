@@ -77,13 +77,18 @@ var transactionDeadline = @getTransactionDeadline()
             byte[] requestBytes = null;
             using (var ms = new MemoryStream()) {
                 byte[] bytes = new byte[4];
+
                 bytes = BitConverter.GetBytes (serializedBytecode.Length);
                 ms.Write (bytes, 0, bytes.Length);
+
                 var sourceBytes = Encoding.UTF8.GetBytes (program);
+
                 bytes = BitConverter.GetBytes (sourceBytes.Length);
                 ms.Write (bytes, 0, bytes.Length);
+
                 bytes = BitConverter.GetBytes (serializedState.Length);
                 ms.Write (bytes, 0, bytes.Length);
+
                 ms.Write (serializedBytecode, 0, serializedBytecode.Length);
                 ms.Write (sourceBytes, 0, sourceBytes.Length);
                 ms.Write (serializedState, 0, serializedState.Length);
@@ -102,8 +107,10 @@ var transactionDeadline = @getTransactionDeadline()
             byte[] serializedServerState = null;
             using (var ms = new MemoryStream(responseBytes)) {
                 byte[] bytes = new byte[4];
+
                 ms.Read (bytes, 0, 4);
                 int serverStateLength = BitConverter.ToInt32 (bytes, 0);
+
                 serializedServerState = new byte[serverStateLength];
                 ms.Read (serializedServerState, 0, serializedServerState.Length);
             }

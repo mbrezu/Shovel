@@ -74,8 +74,9 @@ namespace Server
                     }
                     );
 
-                    // Wrap this call in a DB transaction to execute the ShovelScript code between
-                    // @goToServer and @goToClient in a DB transaction.
+                    // To execute the ShovelScript code between
+                    // @goToServer and @goToClient in a DB transaction,
+                    // just wrap this call in a DB transaction.
 
                     Shovel.Vm.Vm vm = null;
                     TimeIt ("server", () => {
@@ -89,11 +90,11 @@ namespace Server
 
                     // In a real application, we should check the values returned by 
                     // Shovel.Api.VmProgrammingError and Shovel.Api.VmUserDefinedPrimitiveError 
-                    // and return something else based on the presence of errors.
+                    // and return something else based on the presence/absence of errors.
 
-                    // If this server listens for requests from the internet (or a large intranet),
-                    // you must set quotas for RAM and CPU when calling RunVm (so a single
-                    // broken/malicious request doesn't bring down the whole server).
+                    // In a normal context, you must set quotas for RAM and CPU when calling RunVm (so a single
+                    // broken/malicious request doesn't bring down the whole server). This is not 
+                    // done here to keep things simple.
 
                     // This is accomplished using the RunVm 'totalTicksQuota' and 'usedCellsQuota' parameters.
 
