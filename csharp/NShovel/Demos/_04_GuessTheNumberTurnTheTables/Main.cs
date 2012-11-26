@@ -145,7 +145,7 @@ namespace _04_GuessTheNumberTurnTheTables
             var session = new Session ();
             session.Id = fsd.GetFreshId ();
             session.ShovelVmSources = program;
-            session.ShovelVmBytecode = Shovel.Api.SerializeBytecode (bytecode).ToArray ();
+            session.ShovelVmBytecode = Shovel.Api.SerializeBytecode (bytecode);
             return session;
         }
 

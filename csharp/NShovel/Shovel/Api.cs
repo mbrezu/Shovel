@@ -48,6 +48,14 @@ namespace Shovel
             return ms.ToArray ();
         }
 
+        public static Stream SerializeVmStateToStream (Vm.Vm vm)
+        {
+            return Serialization.Utils.SerializeWithMd5CheckSum (str => {
+                vm.SerializeState (str);
+            }
+            );
+        }
+
         public static ShovelException VmProgrammingError (Shovel.Vm.Vm vm)
         {
             return vm.ProgrammingError;
@@ -105,9 +113,14 @@ namespace Shovel
             return assembled;
         }
 
-        public static MemoryStream SerializeBytecode (Instruction[] bytecode)
+        public static MemoryStream SerializeBytecodeToStream (Instruction[] bytecode)
         {
             return Serialization.BytecodeSerializer.SerializeBytecode (bytecode);
+        }
+
+        public static byte[] SerializeBytecode (Instruction[] bytecode)
+        {
+            return Serialization.BytecodeSerializer.SerializeBytecode (bytecode).ToArray();
         }
 
         public static Instruction[] DeserializeBytecode (MemoryStream ms)

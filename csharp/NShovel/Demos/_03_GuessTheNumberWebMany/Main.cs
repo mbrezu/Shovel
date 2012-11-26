@@ -159,7 +159,7 @@ game()
             var session = new Session ();
             session.Id = fsd.GetFreshId ();
             session.ShovelVmSources = Program ();
-            session.ShovelVmBytecode = Shovel.Api.SerializeBytecode (ProgramBytecode ()).ToArray ();
+            session.ShovelVmBytecode = Shovel.Api.SerializeBytecode (ProgramBytecode ());
             return session;
         }
 

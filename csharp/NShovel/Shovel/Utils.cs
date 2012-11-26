@@ -61,7 +61,7 @@ namespace Shovel
 
         internal static byte[] ComputeBytecodeMd5(Instruction[] bytecode)
         {
-            var ms = Api.SerializeBytecode(bytecode);
+            var ms = Api.SerializeBytecodeToStream(bytecode);
             using (var md5 = MD5.Create()) {
                 ms.Seek(0, SeekOrigin.Begin);
                 return md5.ComputeHash(ms);

@@ -347,8 +347,8 @@ Let's place the source in a global variable too:
     // the code between 'goToServer' and 'goToClient' in a transaction) .
 
     @subtractFromAccount(sourceAccountNo, amount)
-    @addToAccount(destinationAccountNo, amount) var
-    transactionDeadline = @getTransactionDeadline()
+    @addToAccount(destinationAccountNo, amount) 
+    var transactionDeadline = @getTransactionDeadline()
 
     // Go back to the client.
     @goToClient()
