@@ -1,6 +1,6 @@
 <!-- -*- markdown -*- -->
 
-# Shovel Getting Started for C#
+# Shovel Getting Started for C\# #
 
 ## Installation
 

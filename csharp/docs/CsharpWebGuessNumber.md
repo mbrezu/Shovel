@@ -1,6 +1,6 @@
 <!-- -*- markdown -*- -->
 
-# A Guess-the-Number Game with Shovel and C#
+# A Guess-the-Number Game with Shovel and C\# #
 
 ## Introduction
 
