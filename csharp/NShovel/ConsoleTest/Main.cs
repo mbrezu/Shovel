@@ -173,16 +173,21 @@ main()
             var sources = Shovel.Api.MakeSourcesWithStdlib ("mmind", Mastermind ());
             File.WriteAllText ("test.txt", Shovel.Api.PrintAssembledBytecode (sources));
             var bytecode = Shovel.Api.GetBytecode (sources);
-            Shovel.Value result;
+            Shovel.Value result = Shovel.Value.Make();
             for (var i = 0; i < 20; i++) {
                 result = MasterMindRun(bytecode, sources);
             }
-            foreach (var k in result.ArrayValue) {
-                foreach (var kk in k.ArrayValue) {
-                    Console.Write (kk.IntegerValue);
-                    Console.Write (" ");
+            foreach (var k in result.ArrayValue)
+            {
+                if (k.Kind == Shovel.Value.Kinds.Array)
+                {
+                    foreach (var kk in k.ArrayValue)
+                    {
+                        Console.Write(kk.IntegerValue);
+                        Console.Write(" ");
+                    }
+                    Console.WriteLine();
                 }
-                Console.WriteLine ();
             }
         }
 
