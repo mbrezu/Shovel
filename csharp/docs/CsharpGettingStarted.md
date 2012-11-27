@@ -559,6 +559,6 @@ After `RunVm` returns on the server, the state is extracted from the
 VM, serialized and sent back to the client. We don't use any RAM/CPU
 quotas for the process because this is a simple example. In any
 production deployment you should set RAM and CPU quotas. The
-[number guessing tutorial](CsarpWebGuessNumber.md) shows how to set
+[number guessing tutorial](CsharpWebGuessNumber.md) shows how to set
 quotas.
 
