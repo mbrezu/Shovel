@@ -13,8 +13,8 @@ contains a `NShovel.sln` file. I'm using
 [MonoDevelop](http://monodevelop.com/) to write C# code. The
 `NShovel.sln` file can be opened with Microsoft Visual Studio 2010 and
 2012. If using Visual Studio, you'll have to unload the `ShovelTests`
-projects (or delete it from the solution if using the Express versions
-of the Microsoft tools) because they reference the Mono versions of
+project (or delete it from the solution if using the Express versions
+of the Microsoft tools) because it references the Mono version of
 NUnit (alternatively, you can install NUnit and change the
 references).
 

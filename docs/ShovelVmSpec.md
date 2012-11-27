@@ -50,7 +50,7 @@ is a tuple containing:
  * an array of values.
 
 The names and the program counter are only needed to offer more
-helpful debugging information. During normal exectution only the array
+helpful debugging information. During normal execution only the array
 of values is used.
 
 A variable is identified as a pair of integers (frame address,

@@ -77,14 +77,6 @@ game()
             }
         }
 
-        enum ReadStates
-        {
-            None,
-            ReadInteger,
-            ReadChar
-        }
-        ;
-
         static IEnumerable<Shovel.Callable> Udps (Session session, string userInput)
         {
             var rng = new Random ();

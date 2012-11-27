@@ -44,14 +44,6 @@ namespace _04_GuessTheNumberTurnTheTables
             }
         }
 
-        enum ReadStates
-        {
-            None,
-            ReadInteger,
-            ReadChar
-        }
-        ;
-
         static IEnumerable<Shovel.Callable> Udps (Session session, string userInput)
         {
             var rng = new Random ();
@@ -211,7 +203,10 @@ namespace _04_GuessTheNumberTurnTheTables
                 Shovel.Api.DeserializeBytecode (session.ShovelVmBytecode), 
                 ProgramSources (session.ShovelVmSources), 
                 Udps (session, userInput), 
-                session.ShovelVmState);
+                session.ShovelVmState,
+                totalTicksQuota: null,
+                ticksUntilNextNapQuota: null,
+                usedCellsQuota: null);
             if (Shovel.Api.VmProgrammingError (vm) != null) {
                 ServeError (ctx, session, Shovel.Api.VmProgrammingError (vm).Message);
             } else if (Shovel.Api.VmUserDefinedPrimitiveError (vm) != null) {

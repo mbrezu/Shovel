@@ -30,7 +30,7 @@ namespace Shovel
 		// Do not change the order of Opcodes, they are serialized as ints.
 		// The only valid way to change this list is to add a new opcode 
 		// at the end (additive changes).
-		public enum Opcodes
+		internal enum Opcodes
 		{ 
 			VmVersion,
 			VmSourcesMd5,
@@ -94,19 +94,19 @@ namespace Shovel
 			IsCallable
 		}
 
-		public Opcodes Opcode { get; set; }
+		internal Opcodes Opcode { get; set; }
 
-		public object Arguments { get; set; }
+		internal object Arguments { get; set; }
 
-		public int? StartPos { get; set; }
+		internal int? StartPos { get; set; }
 
-		public int? EndPos { get; set; }
+		internal int? EndPos { get; set; }
 
-		public string Comments { get; set; }
+		internal string Comments { get; set; }
 
-		public object Cache { get; set; }
+		internal object Cache { get; set; }
 
-		public int NumericOpcode { get; set; }
+		internal int NumericOpcode { get; set; }
 
 		public override string ToString ()
 		{

@@ -55,6 +55,8 @@ The
 
 The [specifications](shovel/blob/master/docs/specs.md).
 
+Some [notes for advanced scenarios](shovel/blob/master/docs/advanced.md).
+
 ## License
 
 Shovel implementations and the associated documentation are
