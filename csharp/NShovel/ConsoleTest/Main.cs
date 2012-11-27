@@ -31,10 +31,10 @@ namespace ConsoleTest
     {
         public static void Main (string[] args)
         {
-            //MasterMindBenchmark();
+            MasterMindBenchmark();
             //SimpleTest ();
             //AnotherSimpleTest ();
-            SerializerTest ();
+            //SerializerTest ();
             //UdpTest();
         }
 
@@ -157,29 +157,26 @@ main()
             Console.WriteLine (Shovel.Api.TestRunVm (sources));
         }
 
-        public static void MasterMindBenchmark ()
+        public static Shovel.Value MasterMindRun(Shovel.Instruction[] bytecode, List<Shovel.SourceFile> sources)
         {
-//          var sources = Shovel.Api.MakeSourcesWithStdlib ("qsort", "stdlib.sort(array(1, 5, 3, 4, 2), fn (a, b) a < b)");
-            var sources = Shovel.Api.MakeSourcesWithStdlib ("mmind", Mastermind ());
-            File.WriteAllText ("test.txt", Shovel.Api.PrintAssembledBytecode (sources));
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch ();
-//          sw.Reset ();
-//          sw.Start ();
-//          for (int i = 0; i < 3000; i ++) {
-//              Shovel.Api.GetBytecode (sources);
-//          }
-//          sw.Stop ();
-//          Console.WriteLine (sw.ElapsedMilliseconds / 1000.0);
-            var bytecode = Shovel.Api.GetBytecode (sources);
-
             sw.Reset ();
             sw.Start ();
             var result = Shovel.Api.TestRunVm (bytecode, sources);
             sw.Stop ();
-
             Console.WriteLine (sw.ElapsedMilliseconds / 1000.0);
+            return result;
+        }
 
-            //          var result = Shovel.Api.NakedRunVm (sources);
+        public static void MasterMindBenchmark ()
+        {
+            var sources = Shovel.Api.MakeSourcesWithStdlib ("mmind", Mastermind ());
+            File.WriteAllText ("test.txt", Shovel.Api.PrintAssembledBytecode (sources));
+            var bytecode = Shovel.Api.GetBytecode (sources);
+            Shovel.Value result;
+            for (var i = 0; i < 20; i++) {
+                result = MasterMindRun(bytecode, sources);
+            }
             foreach (var k in result.ArrayValue) {
                 foreach (var kk in k.ArrayValue) {
                     Console.Write (kk.IntegerValue);
@@ -241,7 +238,7 @@ main()
       result
     }
     //length(generateOptions())
-    stdlib.repeat(9, fn() generateOptions())
+    //stdlib.repeat(9, fn() generateOptions())
     slice(generateOptions(), 0, 10)
 ";
         }

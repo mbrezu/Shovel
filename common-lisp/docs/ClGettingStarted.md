@@ -18,7 +18,7 @@ NOTE: I tested Shovel with SBCL 1.1.0 and CCL 1.8-r15286M (32bit). It
 should work on other CL implementations, but these are the only
 implementations actually tested.
 
-## The first programs
+## The First Programs
 
 Time for the your first ShovelScript program (ShovelScript is the
 high-level language used to write Shovel programs):
@@ -43,7 +43,7 @@ knowledge. The factorial script above is JavaScript-like, but:
    required;
  * if the function body has only one statement, curly brackets/braces
    are not required;
- * statements have values;
+ * statements have values.
 
 `shovel:run-code` takes a list of sources. A 'source' can simply be a
 string, or an instance of `shovel:source-file`. The example above can

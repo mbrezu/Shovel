@@ -468,11 +468,13 @@ encodeTime(time)"
 		{
 			var sources = Shovel.Api.MakeSources ("test.sho", "panic('test')");
             var bytecode = Shovel.Api.GetBytecode(sources);
-            var vm = Shovel.Api.RunVm (bytecode, sources);
-            Assert.IsNotNull (Shovel.Api.VmProgrammingError(vm));
-            Assert.IsTrue (Shovel.Api.VmProgrammingError(vm) is ShovelException);
-            var ex = (ShovelException)Shovel.Api.VmProgrammingError(vm);
-            Assert.AreEqual("test", ex.Message.Substring(0, 4));
+            Utils.ExpectException<Shovel.Exceptions.ShovelException>(() => {
+            Shovel.Api.RunVm (bytecode, sources);
+            },
+            shex => {
+                Assert.IsNotNull(shex);
+                Assert.AreEqual("test", shex.Message.Substring(0, 4));
+            });
 		}
 
 		[Test]

@@ -224,7 +224,8 @@ namespace Shovel.Compiler
                     AtEof = true
                 };
 			}
-			return result;
+            result.Content = result.Content.Replace("\\\"", "\"").Replace("\\\'", "\'");
+            return result;
 		}
         
 		Token TokenizeNumber ()

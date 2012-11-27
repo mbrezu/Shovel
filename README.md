@@ -44,33 +44,16 @@ the rest of the application).
 Shovel is actually more then just the VM: a VM specification, a
 language specification (it's more fun to write code in a high level
 language than to write assembly for a VM by hand), a compiler for that
-language and a VM implementation (both written in Common Lisp now,
-with implementations in C#, JavaScript and Java planned). The Shovel
-language is named ShovelScript.
+language and a 2 VM implementations (Common Lisp and C#, with
+JavaScript and Java planned). The Shovel language is named
+ShovelScript.
 
-A Shovel quick start guide for Common Lisp:
-[ClGettingStarted.md](shovel/blob/master/ClGettingStarted.md).
+The [documentation trail for C#/.NET](shovel/blob/master/csharp/docs/index.md).
 
-A simple number guessing demo:
-[WebGuessNumber.md](shovel/blob/master/WebGuessNumber.md).
+The
+[documentation trail for Common Lisp](shovel/blob/master/common-lisp/docs/index.md).
 
-The description of the API:
-[ShovelApi.md](shovel/blob/master/ShovelApi.md).
-
-If you want more information: The language specification (for small
-values of 'specification'):
-[ShovelScriptSpec.md](shovel/blob/master/ShovelScriptSpec.md).
-
-If you want even more information: The VM specification (also for
-small values of 'specification'):
-[ShovelVmSpec.md](shovel/blob/master/ShovelVmSpec.md).
-
-The two 'specifications' above are probably very low quality (they
-specify little) but I include them here hoping that they are better
-than nothing. Once I get another implementation running (or questions
-about what is unspecified) I will be able to improve them.
-
-Beyond these, the source code is the real source of information :-)
+The [specifications](shovel/blob/master/docs/specs.md).
 
 ## License
 

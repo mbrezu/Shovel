@@ -80,6 +80,6 @@ Global
 		{5E5B6FF1-B785-4E33-9F9E-1740938D518F} = {73CE6BD1-2D61-4200-A54E-271CB11C1513}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = Demos\Client\Client.csproj
+		StartupItem = Demos\Playground\Playground.csproj
 	EndGlobalSection
 EndGlobal

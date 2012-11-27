@@ -170,7 +170,7 @@ namespace Shovel.Vm
                 Serialization.Utils.DeserializeWithMd5CheckSum (ms, str => {
                     var version = Serialization.Utils.ReadInt (str);
                     if (version > Shovel.Api.Version) {
-                        throw new Exceptions.VersionNotSupportedException();
+                        throw new Exceptions.VersionNotSupportedException ();
                     }
                     var stackIndex = Serialization.Utils.ReadInt (str);
                     var envIndex = Serialization.Utils.ReadInt (str);
@@ -370,7 +370,7 @@ namespace Shovel.Vm
                     return true;
                 } catch (ShovelException ex) {
                     this.programmingError = ex;
-                    return false;
+                    throw;
                 }
             } else {
                 return false;
