@@ -10,3 +10,4 @@ markdown docs/advanced.md >docs/advanced.html
 markdown csharp/docs/index.md >csharp/docs/index.html
 markdown csharp/docs/CsharpGettingStarted.md >csharp/docs/CsharpGettingStarted.html
 markdown csharp/docs/CsharpWebGuessNumber.md >csharp/docs/CsharpWebGuessNumber.html
+markdown csharp/docs/CsharpShovelApi.md >csharp/docs/CsharpShovelApi.html
