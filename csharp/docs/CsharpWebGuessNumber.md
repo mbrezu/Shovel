@@ -383,7 +383,7 @@ threads serving requests and we could use another quota,
 `ticksUntilNextNapQuota` ticks and another VM can be resumed - but we
 have to write the scheduler, all Shovel does is return from `RunVm`
 when this quota is exceeded - we can determine that the quota is
-exceeded if a) the program didn't complet and b) the `ReadState` field
+exceeded if a) the program didn't complete and b) the `ReadState` field
 of the current session is `Session.ReadStates.None`). Both these
 changes are beyond the scope of this document.
 
