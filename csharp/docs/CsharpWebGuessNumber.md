@@ -237,7 +237,7 @@ argued that entering a different input after using the back button
 should branch the game (create a different 'future' - the guesses made
 in the pages we backed up from are one branch (or 'future') of the
 game; by entering other inputs we create a new branch/future). This is
-important, if the back button works properly, we could cheat the
+important, if the back button works properly, we can cheat the
 game: guess the number, then use the back button as much as we like
 (maybe up to the first guess?) and then enter the secret number
 directly.
