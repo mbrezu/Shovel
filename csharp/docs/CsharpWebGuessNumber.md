@@ -139,7 +139,7 @@ program will call `readInt` or `readChar` before finishing.
 
 If b), we need to do the HTTP equivalent of `Console.ReadLine`. This
 means writing the page accumulated so far to the HTTP response, add a
-frame with a text box and focus the textbox (to make it easy to enter
+form with a text box and focus the textbox (to make it easy to enter
 the number or character and to make sure that the form is visible -
 the user doesn't need to scroll down to see it).
 
@@ -174,9 +174,13 @@ require different solution/project files to be usable on both Mono and
 
 The 'database' is implemented in `FileSystemDatabase.cs`. Features:
 
- * stores dictionaries of <string, byte[]> in files;
- * each dictionary is stored in a directory named like the key;
- * all the 'key directories' are stored in a 'database directory';
+ * stores records as directories (one record per directory) as one
+   file per field - the file name is the field name, the content is
+   the `byte` array representing the field's value;
+ * the directory for each record is named by the value of the primary
+   key (e.g. directory '100' for the record corresponding to primary
+   key value '100');
+ * all the 'record directories' are stored in a 'database directory';
  * locking is very primitive: all operations block on the current
    instance of the 'database server', so different processes can
    corrupt the data and all operations lock the entire 'database';
@@ -185,7 +189,7 @@ The 'database' is implemented in `FileSystemDatabase.cs`. Features:
 The sessions are implemented by class `Session.cs`. Its fields are the
 globals of the previous version, plus an integer key (the session
 ID). A session knows how to save itself to a 'database' and the class
-can return a session loaded from the database.
+can create a session by loading it from the database.
 
 There are a few differences in `Main.cs`. The
 `ServeGuessNumberRequest` also reads a `sessionid` HTTP GET
@@ -233,9 +237,10 @@ argued that entering a different input after using the back button
 should branch the game (create a different 'future' - the guesses made
 in the pages we backed up from are one branch (or 'future') of the
 game; by entering other inputs we create a new branch/future). This is
-important, we can now cheat the game: guess the number, then use the
-back button as much as we like (maybe up to the first guess?) and then
-enter the secret number directly.
+important, if the back button worked properly, we could cheat the
+game: guess the number, then use the back button as much as we like
+(maybe up to the first guess?) and then enter the secret number
+directly.
 
 Cloned pages are a similar problem: imagine that the user copies the
 URL for one of the attempt pages, then pastes that address into
