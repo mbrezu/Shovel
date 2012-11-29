@@ -174,9 +174,9 @@ require different solution/project files to be usable on both Mono and
 
 The 'database' is implemented in `FileSystemDatabase.cs`. Features:
 
- * stores records as directories (one record per directory) as one
-   file per field - the file name is the field name, the content is
-   the `byte` array representing the field's value;
+ * stores records as directories (one record per directory), with one
+   file per field - the file name is the field name, the file content
+   is the `byte` array representing the field's value;
  * the directory for each record is named by the value of the primary
    key (e.g. directory '100' for the record corresponding to primary
    key value '100');
@@ -237,7 +237,7 @@ argued that entering a different input after using the back button
 should branch the game (create a different 'future' - the guesses made
 in the pages we backed up from are one branch (or 'future') of the
 game; by entering other inputs we create a new branch/future). This is
-important, if the back button worked properly, we could cheat the
+important, if the back button works properly, we could cheat the
 game: guess the number, then use the back button as much as we like
 (maybe up to the first guess?) and then enter the secret number
 directly.
