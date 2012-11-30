@@ -44,7 +44,10 @@ namespace Shovel
         }
         ;
 
-        [FieldOffset(16)]
+        // Mono and .NET 32 bit seem to be OK with the offset below set at 12.
+        // Mono on 64 bit wants it to be set to 20. No idea why (it looks like it should be 16).
+        // Need to check what .NET 64 bit requires.
+        [FieldOffset(12)]
         public Kinds Kind;
 
         [FieldOffset(0)]
