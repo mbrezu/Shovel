@@ -163,7 +163,13 @@ namespace ShovelTests
 			Utils.TestValue ("20 == 10", Shovel.Value.Kinds.Bool, false);
 			Utils.TestValue ("10 == 10", Shovel.Value.Kinds.Bool, true);
 			Utils.TestValue ("'a' == 'a'", Shovel.Value.Kinds.Bool, true);
-			Utils.TestValue ("'b' == 'a'", Shovel.Value.Kinds.Bool, false);
+            Utils.TestValue ("'b' == 'a'", Shovel.Value.Kinds.Bool, false);
+            Utils.TestValue ("'b' == null", Shovel.Value.Kinds.Bool, false);
+            Utils.TestValue ("null == null", Shovel.Value.Kinds.Bool, true);
+            Utils.TestValue ("null == 'b'", Shovel.Value.Kinds.Bool, false);
+            Utils.TestValue ("10 == null", Shovel.Value.Kinds.Bool, false);
+            Utils.TestValue ("false == null", Shovel.Value.Kinds.Bool, false);
+            Utils.TestValue ("10.5 == null", Shovel.Value.Kinds.Bool, false);
 		}
 
 		[Test]
@@ -173,6 +179,13 @@ namespace ShovelTests
 			Utils.TestValue ("10 != 10", Shovel.Value.Kinds.Bool, false);
 			Utils.TestValue ("'a' != 'a'", Shovel.Value.Kinds.Bool, false);
 			Utils.TestValue ("'b' != 'a'", Shovel.Value.Kinds.Bool, true);
+
+            Utils.TestValue ("'b' != null", Shovel.Value.Kinds.Bool, true);
+            Utils.TestValue ("null != null", Shovel.Value.Kinds.Bool, false);
+            Utils.TestValue ("null != 'b'", Shovel.Value.Kinds.Bool, true);
+            Utils.TestValue ("10 != null", Shovel.Value.Kinds.Bool, true);
+            Utils.TestValue ("false != null", Shovel.Value.Kinds.Bool, true);
+            Utils.TestValue ("10.5 != null", Shovel.Value.Kinds.Bool, true);
 		}
 		// FIXME: add tests for broken comparisons.
 

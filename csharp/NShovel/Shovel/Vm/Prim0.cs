@@ -473,7 +473,7 @@ namespace Shovel.Vm
         static void AreEqualError (VmApi api)
         {
             api.RaiseShovelError (
-                        "Arguments must have the same type (numbers or strings).");
+                        "Arguments must have the same type (numbers or strings), or at least one must be null.");
         }
 
         internal static void AreEqual (VmApi api, ref Value t1, ref Value t2)
@@ -482,6 +482,8 @@ namespace Shovel.Vm
             case Value.Kinds.Integer:
                 if (t2.Kind == Value.Kinds.Integer) {
                     t1.BoolValue = t1.IntegerValue == t2.IntegerValue;
+                } else if (t2.Kind == Value.Kinds.Null) {
+                    t1.BoolValue = false;
                 } else {
                     AreEqualError (api);
                 }
@@ -490,6 +492,8 @@ namespace Shovel.Vm
                 if (t2.Kind == Value.Kinds.String) {
                     int comparison = CompareStrings (t1.StringValue, t2.StringValue);
                     t1.BoolValue = comparison == 0;
+                } else if (t2.Kind == Value.Kinds.Null) {
+                    t1.BoolValue = false;
                 } else {
                     AreEqualError (api);
                 }
@@ -497,6 +501,8 @@ namespace Shovel.Vm
             case Value.Kinds.Double:
                 if (t2.Kind == Value.Kinds.Double) {
                     t1.BoolValue = t1.DoubleValue == t2.DoubleValue;
+                } else if (t2.Kind == Value.Kinds.Null) {
+                    t1.BoolValue = false;
                 } else {
                     AreEqualError (api);
                 }
@@ -504,19 +510,20 @@ namespace Shovel.Vm
             case Value.Kinds.Bool:
                 if (t2.Kind == Value.Kinds.Bool) {
                     t1.BoolValue = t1.BoolValue == t2.BoolValue;
-                } else {
-                    AreEqualError (api);
-                }
-                break;
-            case Value.Kinds.Null:
-                if (t2.Kind == Value.Kinds.Null) {
-                    t1.BoolValue = true;
+                } else if (t2.Kind == Value.Kinds.Null) {
+                    t1.BoolValue = false;
                 } else {
                     AreEqualError (api);
                 }
                 break;
             default:
-                AreEqualError (api);
+                if (t1.Kind == Value.Kinds.Null && t2.Kind == Value.Kinds.Null) {
+                    t1.BoolValue = true;
+                } else if (t1.Kind == Value.Kinds.Null || t2.Kind == Value.Kinds.Null) {
+                    t2.BoolValue = false;
+                } else {
+                    AreEqualError (api);
+                }
                 break;
             }
             t1.Kind = Value.Kinds.Bool;
