@@ -71,7 +71,11 @@ knowledge. The factorial script above is JavaScript-like, but:
  * blocks (`{}`) group multiple statements together; the value of a
    block is the value of the last statement in the block;
  * **`if`** can be used as an expression, there's no ternary (`?:`)
-   operator.
+   operator;
+ * there's no `return`, `break` or `continue`;
+ * there are no iteration mechanisms baked in the language syntax; use
+   recursion or the 'standard library' functions (see below for
+   examples).
  
 Let's see an error message. Change the `Main` method:
 
