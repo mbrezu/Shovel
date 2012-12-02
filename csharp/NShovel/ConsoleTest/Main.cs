@@ -31,8 +31,8 @@ namespace ConsoleTest
     {
         public static void Main (string[] args)
         {
-            MasterMindBenchmark();
-            //SimpleTest ();
+            //MasterMindBenchmark();
+            SimpleTest ();
             //AnotherSimpleTest ();
             //SerializerTest ();
             //UdpTest();
@@ -114,7 +114,7 @@ main()
                 state = Shovel.Api.SerializeVmState (vm);
             }
             sw.Stop ();
-            Console.WriteLine ("Serialization time: {0}",sw.ElapsedMilliseconds / 1000.0);
+            Console.WriteLine ("Serialization time: {0}", sw.ElapsedMilliseconds / 1000.0);
 
 
             Console.WriteLine (state.Length);
@@ -143,10 +143,12 @@ main()
 
         public static void SimpleTest ()
         {
-            var sources = Shovel.Api.MakeSources ("test.sho", "@print(10)");
-            var bytecode = Shovel.Api.GetBytecode(sources);
-            var udps = GetPrintAndStopUdps();
-            Shovel.Api.RunVm (bytecode, sources, udps);
+            try {
+                Shovel.Api.GetBytecode (Shovel.Api.MakeSources ("test.sho", "var a = array(array(array(3))) a[0][0][0]"));
+            } catch (Shovel.Exceptions.ShovelException shex) {
+                Console.WriteLine (shex.Message);
+            }
+
         }
 
         public static void AnotherSimpleTest ()
@@ -157,7 +159,7 @@ main()
             Console.WriteLine (Shovel.Api.TestRunVm (sources));
         }
 
-        public static Shovel.Value MasterMindRun(Shovel.Instruction[] bytecode, List<Shovel.SourceFile> sources)
+        public static Shovel.Value MasterMindRun (Shovel.Instruction[] bytecode, List<Shovel.SourceFile> sources)
         {
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch ();
             sw.Reset ();
@@ -173,20 +175,17 @@ main()
             var sources = Shovel.Api.MakeSourcesWithStdlib ("mmind", Mastermind ());
             File.WriteAllText ("test.txt", Shovel.Api.PrintAssembledBytecode (sources));
             var bytecode = Shovel.Api.GetBytecode (sources);
-            Shovel.Value result = Shovel.Value.Make();
+            Shovel.Value result = Shovel.Value.Make ();
             for (var i = 0; i < 20; i++) {
-                result = MasterMindRun(bytecode, sources);
+                result = MasterMindRun (bytecode, sources);
             }
-            foreach (var k in result.ArrayValue)
-            {
-                if (k.Kind == Shovel.Value.Kinds.Array)
-                {
-                    foreach (var kk in k.ArrayValue)
-                    {
-                        Console.Write(kk.IntegerValue);
-                        Console.Write(" ");
+            foreach (var k in result.ArrayValue) {
+                if (k.Kind == Shovel.Value.Kinds.Array) {
+                    foreach (var kk in k.ArrayValue) {
+                        Console.Write (kk.IntegerValue);
+                        Console.Write (" ");
                     }
-                    Console.WriteLine();
+                    Console.WriteLine ();
                 }
             }
         }

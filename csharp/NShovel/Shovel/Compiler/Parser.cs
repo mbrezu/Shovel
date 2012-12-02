@@ -375,7 +375,7 @@ namespace Shovel.Compiler
 				);
 				grefParseTree.StartPos = grefStartPos;
 				grefParseTree.EndPos = grefEndPos;
-				return result;
+				return this.ParseIdentifierOrCallOrRef(result);
 			} else {
 				return start;
 			}

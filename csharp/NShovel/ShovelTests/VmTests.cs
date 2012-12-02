@@ -606,5 +606,11 @@ c1()
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
             Assert.IsNotNull(Shovel.Api.VmUserDefinedPrimitiveError(vm));
         }
+
+        [Test]
+        public void MultipleGrefs()
+        {
+            Utils.TestValue("var a = array(array(array(3))) a[0][0][0]", Shovel.Value.Kinds.Integer, (long)3);
+        }
     }
 }
