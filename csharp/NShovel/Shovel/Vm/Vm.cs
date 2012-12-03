@@ -1419,13 +1419,15 @@ namespace Shovel.Vm
             int? line = null, column = null;
             if (fileName != null && this.sources != null) {
                 var source = SourceFile.FindSource (this.sources, fileName);
-                int? startPos, endPos;
-                this.FindStartEndPos (out startPos, out endPos);
-                if (startPos != null) {
-                    var pos = Position.CalculatePosition (source, startPos.Value);
-                    if (pos != null) {
-                        line = pos.Line;
-                        column = pos.Column;
+                if (source != null) {
+                    int? startPos, endPos;
+                    this.FindStartEndPos (out startPos, out endPos);
+                    if (startPos != null) {
+                        var pos = Position.CalculatePosition (source, startPos.Value);
+                        if (pos != null) {
+                            line = pos.Line;
+                            column = pos.Column;
+                        }
                     }
                 }
             }
