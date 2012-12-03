@@ -144,7 +144,10 @@ main()
         public static void SimpleTest ()
         {
             try {
-                Console.WriteLine(Shovel.Api.TestRunVm(Shovel.Api.MakeSources("test.sho", "null == 'b'")));
+                var sources = Shovel.Api.MakeSources("test.sho", "");
+                Console.WriteLine (Shovel.Api.PrintRawBytecode(sources, false));
+                var bytecode = Shovel.Api.GetBytecode(sources);
+                Console.WriteLine(Shovel.Api.RunVm(bytecode, null, null));
             } catch (Shovel.Exceptions.ShovelException shex) {
                 Console.WriteLine (shex.Message);
             }

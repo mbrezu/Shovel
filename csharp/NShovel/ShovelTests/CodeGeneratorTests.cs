@@ -117,14 +117,14 @@ L2:
 			Assert.AreEqual (@"    VMVERSION 1
     VMSOURCESMD5 D41D8CD98F00B204E9800998ECF8427E
     VMBYTECODEMD5 ?
-    CONST NULL
+    CONST null
 ", Shovel.Api.PrintRawBytecode (sources));
 			sources = Shovel.Api.MakeSources ("test-1", "");
 			Assert.AreEqual (@"    VMVERSION 1
     VMSOURCESMD5 D41D8CD98F00B204E9800998ECF8427E
     VMBYTECODEMD5 ?
     FILENAME test-1
-    CONST NULL
+    CONST null
 ", Shovel.Api.PrintRawBytecode (sources));
 			sources = Shovel.Api.MakeSources ("test-1", "", "test-2", "");
 			Assert.AreEqual (@"    VMVERSION 1
@@ -132,39 +132,39 @@ L2:
     VMBYTECODEMD5 ?
     FILENAME test-1
     FILENAME test-2
-    CONST NULL
+    CONST null
 ", Shovel.Api.PrintRawBytecode (sources));
 			sources = Shovel.Api.MakeSources ("test-1", "{}");
 			Assert.AreEqual (@"    VMVERSION 1
     VMSOURCESMD5 99914B932BD37A50B983C5E7C90AE93B
     VMBYTECODEMD5 ?
     FILENAME test-1
-    CONST NULL
+    CONST null
 ", Shovel.Api.PrintRawBytecode (sources));
 			sources = Shovel.Api.MakeSources ("test-1", "{}{}");
 			Assert.AreEqual (@"    VMVERSION 1
     VMSOURCESMD5 C53F4EBE9B2A50BC2B52FD88A5D503E1
     VMBYTECODEMD5 ?
     FILENAME test-1
-    CONST NULL
+    CONST null
     POP
-    CONST NULL
+    CONST null
 ", Shovel.Api.PrintRawBytecode (sources));
 			sources = Shovel.Api.MakeSources ("test-1", "{{}}");
 			Assert.AreEqual (@"    VMVERSION 1
     VMSOURCESMD5 3F7A56499D58DE719351A6D324A76BBD
     VMBYTECODEMD5 ?
     FILENAME test-1
-    CONST NULL
+    CONST null
 ", Shovel.Api.PrintRawBytecode (sources));
 			sources = Shovel.Api.MakeSources ("test-1", "{{}}{{{}}}");
 			Assert.AreEqual (@"    VMVERSION 1
     VMSOURCESMD5 66F99E017EE16ED7E471D3B4830ADF02
     VMBYTECODEMD5 ?
     FILENAME test-1
-    CONST NULL
+    CONST null
     POP
-    CONST NULL
+    CONST null
 ", Shovel.Api.PrintRawBytecode (sources));
 			sources = Shovel.Api.MakeSources ("test-1", "1", "test-2", "");
 			Assert.AreEqual (@"    VMVERSION 1

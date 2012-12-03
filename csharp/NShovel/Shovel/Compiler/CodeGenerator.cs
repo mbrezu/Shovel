@@ -550,7 +550,7 @@ namespace Shovel.Compiler
 					}
 				}
 			} else {
-				this.Gen (Instruction.Opcodes.Const, null);
+				this.Gen (Instruction.Opcodes.Const, Value.Make ());
 				if (!useVal) {
 					this.Gen (Instruction.Opcodes.Pop);
 				}
