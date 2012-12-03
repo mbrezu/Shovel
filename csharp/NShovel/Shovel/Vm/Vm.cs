@@ -1490,13 +1490,15 @@ namespace Shovel.Vm
                 if (this.sources != null) {
                     var fileName = this.FindFileName (pc);
                     var sourceFile = SourceFile.FindSource (this.sources, fileName);
-                    var startPos = Position.CalculatePosition (sourceFile, characterStartPos.Value);
-                    var endPos = Position.CalculatePosition (sourceFile, characterEndPos.Value);
-                    var lines = Utils.ExtractRelevantSource (sourceFile.Content.Split ('\n'), startPos, endPos);
-                    foreach (var line in lines) {
-                        sb.AppendLine (line);
+                    if (sourceFile != null) {
+                        var startPos = Position.CalculatePosition (sourceFile, characterStartPos.Value);
+                        var endPos = Position.CalculatePosition (sourceFile, characterEndPos.Value);
+                        var lines = Utils.ExtractRelevantSource (sourceFile.Content.Split ('\n'), startPos, endPos);
+                        foreach (var line in lines) {
+                            sb.AppendLine (line);
+                        }
+                        foundLocation = true;
                     }
-                    foundLocation = true;
                 }
             }
             if (!foundLocation) {
