@@ -501,14 +501,17 @@ var stdlib = {
    }
    var getBlockName = fn () getPrefixedBlockName('block')
 
-   var tryAndThrow = {
+   var throw = null
+   var try = null
+   {
      var tryStack = array()
-     var throw = fn (error) {
+     throw = fn (error) {
+       if length(tryStack) == 0 panic('\'Throw\' without \'try\'!')
        var blockName = pop(tryStack)
        push(tryStack, array(error))
        return blockName null
      }
-     var try = fn (tryCode, catchCode) {
+     try = fn (tryCode, catchCode) {
        var newBlockName = getPrefixedBlockName('tryCatchBlock')
        push(tryStack, newBlockName)
        var exitValue = block newBlockName tryCode()
@@ -516,7 +519,6 @@ var stdlib = {
        if isArray(stackTop) catchCode(stackTop[0])
        else exitValue
      }
-     array(try, throw)
    }
 
    var repeat = fn (count, fun) {
@@ -541,8 +543,8 @@ var stdlib = {
         'reverse', reverse,
         'getPrefixedBlockName', getPrefixedBlockName,
         'getBlockName', getBlockName,
-        'try', tryAndThrow[0],
-        'throw' , tryAndThrow[1],
+        'try', try,
+        'throw' , throw,
         'repeat', repeat
        )
 }";
