@@ -500,7 +500,11 @@ namespace Shovel.Compiler
     				this.RaiseError (nameAst.StartPos, nameAst.EndPos, message);
                 } else {
                     previousDefinition.PlaceHolder = placeHolder;
-                    previousDefinition.StartPos = nameAst.StartPos;
+                    if (nameAst != null) {
+                        previousDefinition.StartPos = nameAst.StartPos;
+                    } else {
+                        previousDefinition.StartPos = 0;
+                    }
                 }
 			} else {
                 int currentPos = 0;

@@ -144,12 +144,14 @@ main()
         public static void SimpleTest ()
         {
             var source = @"
-var a = fn() b()
-var b = fn() 3
-a()
+var a = 1
+var a = 2
 ";
-            Shovel.Api.PrintAssembledBytecode (Shovel.Api.MakeSources ("source.sho", source));
-
+            try {
+                Shovel.Api.PrintAssembledBytecode (Shovel.Api.MakeSources ("source.sho", source));
+            } catch (Shovel.Exceptions.ShovelException shex) {
+                Console.WriteLine (shex.Message);
+            }
         }
 
         public static void AnotherSimpleTest ()

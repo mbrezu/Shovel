@@ -208,6 +208,26 @@ a()
 ";
             Utils.TestValue(source, Shovel.Value.Kinds.Integer, (long)3);
         }
+
+        [Test]
+        public void DuplicateDefinitionError()
+        {
+            var source = @"
+var a = 1
+var a = 2
+";
+            Utils.ExpectException<Shovel.Exceptions.ShovelException>(
+            () => {
+                Shovel.Api.GetBytecode(Shovel.Api.MakeSources("test.sho", source));
+            },
+            (ex) => {
+                Assert.IsNotNull(ex);
+                Assert.AreEqual(@"Variable 'a' is already defined in this frame in file 'test.sho', at line 2, column 5.
+file 'test.sho' line 3: var a = 2
+file 'test.sho' line 3:     ^", ex.Message);
+            });
+        }
+
 	}
 }
 
