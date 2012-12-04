@@ -197,6 +197,17 @@ L2:
     CONST 2
 ", Shovel.Api.PrintRawBytecode (sources));
 		}
+
+        [Test]
+        public void CompileEnvironments()
+        {
+            var source = @"
+var a = fn() b()
+var b = fn() 3
+a()
+";
+            Utils.TestValue(source, Shovel.Value.Kinds.Integer, (long)3);
+        }
 	}
 }
 

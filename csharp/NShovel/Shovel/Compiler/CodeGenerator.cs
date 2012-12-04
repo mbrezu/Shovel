@@ -472,7 +472,7 @@ namespace Shovel.Compiler
 				var newEnv = this.EmptyEnv ();
 				newEnv.Next = env;
 				foreach (var arg in args.Children) {
-					this.ExtendFrame (newEnv, arg.Content, arg);
+					this.ExtendFrame (newEnv, arg.Content, arg, false);
 				}
 				var varNames = args.Children.Select (arg => arg.Content).ToArray ();
 				this.Gen (
@@ -486,25 +486,34 @@ namespace Shovel.Compiler
 			}
 		}
 
-		void ExtendFrame (Types.Environment env, string name, ParseTree nameAst)
+		void ExtendFrame (Types.Environment env, string name, ParseTree nameAst, bool placeHolder)
 		{
 			var topFrame = env.Frame;
-			var currentStartPos = nameAst.StartPos;
 			var previousDefinition = topFrame.EntryFor (name);
 			if (previousDefinition != null) {
-				var sourceFile = SourceFile.FindSource (this.sources, previousDefinition.FileName);
-				var pos = Position.CalculatePosition (sourceFile, previousDefinition.StartPos);
-				var message = String.Format (
-                    "Variable '{0}' is already defined in this frame in file '{1}', at line {2}, column {3}.",
-                    name, pos.FileName, pos.Line, pos.Column);
-				this.RaiseError (currentStartPos, nameAst.EndPos, message);
+                if (!previousDefinition.PlaceHolder) {
+    				var sourceFile = SourceFile.FindSource (this.sources, previousDefinition.FileName);
+    				var pos = Position.CalculatePosition (sourceFile, previousDefinition.StartPos);
+    				var message = String.Format (
+                        "Variable '{0}' is already defined in this frame in file '{1}', at line {2}, column {3}.",
+                        name, pos.FileName, pos.Line, pos.Column);
+    				this.RaiseError (nameAst.StartPos, nameAst.EndPos, message);
+                } else {
+                    previousDefinition.PlaceHolder = placeHolder;
+                    previousDefinition.StartPos = nameAst.StartPos;
+                }
 			} else {
+                int currentPos = 0;
+                if (nameAst != null) {
+                    currentPos = nameAst.StartPos;
+                }
 				var newVar = new EnvVar ()
                 {
                     Name = name,
                     FileName = this.fileName,
                     Place = topFrame.Vars.Count,
-                    StartPos = currentStartPos
+                    StartPos = currentPos,
+                    PlaceHolder = placeHolder
                 };
 				topFrame.Vars.Add (newVar);
 			}
@@ -514,7 +523,7 @@ namespace Shovel.Compiler
 		{
 			var nameAst = ast.Children.ElementAt (0);
 			var name = nameAst.Content;
-			this.ExtendFrame (env, name, nameAst);
+			this.ExtendFrame (env, name, nameAst, false);
 			this.CompileAst (ast.Children.ElementAt (1), env, true, true);
 			this.CompileSetVar (name, env, useVal, more, ast);
 		}
@@ -536,6 +545,9 @@ namespace Shovel.Compiler
                     Instruction.Opcodes.NewFrame, newVarNames,
                     startPos: newVars.First ().StartPos,
                     endPos: newVars.Last ().EndPos);
+                    foreach (var varName in newVarNames) {
+                        this.ExtendFrame(newEnv, varName, null, true);
+                    }
 					this.CompileStatements (newEnv, dropValueAsts, valueAst, more);
 					if (more) {
 						this.Gen (Instruction.Opcodes.DropFrame);

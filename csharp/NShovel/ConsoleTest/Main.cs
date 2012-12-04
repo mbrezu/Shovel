@@ -143,14 +143,12 @@ main()
 
         public static void SimpleTest ()
         {
-            try {
-                var sources = Shovel.Api.MakeSources("test.sho", "");
-                Console.WriteLine (Shovel.Api.PrintRawBytecode(sources, false));
-                var bytecode = Shovel.Api.GetBytecode(sources);
-                Console.WriteLine(Shovel.Api.RunVm(bytecode, null, null));
-            } catch (Shovel.Exceptions.ShovelException shex) {
-                Console.WriteLine (shex.Message);
-            }
+            var source = @"
+var a = fn() b()
+var b = fn() 3
+a()
+";
+            Shovel.Api.PrintAssembledBytecode (Shovel.Api.MakeSources ("source.sho", source));
 
         }
 

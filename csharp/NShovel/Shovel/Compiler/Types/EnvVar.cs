@@ -23,16 +23,18 @@ using System;
 
 namespace Shovel.Compiler.Types
 {
-	public class EnvVar
-	{
-		public string Name { get; set; }
+    public class EnvVar
+    {
+        public string Name { get; set; }
 
-		public int Place { get; set; }
+        public int Place { get; set; }
 
-		public string FileName { get; set; }
+        public string FileName { get; set; }
 
-		public int StartPos { get; set; }
-	}
+        public int StartPos { get; set; }
+
+        public bool PlaceHolder { get; set; }
+    }
 
 }
 
