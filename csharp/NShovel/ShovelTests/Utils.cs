@@ -74,6 +74,7 @@ fib(10)
 			Assert.IsTrue (result.Kind == expectedResultType);
 			switch (expectedResultType) {
 			case Shovel.Value.Kinds.Null:
+                Assert.AreEqual (Shovel.Value.Kinds.Null, result.Kind);
 				break;
 			case Shovel.Value.Kinds.Integer:
 				Assert.AreEqual ((long)expectedResult, result.IntegerValue);

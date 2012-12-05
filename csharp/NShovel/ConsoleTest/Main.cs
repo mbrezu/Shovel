@@ -144,13 +144,18 @@ main()
         public static void SimpleTest ()
         {
             var source = @"
-var a = 1
-var a = 2
+var a = fn () {}
+a()
 ";
             try {
-                Shovel.Api.PrintAssembledBytecode (Shovel.Api.MakeSources ("source.sho", source));
+                var sources = Shovel.Api.MakeSources ("source.sho", source);
+                Console.WriteLine (Shovel.Api.PrintAssembledBytecode (sources));
+                Console.WriteLine (Shovel.Api.TestRunVm (sources));
             } catch (Shovel.Exceptions.ShovelException shex) {
                 Console.WriteLine (shex.Message);
+            } catch (Exception ex) {
+                Console.WriteLine (ex.Message);
+                Console.WriteLine (ex.StackTrace);
             }
         }
 

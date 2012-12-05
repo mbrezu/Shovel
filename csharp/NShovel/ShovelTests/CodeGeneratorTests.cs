@@ -196,6 +196,8 @@ L2:
 ;; file 'test-2' line 1: ^
     CONST 2
 ", Shovel.Api.PrintRawBytecode (sources));
+ 
+            Utils.TestValue("var a = fn () {} a()", Shovel.Value.Kinds.Null, null);
 		}
 
         [Test]
