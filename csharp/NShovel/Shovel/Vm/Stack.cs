@@ -83,7 +83,8 @@ namespace Shovel
 
         public void RemoveRange (int position, int rangeLength)
         {
-            Array.Copy (this.storage, position + rangeLength, this.storage, position, rangeLength);
+            int lengthToCopy = this.length - position - rangeLength;
+            Array.Copy (this.storage, position + rangeLength, this.storage, position, lengthToCopy);
             this.length -= rangeLength;
         }
 
