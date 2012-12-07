@@ -363,6 +363,15 @@ namespace ShovelTests
 
 			Utils.TestValue (
 				"var a = 'Test' slice(a, 1, -2)", Shovel.Value.Kinds.String, "es");
+
+            sources = Shovel.Api.MakeSources("test.sho", "slice(array(1, 2, 3), 0, 2)");
+            result = Shovel.Api.TestRunVm (sources);
+            Assert.IsTrue (result.Kind == Shovel.Value.Kinds.Array);
+            Assert.AreEqual (2, result.ArrayValue.Count);
+            Assert.IsTrue (result.ArrayValue [0].Kind == Shovel.Value.Kinds.Integer);
+            Assert.AreEqual (1, result.ArrayValue [0].IntegerValue);
+            Assert.IsTrue (result.ArrayValue [1].Kind == Shovel.Value.Kinds.Integer);
+            Assert.AreEqual (2, result.ArrayValue [1].IntegerValue);
 		}
 
 		[Test]

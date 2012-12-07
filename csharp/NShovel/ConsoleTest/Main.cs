@@ -144,7 +144,11 @@ main()
         public static void SimpleTest ()
         {
             var source = @"
-var a = fn () {}
+var b = fn () return 'a' null
+var a = fn () {
+    block 'a' b()
+    10
+}
 a()
 ";
             try {

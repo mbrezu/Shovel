@@ -150,6 +150,16 @@ var g = fn x h(x) + 2
 var f = fn x block 'f' g(x) + 2
 f(1)
 ", Shovel.Value.Kinds.Integer, (long)10);
+
+            Utils.TestValue (@"
+var b = fn () return 'a' null
+var a = fn () {
+    block 'a' b()
+    10
+}
+a()
+", Shovel.Value.Kinds.Integer, (long)10);
+
         }
 
         [Test]

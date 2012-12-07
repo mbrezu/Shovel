@@ -327,23 +327,25 @@ namespace Shovel.Vm
         static string DumpShovelValue (VmApi api, Value obj)
         {
             if (obj.Kind == Value.Kinds.String) {
-                return obj.StringValue;
+                return Prim0.ShovelStringRepresentation (api, obj).StringValue;
             } else if (obj.Kind == Value.Kinds.Array) {
-                return "[...array...]";
+                return Prim0.ShovelStringRepresentation (api, obj).StringValue;
             } else if (obj.Kind == Value.Kinds.Integer) {
-                return obj.IntegerValue.ToString (CultureInfo.InvariantCulture);
+                return Prim0.ShovelStringRepresentation (api, obj).StringValue;
             } else if (obj.Kind == Value.Kinds.Double) {
-                return obj.DoubleValue.ToString (CultureInfo.InvariantCulture);
+                return Prim0.ShovelStringRepresentation (api, obj).StringValue;
             } else if (obj.Kind == Value.Kinds.Hash) {
-                return "[...hash...]";
+                return Prim0.ShovelStringRepresentation (api, obj).StringValue;
             } else if (obj.Kind == Value.Kinds.Callable) {
-                return "[...callable...]";
+                return Prim0.ShovelStringRepresentation (api, obj).StringValue;
             } else if (obj.Kind == Value.Kinds.Bool) {
-                return obj.BoolValue.ToString ().ToLower ();
+                return Prim0.ShovelStringRepresentation (api, obj).StringValue;
             } else if (obj.Kind == Value.Kinds.Null) {
-                return "null";
+                return Prim0.ShovelStringRepresentation (api, obj).StringValue;
             } else if (obj.Kind == Value.Kinds.ReturnAddress) {
                 return String.Format ("Return to {0}", obj.ReturnAddressValue.ProgramCounter);
+            } else if (obj.Kind == Value.Kinds.NamedBlock) {
+                return String.Format ("Named block {0} to {0}", obj.NamedBlockValue.Name, obj.NamedBlockValue.BlockEnd);
             } else {
                 throw new InvalidOperationException ();
             }
@@ -360,13 +362,18 @@ namespace Shovel.Vm
                     }
                     this.runs [this.programCounter] (this);
 
-                    //                var instruction = this.CurrentInstruction ();
-                    //                Console.WriteLine ("*****");
-                    //                Console.WriteLine (instruction.ToString ());
-                    //                for (var i = 0; i < this.stack.Count; i++) {
-                    //                    Console.WriteLine (DumpShovelValue (this.api, this.stack.Storage [i]));
-                    //                }
-                    //                Vm.handlers [instruction.NumericOpcode] (this);
+//                    var instruction = this.CurrentInstruction ();
+//                    Console.WriteLine ("*****");
+//                    Console.WriteLine (instruction.ToString ());
+//                    StringBuilder sb = new StringBuilder();
+//                    this.PrintLineFor (sb, this.programCounter, instruction.StartPos, instruction.EndPos);
+//                    Console.WriteLine(sb.ToString());
+//                    Console.WriteLine ("Stack before:");
+//                    for (var i = 0; i < this.stack.Count; i++) {
+//                        Console.WriteLine (DumpShovelValue (this.api, this.stack.Storage [i]));
+//                    }
+//                    Vm.handlers [instruction.NumericOpcode] (this);
+  
                     return true;
                 } catch (ShovelException ex) {
                     this.programmingError = ex;

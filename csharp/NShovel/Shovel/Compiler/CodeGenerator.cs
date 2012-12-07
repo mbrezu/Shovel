@@ -107,7 +107,7 @@ namespace Shovel.Compiler
 				this.CompileAtom (ast, env, useVal, more);
 				break;
 			case ParseTree.Labels.NamedBlock:
-				this.CompileNamedBlock (ast, env, more);
+				this.CompileNamedBlock (ast, env, useVal, more);
 				break;
 			case ParseTree.Labels.BlockReturn:
 				this.CompileBlockReturn (ast, env);
@@ -136,7 +136,7 @@ namespace Shovel.Compiler
 			this.Gen (Instruction.Opcodes.BlockReturn, null, ast);
 		}
 
-		void CompileNamedBlock (ParseTree ast, Types.Environment env, bool more)
+		void CompileNamedBlock (ParseTree ast, Types.Environment env, bool useVal, bool more)
 		{
 			var blockName = ast.Children.ElementAt (0);
 			var blockContents = ast.Children.ElementAt (1);
@@ -146,9 +146,7 @@ namespace Shovel.Compiler
 			this.CompileAst (blockContents, env, true, true);
 			this.Gen (Instruction.Opcodes.Label, blockEnd);
 			this.Gen (Instruction.Opcodes.PopBlock, null, ast);
-			if (!more) {
-				this.Gen (Instruction.Opcodes.Return);
-			}
+            this.FinishInstruction(useVal, more);
 		}
 
 		string GenLabel (string prefix = "L")
