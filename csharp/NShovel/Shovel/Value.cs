@@ -47,7 +47,8 @@ namespace Shovel
         // Mono and .NET 32 bit seem to be OK with the offset below set at 12.
         // Mono on 64 bit wants it to be set to 20. No idea why (it looks like it should be 16).
         // Need to check what .NET 64 bit requires.
-        [FieldOffset(12)]
+        // The lower the better, performance wise.
+        [FieldOffset(20)]
         public Kinds Kind;
 
         [FieldOffset(0)]
@@ -103,6 +104,9 @@ namespace Shovel
 
         public static Value Make (string s)
         {
+            if (s == null) {
+                return value;
+            }
             Value result = value;
             result.Kind = Kinds.String;
             result.StringValue = s;
@@ -119,6 +123,9 @@ namespace Shovel
 
         public static Value Make (List<Value> a)
         {
+            if (a == null) {
+                return value;
+            }
             Value result = value;
             result.Kind = Kinds.Array;
             result.ArrayValue = a;
@@ -127,6 +134,9 @@ namespace Shovel
 
         public static Value Make (Dictionary<Value, Value> d)
         {
+            if (d == null) {
+                return value;
+            }
             Value result = value;
             result.Kind = Kinds.Hash;
             result.HashValue = d;
