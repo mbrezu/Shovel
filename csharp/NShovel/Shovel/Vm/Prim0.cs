@@ -670,6 +670,9 @@ namespace Shovel.Vm
                 }
             } else if (arrayOrHashOrString.Kind == Value.Kinds.Hash) {
                 if (index.Kind == Value.Kinds.String) {
+                    if (!arrayOrHashOrString.HashValue.ContainsKey(index)) {
+                        api.RaiseShovelError(String.Format ("Key '{0}' not found.", index.StringValue));
+                    } 
                     arrayOrHashOrString = arrayOrHashOrString.HashValue [index];
                 } else {
                     api.RaiseShovelError ("Getting a hash table value requires a key that is a string.");
