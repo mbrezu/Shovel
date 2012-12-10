@@ -31,8 +31,8 @@ namespace ConsoleTest
     {
         public static void Main (string[] args)
         {
-            MasterMindBenchmark();
-            //SimpleTest ();
+            //MasterMindBenchmark();
+            SimpleTest ();
             //AnotherSimpleTest ();
             //SerializerTest ();
             //UdpTest();
@@ -143,24 +143,17 @@ main()
 
         public static void SimpleTest ()
         {
-            var source = @"
-var b = fn () return 'a' null
-var a = fn () {
-    block 'a' b()
-    10
-}
-a()
-";
-            try {
-                var sources = Shovel.Api.MakeSources ("source.sho", source);
-                Console.WriteLine (Shovel.Api.PrintAssembledBytecode (sources));
-                Console.WriteLine (Shovel.Api.TestRunVm (sources));
-            } catch (Shovel.Exceptions.ShovelException shex) {
-                Console.WriteLine (shex.Message);
-            } catch (Exception ex) {
-                Console.WriteLine (ex.Message);
-                Console.WriteLine (ex.StackTrace);
-            }
+            var sources = Shovel.Api.MakeSources ("test.sho", @"
+var id = fn x x
+var h = fn (x) context
+var g = fn (x) id(h(x))
+var f = fn (x) id(g(x))
+f(3)
+"
+            );
+            var result = Shovel.Api.TestRunVm (sources);
+            Console.WriteLine (
+                result.HashValue[Shovel.Value.Make ("environment")].StringValue);
         }
 
         public static void AnotherSimpleTest ()

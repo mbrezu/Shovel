@@ -1504,7 +1504,7 @@ namespace Shovel.Vm
                     sb.AppendLine ("Frame starts at:");
                     var pc = env.Frame.IntroducedAtProgramCounter.Value;
                     var instruction = this.bytecode [pc];
-                    this.PrintLineFor (sb, pc, instruction.StartPos, instruction.EndPos);
+                    this.PrintLineFor (sb, pc, instruction.StartPos, instruction.StartPos);
                 }
                 sb.AppendLine ("Frame variables are:");
                 for (var i = 0; i < env.Frame.VarNames.Length; i++) {

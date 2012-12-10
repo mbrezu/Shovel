@@ -51,8 +51,8 @@ Frame variables are:
 x = 3
 
 Frame starts at:
-file 'test.sho' line 2: var id = fn x x [...content snipped...]
-file 'test.sho' line 2: ^^^^^^^^^^^^^^^
+file 'test.sho' line 2: var id = fn x x
+file 'test.sho' line 2: ^
 Frame variables are:
 id = [...callable...]
 h = [...callable...]
@@ -93,8 +93,8 @@ Frame variables are:
 x = 3
 
 Frame starts at:
-file 'test.sho' line 2: var h = fn (x) context [...content snipped...]
-file 'test.sho' line 2: ^^^^^^^^^^^^^^^^^^^^^^
+file 'test.sho' line 2: var h = fn (x) context
+file 'test.sho' line 2: ^
 Frame variables are:
 h = [...callable...]
 g = [...callable...]
