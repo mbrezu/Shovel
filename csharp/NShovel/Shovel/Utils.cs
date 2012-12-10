@@ -26,6 +26,7 @@ using System.Security.Cryptography;
 using System.IO;
 using System.Linq;
 using Shovel.Compiler.Types;
+using System.Diagnostics;
 
 namespace Shovel
 {
@@ -573,7 +574,13 @@ var stdlib = {
             return sb.ToString();
         }
 
-
+        internal static void TimeIt(string prompt, Action timed) {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            timed();
+            sw.Stop ();
+            Console.WriteLine ("{0}: {1}ms.", prompt, sw.ElapsedMilliseconds);
+        }
 
     }
 }

@@ -33,8 +33,11 @@ namespace Shovel.Vm
 {
     public class Vm
     {
+
         #region Private Storage
         Instruction[] bytecode = null;
+        object[] cache = null;
+        int[] executionCount = null;
         int programCounter = 0;
         VmEnvironment currentEnvironment = null;
         Stack stack = new Stack ();
@@ -99,6 +102,8 @@ namespace Shovel.Vm
             if (vm == null) {
                 vm = new Vm ();
                 vm.bytecode = bytecode;
+                vm.cache = new object[bytecode.Length];
+                vm.executionCount = new int[bytecode.Length];
                 vm.programCounter = 0;
                 vm.currentEnvironment = null;
                 vm.stack = new Stack ();
@@ -351,6 +356,19 @@ namespace Shovel.Vm
             }
         }
 
+        void TraceInstruction (Instruction instruction)
+        {
+            Console.WriteLine ("*****");
+            Console.WriteLine (instruction.ToString ());
+            StringBuilder sb = new StringBuilder ();
+            this.PrintLineFor (sb, this.programCounter, instruction.StartPos, instruction.EndPos);
+            Console.WriteLine (sb.ToString ());
+            Console.WriteLine ("Stack before:");
+            for (var i = 0; i < this.stack.Count; i++) {
+                Console.WriteLine (DumpShovelValue (this.api, this.stack.Storage [i]));
+            }
+        }
+
         bool StepVm ()
         {
             if (this.IsLive ()) {
@@ -358,22 +376,21 @@ namespace Shovel.Vm
                 this.CheckQuotas ();
                 try {
                     if (this.runs [this.programCounter] == null) {
-                        this.runs [this.programCounter] = this.GenRun ();
+                        if (this.executionCount [this.programCounter] > 10) {
+                            this.runs [this.programCounter] = this.GenRun ();
+                            this.runs [this.programCounter] (this);
+                        } else {
+                            this.executionCount [this.programCounter] ++;
+                            var instruction = this.CurrentInstruction ();
+                            //TraceInstruction(instruction);
+                            Vm.handlers [instruction.NumericOpcode] (this);
+                            this.executedTicks ++;
+                            this.executedTicksSinceLastNap ++;
+                        }
+                    } else {
+                        this.runs [this.programCounter] (this);
                     }
-                    this.runs [this.programCounter] (this);
 
-//                    var instruction = this.CurrentInstruction ();
-//                    Console.WriteLine ("*****");
-//                    Console.WriteLine (instruction.ToString ());
-//                    StringBuilder sb = new StringBuilder();
-//                    this.PrintLineFor (sb, this.programCounter, instruction.StartPos, instruction.EndPos);
-//                    Console.WriteLine(sb.ToString());
-//                    Console.WriteLine ("Stack before:");
-//                    for (var i = 0; i < this.stack.Count; i++) {
-//                        Console.WriteLine (DumpShovelValue (this.api, this.stack.Storage [i]));
-//                    }
-//                    Vm.handlers [instruction.NumericOpcode] (this);
-  
                     return true;
                 } catch (ShovelException ex) {
                     this.programmingError = ex;
@@ -446,6 +463,16 @@ namespace Shovel.Vm
         Instruction CurrentInstruction ()
         {
             return this.bytecode [this.programCounter];
+        }
+
+        object GetCurrentCache ()
+        {
+            return this.cache [this.programCounter];
+        }
+
+        void SetCurrentCache (object cache)
+        {
+            this.cache [this.programCounter] = cache;
         }
 
         static void HandleDiv (Vm vm)
@@ -731,7 +758,7 @@ namespace Shovel.Vm
         static void HandlePrim0 (Vm vm)
         {
             var instruction = vm.CurrentInstruction ();
-            if (instruction.Cache == null) {
+            if (vm.GetCurrentCache () == null) {
                 var primName = (string)instruction.Arguments;
                 if (!Vm.Prim0Hash.ContainsKey (primName)) {
                     vm.RaiseShovelError (String.Format (
@@ -739,9 +766,9 @@ namespace Shovel.Vm
                         primName)
                     );
                 }
-                instruction.Cache = Value.Make (Vm.Prim0Hash [primName]);
+                vm.SetCurrentCache (Value.Make (Vm.Prim0Hash [primName]));
             }
-            vm.stack.Push ((Value)instruction.Cache);
+            vm.stack.Push ((Value)vm.GetCurrentCache ());
             vm.IncrementTicks (1);
             vm.programCounter++;
         }
@@ -759,11 +786,11 @@ namespace Shovel.Vm
         static void HandlePrim (Vm vm)
         {
             var instruction = vm.CurrentInstruction ();
-            if (instruction.Cache == null) {
+            if (vm.GetCurrentCache () == null) {
                 var udpName = (string)instruction.Arguments;
-                instruction.Cache = Value.Make (GetUdpByName (vm, udpName));
+                vm.SetCurrentCache (Value.Make (GetUdpByName (vm, udpName)));
             }
-            vm.stack.Push ((Value)instruction.Cache);
+            vm.stack.Push ((Value)vm.GetCurrentCache ());
             vm.IncrementTicks (1);
             vm.programCounter++;
         }
@@ -990,9 +1017,8 @@ namespace Shovel.Vm
             vm.programCounter++;
         }
 
-        static VmEnvironment FreshFrame (Vm vm, Instruction instruction)
+        static VmEnvironment FreshFrame (Vm vm, string[] args)
         {
-            var args = (string[])instruction.Arguments;
             var frame = new VmEnvFrame () {
                 VarNames = args,
                 Values = new Value[args.Length],
@@ -1002,19 +1028,19 @@ namespace Shovel.Vm
                 Frame = frame,
             };
             vm.IncrementCells (args.Length * 3 + 5);
-            instruction.Cache = result;
+            vm.SetCurrentCache (result);
             return result;
         }
 
         static void HandleNewFrame (Vm vm)
         {
             var instruction = vm.CurrentInstruction ();
-            if (instruction.Cache == null) {
-                FreshFrame (vm, instruction);
+            if (vm.GetCurrentCache () == null) {
+                FreshFrame (vm, (string[])instruction.Arguments);
             }
-            var newEnv = (VmEnvironment)instruction.Cache;
+            var newEnv = (VmEnvironment)vm.GetCurrentCache ();
             if (newEnv.IsUsed) {
-                newEnv = FreshFrame (vm, instruction);
+                newEnv = FreshFrame (vm, (string[])instruction.Arguments);
             }
             var values = newEnv.Frame.Values;
             for (var i = 0; i < values.Length; i++) {

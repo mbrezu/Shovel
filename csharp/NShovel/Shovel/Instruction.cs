@@ -104,8 +104,6 @@ namespace Shovel
 
 		internal string Comments { get; set; }
 
-		internal object Cache { get; set; }
-
 		internal int NumericOpcode { get; set; }
 
 		public override string ToString ()
