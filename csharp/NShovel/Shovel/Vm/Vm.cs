@@ -840,7 +840,6 @@ namespace Shovel.Vm
                 }
                 )
                 );
-                vm.currentEnvironment.IncreaseUsesLocally ();
             }
             if (callable.Arity != null && callable.Arity.Value != numArgs) {
                 ArityError (vm, callable.Arity.Value, numArgs);
@@ -1018,45 +1017,26 @@ namespace Shovel.Vm
                 Arity = args[1],
                 Environment = vm.currentEnvironment
             };
-            if (vm.currentEnvironment != null) {
-                vm.currentEnvironment.IncreaseUses ();
-            }
             vm.stack.Push (Value.Make (callable));
             vm.IncrementCells (5);
             vm.programCounter++;
         }
 
-        static VmEnvironment FreshFrame (Vm vm, string[] args)
+        static void HandleNewFrame (Vm vm)
         {
+            var instruction = vm.CurrentInstruction ();
+            var args = (string[])instruction.Arguments;
             var frame = new VmEnvFrame () {
                 VarNames = args,
                 Values = new Value[args.Length],
                 IntroducedAtProgramCounter = vm.programCounter
             };
-            var result = new VmEnvironment () {
+            var newEnv = new VmEnvironment () {
                 Frame = frame,
+                Next = vm.currentEnvironment
             };
-            vm.IncrementCells (args.Length * 3 + 5);
-            vm.SetCurrentCache (result);
-            return result;
-        }
-
-        static void HandleNewFrame (Vm vm)
-        {
-            var instruction = vm.CurrentInstruction ();
-            if (vm.GetCurrentCache () == null) {
-                FreshFrame (vm, (string[])instruction.Arguments);
-            }
-            var newEnv = (VmEnvironment)vm.GetCurrentCache ();
-            if (newEnv.IsUsed) {
-                newEnv = FreshFrame (vm, (string[])instruction.Arguments);
-            }
-            var values = newEnv.Frame.Values;
-            for (var i = 0; i < values.Length; i++) {
-                values [i].Kind = Value.Kinds.Null;
-            }
-            newEnv.Next = vm.currentEnvironment;
             vm.currentEnvironment = newEnv;
+            vm.IncrementCells (args.Length * 3 + 5);
             vm.programCounter++;
         }
 
@@ -1143,7 +1123,6 @@ namespace Shovel.Vm
         {
             this.programCounter = returnAddress.ProgramCounter;
             this.currentEnvironment = returnAddress.Environment;
-            this.currentEnvironment.DecreaseUsesLocally ();
         }
 
         static void HandleBlock (Vm vm)
@@ -1185,11 +1164,6 @@ namespace Shovel.Vm
             }
             var namedBlockIndex = vm.FindNamedBlock (name.StringValue);
             if (vm.stack.Count > namedBlockIndex + 1) {
-                for (var i = namedBlockIndex + 1; i < vm.stack.Count; i++) {
-                    if (vm.stack.Storage [i].Kind == Value.Kinds.ReturnAddress) {
-                        vm.stack.Storage [i].ReturnAddressValue.Environment.DecreaseUsesLocally ();
-                    }
-                }
                 vm.stack.RemoveRange (namedBlockIndex + 1, vm.stack.Count - namedBlockIndex - 1);
             }
             var namedBlock = vm.stack.Top ().NamedBlockValue;

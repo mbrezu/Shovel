@@ -31,7 +31,7 @@ namespace Shovel
 {
     public class Api
     {
-        static int version = 1;
+        static int version = 2;
 
         public static int Version {
             get {

@@ -31,8 +31,8 @@ namespace ConsoleTest
     {
         public static void Main (string[] args)
         {
-            //MasterMindBenchmark();
-            SimpleTest ();
+            MasterMindBenchmark();
+            //SimpleTest ();
             //AnotherSimpleTest ();
             //SerializerTest ();
             //UdpTest();
@@ -143,11 +143,36 @@ main()
 
         public static void SimpleTest ()
         {
-            var sources = Shovel.Api.MakeSources ("test.sho", @"
-var a = hash('a', 1, 'b', 2) delete(a, 'a') length(keys(a))
-");
-            var result = Shovel.Api.TestRunVm (sources);
-            Console.WriteLine (result.IntegerValue);
+            var sources = Shovel.Api.MakeSourcesWithStdlib ("test.sho", @"
+var test = {
+    var printTree = fn tree {
+        var type = tree.type
+        if type == 'node' {
+            stdlib.forEach(tree.children, printTree)
+        } else if type == 'leaf' {
+            @print(string(tree.value))
+        } else {
+            panic('Invalid tree.')
+        }
+    }
+    hash('printTree', printTree)
+}
+var tree = hash(
+    'type', 'node',
+    'children', array(
+        hash('type', 'leaf', 'value', 1),
+        hash('type', 'leaf', 'value', 2)))
+            
+test.printTree(tree)
+"
+            );
+            try {
+                var bytecode = Shovel.Api.GetBytecode (sources);
+                var userPrimitives = GetPrintAndStopUdps ();
+                Shovel.Api.RunVm (bytecode, sources, userPrimitives);
+            } catch (Shovel.Exceptions.ShovelException shex) {
+                Console.WriteLine (shex.Message);
+            }
         }
 
         public static void AnotherSimpleTest ()

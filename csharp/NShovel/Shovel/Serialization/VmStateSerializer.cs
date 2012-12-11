@@ -387,7 +387,6 @@ namespace Shovel.Serialization
 
             result.Frame = (VmEnvFrame)reader (composite.Elements [0]);
             result.Next = (VmEnvironment)reader (composite.Elements [1]);
-            result.Uses = (int)(long)reader (composite.Elements [2]);
 
             return result;
         }
@@ -582,12 +581,11 @@ namespace Shovel.Serialization
         {
             var composite = new Composite { 
                 Kind = ObjectTypes.Environment, 
-                Elements = new int[3] 
+                Elements = new int[2] 
             };
             var result = SerializeOneHashed (composite, obj);
             composite.Elements [0] = Serialize (env.Frame);
             composite.Elements [1] = Serialize (env.Next);
-            composite.Elements [2] = SerializeOne (env.Uses);
             return result;
         }
 

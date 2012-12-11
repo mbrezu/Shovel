@@ -20,6 +20,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
+using System.Linq;
 
 namespace Shovel.Vm.Types
 {
@@ -28,29 +29,6 @@ namespace Shovel.Vm.Types
         internal VmEnvFrame Frame { get; set; }
 
         internal VmEnvironment Next { get; set; }
-
-        internal int Uses { get; set; }
-
-        internal bool IsUsed {
-            get { 
-                return this.Uses > 0; 
-            }
-        }
-
-        internal void IncreaseUses() {
-            this.Uses ++;
-            if (this.Next != null) {
-                this.Next.IncreaseUses();
-            }
-        }
-
-        internal void IncreaseUsesLocally() {
-            this.Uses ++;
-        }
-
-        internal void DecreaseUsesLocally() {
-            this.Uses --;
-        }
     }
 }
 

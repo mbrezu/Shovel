@@ -334,34 +334,6 @@ var b = ""world""
         }
 
         [Test]
-        public void CachedFramesAndSimpleObjects ()
-        {
-            var sources = Shovel.Api.MakeSources ("test.sho", @"
-var makeCounter = fn () {
-  var counter = 0
-  fn () counter = counter + 1
-}
-var c1 = makeCounter()
-var c2 = makeCounter()
-c1()
-c1()
-c2()
-c2()
-c2()
-@print(string(c1()))
-@print(string(c2()))
-"
-            );
-            List<string> log = new List<string> ();
-            var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps (log, false);
-            Shovel.Api.RunVm (bytecode, sources, userPrimitives);
-            Assert.AreEqual (2, log.Count);
-            Assert.AreEqual ("3", log [0]);
-            Assert.AreEqual ("4", log [1]);
-        }
-
-        [Test]
         public void SerializeSimpleObjects ()
         {
             var sources = Shovel.Api.MakeSources ("test.sho", @"
