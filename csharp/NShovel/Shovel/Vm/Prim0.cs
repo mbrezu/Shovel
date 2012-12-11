@@ -339,6 +339,17 @@ namespace Shovel.Vm
                 "Arguments must have the same type (numbers or strings).");
         }
 
+        internal static void DeleteDictionary (VmApi api, ref Value t1, ref Value t2)
+        {
+            if (t1.Kind != Value.Kinds.Hash) {
+                api.RaiseShovelError("First argument must be a hash.");
+            } else if (t2.Kind != Value.Kinds.String) {
+                api.RaiseShovelError("Second argument must be a string.");
+            } else {
+                t1.HashValue.Remove(t2);
+            }
+        }
+
         internal static void LessThan (VmApi api, ref Value t1, ref Value t2)
         {
             switch (t1.Kind) {
@@ -670,8 +681,8 @@ namespace Shovel.Vm
                 }
             } else if (arrayOrHashOrString.Kind == Value.Kinds.Hash) {
                 if (index.Kind == Value.Kinds.String) {
-                    if (!arrayOrHashOrString.HashValue.ContainsKey(index)) {
-                        api.RaiseShovelError(String.Format ("Key '{0}' not found.", index.StringValue));
+                    if (!arrayOrHashOrString.HashValue.ContainsKey (index)) {
+                        api.RaiseShovelError (String.Format ("Key '{0}' not found.", index.StringValue));
                     } 
                     arrayOrHashOrString = arrayOrHashOrString.HashValue [index];
                 } else {

@@ -256,6 +256,7 @@ namespace Shovel.Compiler
             Tuple.Create ("isNumber", Instruction.Opcodes.IsNumber),
             Tuple.Create ("isInteger", Instruction.Opcodes.IsInteger),
             Tuple.Create ("isCallable", Instruction.Opcodes.IsCallable),
+            Tuple.Create ("delete", Instruction.Opcodes.Delete),
         };
 
 		bool CompiledAsInstruction (ParseTree funAst, bool useVal, bool more)

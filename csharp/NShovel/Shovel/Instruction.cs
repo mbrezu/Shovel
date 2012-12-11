@@ -91,7 +91,8 @@ namespace Shovel
 			IsArray,
 			IsNumber,
 			IsInteger,
-			IsCallable
+			IsCallable,
+            Delete
 		}
 
 		internal Opcodes Opcode { get; set; }

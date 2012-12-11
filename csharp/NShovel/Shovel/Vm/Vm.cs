@@ -458,6 +458,7 @@ namespace Shovel.Vm
             Vm.HandleIsNumber,                 // 53
             Vm.HandleIsInteger,                // 54
             Vm.HandleIsCallable,               // 55
+            Vm.HandleDelete,                   // 56
         };
 
         Instruction CurrentInstruction ()
@@ -542,6 +543,14 @@ namespace Shovel.Vm
         static void HandleIsCallable (Vm vm)
         {
             Prim0.IsCallable (vm.api, ref vm.stack.Storage [vm.stack.Count - 1]);
+            vm.programCounter++;
+        }
+
+        static void HandleDelete(Vm vm)
+        {
+            var start = vm.stack.Count - 2;
+            Prim0.DeleteDictionary(vm.api, ref vm.stack.Storage[start], ref vm.stack.Storage[start + 1]);
+            vm.stack.Pop ();
             vm.programCounter++;
         }
 

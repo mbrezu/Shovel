@@ -182,10 +182,13 @@ namespace Shovel
                   && instruction.StartPos != null
                   && instruction.EndPos != null)
                 {
-                    var startPos = Position.CalculatePosition(
-                        currentSource, instruction.StartPos.Value);
-                    var endPos = Position.CalculatePosition(
-                        currentSource, instruction.EndPos.Value);
+                    var startPos = Position.CalculatePosition(currentSource, instruction.StartPos.Value);
+                    Position endPos;
+                    if (instruction.Opcode != Instruction.Opcodes.NewFrame) {
+                        endPos = Position.CalculatePosition(currentSource, instruction.EndPos.Value);
+                    } else {
+                        endPos = startPos;
+                    }
                     var lines = Utils.ExtractRelevantSource(
                         currentSourceFileSplit, startPos, endPos);
                     var sb = new StringBuilder();
@@ -397,6 +400,8 @@ namespace Shovel
                     return 54;
                 case Instruction.Opcodes.IsCallable:
                     return 55;
+                case Instruction.Opcodes.Delete:
+                    return 56;
                 default:
                     Utils.Panic();
                     return 0;

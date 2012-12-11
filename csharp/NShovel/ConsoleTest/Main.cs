@@ -144,16 +144,10 @@ main()
         public static void SimpleTest ()
         {
             var sources = Shovel.Api.MakeSources ("test.sho", @"
-var id = fn x x
-var h = fn (x) context
-var g = fn (x) id(h(x))
-var f = fn (x) id(g(x))
-f(3)
-"
-            );
+var a = hash('a', 1, 'b', 2) delete(a, 'a') length(keys(a))
+");
             var result = Shovel.Api.TestRunVm (sources);
-            Console.WriteLine (
-                result.HashValue[Shovel.Value.Make ("environment")].StringValue);
+            Console.WriteLine (result.IntegerValue);
         }
 
         public static void AnotherSimpleTest ()

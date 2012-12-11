@@ -274,7 +274,7 @@ namespace Shovel.Compiler
           "isString", "isHash", "isBool", "isArray", "isNumber", "isInteger", "isCallable",
           "string", "stringRepresentation",
           "parseInt", "parseFloat", "floor",
-            "panic" }
+            "panic", "delete" }
 			);
         
 		Token TokenizePred (Token.Types type, Func<char, bool> pred)

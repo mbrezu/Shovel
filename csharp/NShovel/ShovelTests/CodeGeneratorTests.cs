@@ -43,8 +43,8 @@ fact(10)
     VMSOURCESMD5 1A680D29F5B254213B99ACFA46DC51FD
     VMBYTECODEMD5 ?
     FILENAME test.sho
-;; file 'test.sho' line 2: var fact = fn (n) { [...content snipped...]
-;; file 'test.sho' line 2: ^^^^^^^^^^^^^^^^^^^
+;; file 'test.sho' line 2: var fact = fn (n) {
+;; file 'test.sho' line 2: ^
     NEWFRAME fact
     JUMP L2
 ;; file 'test.sho' line 2: var fact = fn (n) { [...content snipped...]

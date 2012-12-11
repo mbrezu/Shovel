@@ -346,6 +346,12 @@ Arguments: `hash`, `key`
 Description: `true` if `hash` has a key named `key`, `false`
 otherwise. `hash` must be a hash and `key` must be a string.
 
+### `delete`
+
+Arguments: `hash`, `key`
+
+Description: deletes `key` (and the associated value) from the hash.
+
 ### `utcSecondsSinceUnixEpoch`
 
 Arguments: none
