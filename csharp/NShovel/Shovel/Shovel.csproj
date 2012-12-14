@@ -71,6 +71,8 @@
     <Compile Include="Value.cs" />
     <Compile Include="Exceptions\BytecodeDoesntMatchState.cs" />
     <Compile Include="Exceptions\ShovelTicksQuotaExceededException.cs" />
+    <Compile Include="StructInstance.cs" />
+    <Compile Include="Struct.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

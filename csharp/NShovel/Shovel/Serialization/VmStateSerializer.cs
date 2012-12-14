@@ -53,7 +53,9 @@ namespace Shovel.Serialization
             ReturnAddress,
             NamedBlock,
             Environment,
-            EnvFrame
+            EnvFrame,
+            Struct,
+            StructInstance
         }
 
         class Composite
@@ -105,13 +107,17 @@ namespace Shovel.Serialization
             } else if (obj is Value) {
                 return SerializeShovelValue ((Value)obj, obj);
             } else if (obj is string[]) {
-                return SerializeStringArray (obj, (string[])obj);
+                return SerializeStringArray ((string[])obj);
             } else if (obj is Value[]) {
-                return SerializeShovelValueArray (obj, (Value[])obj);
+                return SerializeShovelValueArray ((Value[])obj);
             } else if (obj is VmEnvironment) {
                 return SerializeEnvironment ((VmEnvironment)obj, obj);
             } else if (obj is VmEnvFrame) {
                 return SerializeEnvFrame ((VmEnvFrame)obj, obj);
+            } else if (obj is Struct) {
+                return SerializeStruct ((Struct)obj, obj);
+            } else if (obj is StructInstance) {
+                return SerializeStructInstance ((StructInstance)obj, obj);
             }
             Shovel.Utils.Panic ();
             throw new InvalidOperationException ();
@@ -283,6 +289,10 @@ namespace Shovel.Serialization
                 return Value.Make ((ReturnAddress)par);
             } else if (par is NamedBlock) {
                 return Value.Make ((NamedBlock)par);
+            } else if (par is Struct) {
+                return Value.Make ((Struct)par);
+            } else if (par is StructInstance) {
+                return Value.Make ((StructInstance)par);
             } else {
                 Shovel.Utils.Panic ();
                 throw new InvalidOperationException ();
@@ -404,6 +414,28 @@ namespace Shovel.Serialization
             return result;
         }
 
+        Struct RebuildStruct (object[] objects, int index, Composite composite, Func<int, object> reader)
+        {
+            var result = new Struct();
+            objects[index] = result;
+
+            result.Fields = (string[])reader(composite.Elements[0]);
+
+            return result;
+        }
+
+        StructInstance RebuildStructInstance (
+            object[] objects, int index, Composite composite, Func<int, object> reader)
+        {
+            var result = new StructInstance();
+            objects[index] = result;
+
+            result.Struct = (Struct)reader(composite.Elements[0]);
+            result.Values = (Value[])reader(composite.Elements[1]);
+
+            return result;
+        }
+
         void RebuildFromComposite (object[] objects, int index, Composite composite, Func<int, object> reader)
         {
             switch (composite.Kind) {
@@ -433,6 +465,12 @@ namespace Shovel.Serialization
                 break;
             case ObjectTypes.EnvFrame:
                 RebuildEnvFrame (objects, index, composite, reader);
+                break;
+            case ObjectTypes.Struct:
+                RebuildStruct (objects, index, composite, reader);
+                break;
+            case ObjectTypes.StructInstance:
+                RebuildStructInstance (objects, index, composite, reader);
                 break;
             default:
                 Shovel.Utils.Panic ();
@@ -482,26 +520,26 @@ namespace Shovel.Serialization
             return result;
         }
 
-        int SerializeShovelValueArray (object obj, Value[] array)
+        int SerializeShovelValueArray (Value[] array)
         {
             var composite = new Composite { 
                 Kind = ObjectTypes.ShovelValueArray,
                 Elements = new int[array.Length] 
             };
-            var result = SerializeOneHashed (composite, obj);
+            var result = SerializeOneHashed (composite, array);
             for (var i = 0; i < array.Length; i++) {
                 composite.Elements [i] = Serialize (array [i]);
             }
             return result;
         }
 
-        int SerializeStringArray (object obj, string[] array)
+        int SerializeStringArray (string[] array)
         {
             var composite = new Composite { 
                 Kind = ObjectTypes.StringArray, 
                 Elements = new int[array.Length] 
             };
-            var result = SerializeOneHashed (composite, obj);
+            var result = SerializeOneHashed (composite, array);
             for (var i = 0; i < array.Length; i++) {
                 composite.Elements [i] = SerializeOneHashed (array [i]);
             }
@@ -602,6 +640,29 @@ namespace Shovel.Serialization
             return result;
         }
 
+        int SerializeStruct (Struct ztruct, object obj)
+        {
+            var composite = new Composite {
+                Kind = ObjectTypes.Struct,
+                Elements = new int[1]
+            };
+            var result = SerializeOneHashed (composite, obj);
+            composite.Elements [0] = SerializeStringArray (ztruct.Fields);
+            return result;
+        }
+
+        int SerializeStructInstance (StructInstance structInstance, object obj)
+        {
+            var composite = new Composite {
+                Kind = ObjectTypes.StructInstance,
+                Elements = new int[2]
+            };
+            var result = SerializeOneHashed (composite, obj);
+            composite.Elements [0] = Serialize (structInstance.Struct);
+            composite.Elements [1] = SerializeShovelValueArray (structInstance.Values);
+            return result;
+        }
+
         int SerializeShovelValue (Value sv, object obj)
         {
             switch (sv.Kind) {
@@ -625,6 +686,10 @@ namespace Shovel.Serialization
                 return SerializeReturnAddress (sv.ReturnAddressValue, obj);
             case Value.Kinds.NamedBlock:
                 return SerializeNamedBlock (sv.NamedBlockValue, obj);
+            case Value.Kinds.Struct:
+                return SerializeStruct (sv.StructValue, obj);
+            case Value.Kinds.StructInstance:
+                return SerializeStructInstance (sv.StructInstanceValue, obj);
             default:
                 Shovel.Utils.Panic ();
                 throw new InvalidOperationException ();

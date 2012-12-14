@@ -672,7 +672,7 @@ namespace Shovel.Vm
         static void HandleSetIndexed (Vm vm)
         {
             var start = vm.stack.Count - 3;
-            Prim0.ArrayOrHashSet (vm.api, 
+            Prim0.ArrayOrHashOrStructInstanceSet (vm.api, 
                                   ref vm.stack.Storage [start], 
                                   ref vm.stack.Storage [start + 1],
                                   ref vm.stack.Storage [start + 2]);

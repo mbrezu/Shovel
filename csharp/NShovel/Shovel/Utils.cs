@@ -535,7 +535,7 @@ var stdlib = {
      })
    }
 
-   hash('min', min,
+   var hashLib = hash('min', min,
         'max', max,
         'while', while,
         'forIndex', forIndex,
@@ -553,6 +553,8 @@ var stdlib = {
         'throw' , throw,
         'repeat', repeat
        )
+    var hashStruct = defstruct(keys(hashLib))
+    hashToStruct(hashStruct, hashLib)
 }";
         }
 

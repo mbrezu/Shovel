@@ -31,7 +31,7 @@ namespace Shovel
 {
     public class Api
     {
-        static int version = 2;
+        static int version = 3;
 
         public static int Version {
             get {
@@ -247,6 +247,27 @@ namespace Shovel
         public static string SideBySide (string str1, string str2, int halfSize = 38)
         {
             return Utils.SideBySide (str1, str2, halfSize);
+        }
+
+        public static Value GetStructInstanceValue(StructInstance str, string key, Value defaultValue)
+        {
+            for (int i = 0; i < str.Struct.Fields.Length; i++) {
+                if (str.Struct.Fields[i] == key) {
+                    return str.Values[i];
+                }
+            }
+            return defaultValue;
+        }
+
+        public static bool SetStructInstanceValue(StructInstance str, string key, Value newValue)
+        {
+            for (int i = 0; i < str.Struct.Fields.Length; i++) {
+                if (str.Struct.Fields[i] == key) {
+                    str.Values[i] = newValue;
+                    return true;
+                }
+            }
+            return false;
         }
 
     }

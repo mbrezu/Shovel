@@ -41,6 +41,8 @@ namespace Shovel
             Callable,
             ReturnAddress,
             NamedBlock,
+            Struct,
+            StructInstance,
         }
         ;
 
@@ -49,8 +51,8 @@ namespace Shovel
         // Need to check what .NET 64 bit requires.
         // The lower the better, performance wise.
         [FieldOffset(20)]
-        public Kinds Kind;
-
+        public Kinds
+            Kind;
         [FieldOffset(0)]
         public long
             IntegerValue;
@@ -78,12 +80,34 @@ namespace Shovel
         [FieldOffset(8)]
         internal NamedBlock
             NamedBlockValue;
+        [FieldOffset(8)]
+        internal Struct
+            StructValue;
+        [FieldOffset(8)]
+        public StructInstance
+            StructInstanceValue;
 
         static Value value;
 
         public static Value Make ()
         {
             return value;
+        }
+
+        public static Value Make(Struct structFields)
+        {
+            Value result = value;
+            result.Kind = Kinds.Struct;
+            result.StructValue = structFields;
+            return result;
+        }
+
+        public static Value Make(StructInstance structInstance) 
+        {
+            Value result = value;
+            result.Kind = Kinds.StructInstance;
+            result.StructInstanceValue = structInstance;
+            return result;
         }
 
         public static Value Make (bool b)
@@ -194,6 +218,10 @@ namespace Shovel
                 return sv.Kind == Kinds.ReturnAddress && this.ReturnAddressValue == sv.ReturnAddressValue;
             case Kinds.NamedBlock:
                 return sv.Kind == Kinds.NamedBlock && this.NamedBlockValue == sv.NamedBlockValue;
+            case Kinds.Struct:
+                return sv.Kind == Kinds.Struct && this.StructValue == sv.StructValue;
+            case Kinds.StructInstance:
+                return sv.Kind == Kinds.StructInstance && this.StructInstanceValue == sv.StructInstanceValue;
             default:
                 Utils.Panic ();
                 throw new InvalidOperationException ();
@@ -223,6 +251,10 @@ namespace Shovel
                 return this.ReturnAddressValue.GetHashCode ();
             case Kinds.NamedBlock:
                 return this.NamedBlockValue.GetHashCode ();
+            case Kinds.Struct:
+                return this.StructValue.GetHashCode();
+            case Kinds.StructInstance:
+                return this.StructInstanceValue.GetHashCode();
             default:
                 Utils.Panic ();
                 throw new InvalidOperationException ();

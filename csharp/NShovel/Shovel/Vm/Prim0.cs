@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Shovel.Vm.Types;
+using System.Text;
 
 namespace Shovel.Vm
 {
@@ -74,7 +75,85 @@ namespace Shovel.Vm
             // Exception throwing.
             AddPrim0 (result, Callable.MakePrim0 ("panic", Callable.MakeHostCallable (Panic), 1));
 
+            // Structs.
+            AddPrim0 (result, Callable.MakePrim0 ("defstruct", Defstruct, 1));
+            AddPrim0 (result, Callable.MakePrim0 ("make", InstantiateStruct, null));
+            AddPrim0 (result, Callable.MakePrim0 ("structToHash", StructToHash, 1));
+            AddPrim0 (result, Callable.MakePrim0 ("hashToStruct", HashToStruct, 2));
+
             return result;
+        }
+
+        static Value HashToStruct (VmApi api, Value[] args, int start, int length)
+        {
+            if (args[start].Kind != Value.Kinds.Struct) {
+                api.RaiseShovelError ("First argument must be a struct.");
+            }
+            if (args[start + 1].Kind != Value.Kinds.Hash) {
+                api.RaiseShovelError ("Second argument must be a hash.");
+            }
+
+            var ztruct = args [start].StructValue;
+            var result = new StructInstance ();
+            result.Struct = ztruct;
+            result.Values = new Value[ztruct.Fields.Length];
+            var hash = args[start+1].HashValue;
+            for (int i = 0; i < ztruct.Fields.Length; i++) {
+                var svKey = Value.Make (ztruct.Fields[i]);
+                if (hash.ContainsKey(svKey)) {
+                    result.Values [i] = hash[svKey];
+                }
+            }
+            return Value.Make (result);
+        }
+
+        static Value StructToHash (VmApi api, Value[] args, int start, int length)
+        {
+            if (args[start].Kind != Value.Kinds.StructInstance) {
+                api.RaiseShovelError ("First argument must be a struct instance.");
+            }
+            var result = new Dictionary<Value, Value>();
+            var structInstance = args[start].StructInstanceValue;
+            var ztruct = structInstance.Struct;
+            for (int i = 0; i < ztruct.Fields.Length; i++) {
+                result[Value.Make (ztruct.Fields[i])] = structInstance.Values[i];
+            }
+            return Value.Make (result);
+        }
+
+        static Value InstantiateStruct (VmApi api, Value[] args, int start, int length)
+        {
+            if (length == 0) {
+                api.RaiseShovelError ("Must provide at least one argument.");
+            }
+            if (args [start].Kind != Value.Kinds.Struct) {
+                api.RaiseShovelError ("First argument must be a struct.");
+            }
+            var ztruct = args [start].StructValue;
+            var result = new StructInstance ();
+            result.Struct = ztruct;
+            result.Values = new Value[ztruct.Fields.Length];
+            for (int i = 1; i < length; i++) {
+                result.Values [i - 1] = args [start + i];
+            }
+            return Value.Make (result);
+        }
+
+        static Value Defstruct (VmApi api, Value[] args, int start, int length)
+        {
+            if (args [start].Kind != Value.Kinds.Array) {
+                api.RaiseShovelError ("Argument must be an array of strings.");
+            }
+            var fieldNames = args [start].ArrayValue;
+            Struct newStruct = new Struct ();
+            newStruct.Fields = new string[fieldNames.Count];
+            for (int i = 0; i < newStruct.Fields.Length; i++) {
+                if (fieldNames [i].Kind != Value.Kinds.String) {
+                    api.RaiseShovelError ("Argument must be an array of strings.");
+                }
+                newStruct.Fields [i] = fieldNames [i].StringValue;
+            }
+            return Value.Make (newStruct);
         }
 
         static void AddError (VmApi api)
@@ -342,11 +421,11 @@ namespace Shovel.Vm
         internal static void DeleteDictionary (VmApi api, ref Value t1, ref Value t2)
         {
             if (t1.Kind != Value.Kinds.Hash) {
-                api.RaiseShovelError("First argument must be a hash.");
+                api.RaiseShovelError ("First argument must be a hash.");
             } else if (t2.Kind != Value.Kinds.String) {
-                api.RaiseShovelError("Second argument must be a string.");
+                api.RaiseShovelError ("Second argument must be a string.");
             } else {
-                t1.HashValue.Remove(t2);
+                t1.HashValue.Remove (t2);
             }
         }
 
@@ -700,39 +779,67 @@ namespace Shovel.Vm
             }
         }
 
-        internal static void HashGetDot (VmApi api, ref Value hash, ref Value index)
+        internal static void HashGetDot (VmApi api, ref Value obj, ref Value index)
         {
-            if (hash.Kind != Value.Kinds.Hash) {
-                api.RaiseShovelError ("First argument must be a hash table.");
-            }
             if (index.Kind != Value.Kinds.String) {
                 api.RaiseShovelError ("Second argument must be a string.");
             }
-            if (!hash.HashValue.ContainsKey (index)) {
-                api.RaiseShovelError ("Key not found in hash table.");
+            if (obj.Kind == Value.Kinds.StructInstance) {
+                var structInstance = obj.StructInstanceValue;
+                var ztruct = structInstance.Struct;
+                var key = index.StringValue;
+                for (int i = 0; i < ztruct.Fields.Length; i ++) {
+                    if (key == ztruct.Fields [i]) {
+                        obj = structInstance.Values [i];
+                        return;
+                    }
+                }
+                api.RaiseShovelError ("Key not found in struct.");
+            } else if (obj.Kind == Value.Kinds.Hash) {
+                if (!obj.HashValue.ContainsKey (index)) {
+                    api.RaiseShovelError ("Key not found in hash table.");
+                }
+                obj = obj.HashValue [index];
+            } else {
+                api.RaiseShovelError ("First argument must be a struct instance or a hash table.");
             }
-            hash = hash.HashValue [index];
         }
 
-        internal static void ArrayOrHashSet (
-            VmApi api, ref Value arrayOrHashOrString, ref Value index, ref Value value)
+        internal static void ArrayOrHashOrStructInstanceSet (
+            VmApi api, ref Value obj, ref Value index, ref Value value)
         {
-            if (arrayOrHashOrString.Kind == Value.Kinds.Array) {
+            if (obj.Kind == Value.Kinds.StructInstance) {
+                if (index.Kind == Value.Kinds.String) {
+                    var structInstance = obj.StructInstanceValue;
+                    var ztruct = structInstance.Struct;
+                    var key = index.StringValue;
+                    for (int i = 0; i < ztruct.Fields.Length; i ++) {
+                        if (key == ztruct.Fields [i]) {
+                            structInstance.Values [i] = value;
+                            obj = value;
+                            return;
+                        }
+                    }
+                    api.RaiseShovelError ("Key not found in struct.");
+                } else {
+                    api.RaiseShovelError ("Setting a struct instance field value requires a key that is a string.");
+                }
+            } else if (obj.Kind == Value.Kinds.Array) {
                 if (index.Kind == Value.Kinds.Integer) {
-                    arrayOrHashOrString.ArrayValue [(int)index.IntegerValue] = value;
-                    arrayOrHashOrString = value;
+                    obj.ArrayValue [(int)index.IntegerValue] = value;
+                    obj = value;
                 } else {
                     api.RaiseShovelError ("Setting an array element requires an integer index.");
                 }
-            } else if (arrayOrHashOrString.Kind == Value.Kinds.Hash) {
+            } else if (obj.Kind == Value.Kinds.Hash) {
                 if (index.Kind == Value.Kinds.String) {
-                    arrayOrHashOrString.HashValue [index] = value;
-                    arrayOrHashOrString = value;
+                    obj.HashValue [index] = value;
+                    obj = value;
                 } else {
                     api.RaiseShovelError ("Setting a hash table value requires a key that is a string.");
                 }
             } else {
-                api.RaiseShovelError ("First argument must be a hash or an array.");
+                api.RaiseShovelError ("First argument must be a hash, an array, a string or a struct instance.");
             }
         }
 
@@ -986,6 +1093,10 @@ namespace Shovel.Vm
                 return "[...hash...]";
             } else if (obj.Kind == Value.Kinds.Callable) {
                 return "[...callable...]";
+            } else if (obj.Kind == Value.Kinds.Struct) {
+                return "[...struct...]";
+            } else if (obj.Kind == Value.Kinds.StructInstance) {
+                return "[...struct instance...]";
             } else if (obj.Kind == Value.Kinds.Bool) {
                 return obj.BoolValue.ToString ().ToLower ();
             } else if (obj.Kind == Value.Kinds.Null) {
@@ -1008,6 +1119,19 @@ namespace Shovel.Vm
             return result;
         }
 
+        private static string StructAsString(Struct ztruct)
+        {
+            var sb = new StringBuilder();
+            sb.Append("defstruct(array(");
+            var pieces = new List<string>();
+            foreach (var str in ztruct.Fields) {
+                pieces.Add (String.Format("'{0}'", str));
+            }
+            sb.Append(String.Join (", ", pieces));
+            sb.Append("))");
+            return sb.ToString();
+        }
+
         private static string ShovelStringRepresentationImpl (
             VmApi api, Value obj, HashSet<object> visited)
         {
@@ -1028,6 +1152,22 @@ namespace Shovel.Vm
                     stringReps.Add ((string)ShovelStringRepresentationImpl (api, obj.HashValue [key], visited));
                 }
                 return String.Format ("hash({0})", String.Join (", ", stringReps));
+            } else if (obj.Kind == Value.Kinds.Struct) {
+                return StructAsString(obj.StructValue);
+            } else if (obj.Kind == Value.Kinds.StructInstance) {
+                visited.Add (obj);
+                var sb = new StringBuilder();
+                sb.Append ("make(");
+                var pieces = new List<string>();
+                var structInstance = obj.StructInstanceValue;
+                var ztruct = structInstance.Struct;
+                pieces.Add (StructAsString(ztruct));
+                for (var i = 0; i < structInstance.Values.Length; i++) {
+                    pieces.Add (ShovelStringRepresentationImpl(api, structInstance.Values[i], visited));
+                }
+                sb.Append (String.Join (", ", pieces));
+                sb.Append (")");
+                return sb.ToString();
             } else if (obj.Kind == Value.Kinds.Null
                 || obj.Kind == Value.Kinds.Integer
                 || obj.Kind == Value.Kinds.Double

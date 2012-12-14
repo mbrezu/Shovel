@@ -427,6 +427,31 @@ main()
         }
 
         [Test]
+        public void SerializeWithStruct ()
+        {
+            var sources = Shovel.Api.MakeSources ("test.sho", @"
+var point = defstruct(array('x', 'y'))
+var main = fn () {
+  var pt = make(point, 1, 2)
+  @stop()
+  @print(string(pt.x))
+  @print(string(pt.y))
+}
+main()
+"
+            );
+            List<string> log = new List<string> ();
+            var bytecode = Shovel.Api.GetBytecode (sources);
+            var userPrimitives = GetPrintAndStopUdps (log, false);
+            var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
+            var state = Shovel.Api.SerializeVmState (vm);
+            Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
+            Assert.AreEqual (2, log.Count);
+            Assert.AreEqual ("1", log [0]);
+            Assert.AreEqual ("2", log [1]);
+        }
+
+        [Test]
         public void SerializeWithHash ()
         {
             var sources = Shovel.Api.MakeSources ("test.sho", @"
@@ -576,7 +601,7 @@ c1()
         }
 
         [Test]
-        public void UdpError()
+        public void UdpError ()
         {
             var sources = Shovel.Api.MakeSources ("test.sho", @"
 @print(100)
@@ -586,13 +611,13 @@ c1()
             var bytecode = Shovel.Api.GetBytecode (sources);
             var userPrimitives = GetPrintAndStopUdps (log, false);
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
-            Assert.IsNotNull(Shovel.Api.VmUserDefinedPrimitiveError(vm));
+            Assert.IsNotNull (Shovel.Api.VmUserDefinedPrimitiveError (vm));
         }
 
         [Test]
-        public void MultipleGrefs()
+        public void MultipleGrefs ()
         {
-            Utils.TestValue("var a = array(array(array(3))) a[0][0][0]", Shovel.Value.Kinds.Integer, (long)3);
+            Utils.TestValue ("var a = array(array(array(3))) a[0][0][0]", Shovel.Value.Kinds.Integer, (long)3);
         }
     }
 }
