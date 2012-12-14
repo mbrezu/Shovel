@@ -115,7 +115,10 @@ namespace Shovel.Vm
             vm.totalTicksQuota = totalTicksQuota;
             vm.untilNextNapTicksQuota = untilNextNapTicksQuota;
             if (state != null) {
-                vm.DeserializeState (state);
+                Utils.TimeIt ("Deserialize VM state", () => {
+                    vm.DeserializeState (state);
+                }
+                );
             }
             if (userPrimitives != null) {
                 foreach (var udp in userPrimitives) {
@@ -546,10 +549,10 @@ namespace Shovel.Vm
             vm.programCounter++;
         }
 
-        static void HandleDelete(Vm vm)
+        static void HandleDelete (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            Prim0.DeleteDictionary(vm.api, ref vm.stack.Storage[start], ref vm.stack.Storage[start + 1]);
+            Prim0.DeleteDictionary (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
             vm.programCounter++;
         }
