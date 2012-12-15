@@ -115,10 +115,10 @@ namespace Shovel.Vm
             vm.totalTicksQuota = totalTicksQuota;
             vm.untilNextNapTicksQuota = untilNextNapTicksQuota;
             if (state != null) {
-                Utils.TimeIt ("Deserialize VM state", () => {
+//                Utils.TimeIt ("Deserialize VM state", () => {
                     vm.DeserializeState (state);
-                }
-                );
+//                }
+//                );
             }
             if (userPrimitives != null) {
                 foreach (var udp in userPrimitives) {
