@@ -86,10 +86,10 @@ namespace Shovel.Vm
 
         static Value HashToStruct (VmApi api, Value[] args, int start, int length)
         {
-            if (args[start].Kind != Value.Kinds.Struct) {
+            if (args [start].Kind != Value.Kinds.Struct) {
                 api.RaiseShovelError ("First argument must be a struct.");
             }
-            if (args[start + 1].Kind != Value.Kinds.Hash) {
+            if (args [start + 1].Kind != Value.Kinds.Hash) {
                 api.RaiseShovelError ("Second argument must be a hash.");
             }
 
@@ -97,33 +97,33 @@ namespace Shovel.Vm
             var result = new StructInstance ();
             result.Struct = ztruct;
             result.Values = new Value[ztruct.Fields.Length];
-            var hash = args[start+1].HashValue;
+            var hash = args [start + 1].HashValue;
             var sizeIncrease = 1 + ztruct.Fields.Length;
-            api.CellsIncrementHerald(sizeIncrease);
+            api.CellsIncrementHerald (sizeIncrease);
             for (int i = 0; i < ztruct.Fields.Length; i++) {
-                var svKey = Value.Make (ztruct.Fields[i]);
-                if (hash.ContainsKey(svKey)) {
-                    result.Values [i] = hash[svKey];
+                var svKey = Value.Make (ztruct.Fields [i]);
+                if (hash.ContainsKey (svKey)) {
+                    result.Values [i] = hash [svKey];
                 }
             }
-            api.CellsIncrementer(sizeIncrease);
+            api.CellsIncrementer (sizeIncrease);
             return Value.Make (result);
         }
 
         static Value StructToHash (VmApi api, Value[] args, int start, int length)
         {
-            if (args[start].Kind != Value.Kinds.StructInstance) {
+            if (args [start].Kind != Value.Kinds.StructInstance) {
                 api.RaiseShovelError ("First argument must be a struct instance.");
             }
-            var result = new Dictionary<Value, Value>();
-            var structInstance = args[start].StructInstanceValue;
+            var result = new Dictionary<Value, Value> ();
+            var structInstance = args [start].StructInstanceValue;
             var ztruct = structInstance.Struct;
             var sizeIncrease = 1 + 2 * ztruct.Fields.Length;
-            api.CellsIncrementHerald(sizeIncrease);
+            api.CellsIncrementHerald (sizeIncrease);
             for (int i = 0; i < ztruct.Fields.Length; i++) {
-                result[Value.Make (ztruct.Fields[i])] = structInstance.Values[i];
+                result [Value.Make (ztruct.Fields [i])] = structInstance.Values [i];
             }
-            api.CellsIncrementer(sizeIncrease);
+            api.CellsIncrementer (sizeIncrease);
             return Value.Make (result);
         }
 
@@ -137,14 +137,14 @@ namespace Shovel.Vm
             }
             var ztruct = args [start].StructValue;
             var sizeIncrease = 1 + ztruct.Fields.Length;
-            api.CellsIncrementHerald(sizeIncrease);
+            api.CellsIncrementHerald (sizeIncrease);
             var result = new StructInstance ();
             result.Struct = ztruct;
             result.Values = new Value[ztruct.Fields.Length];
             for (int i = 1; i < length; i++) {
                 result.Values [i - 1] = args [start + i];
             }
-            api.CellsIncrementer(sizeIncrease);
+            api.CellsIncrementer (sizeIncrease);
             return Value.Make (result);
         }
 
@@ -155,7 +155,7 @@ namespace Shovel.Vm
             }
             var fieldNames = args [start].ArrayValue;
             var sizeIncrease = 1 + length;
-            api.CellsIncrementHerald(sizeIncrease);
+            api.CellsIncrementHerald (sizeIncrease);
             Struct newStruct = new Struct ();
             newStruct.Fields = new string[fieldNames.Count];
             for (int i = 0; i < newStruct.Fields.Length; i++) {
@@ -164,7 +164,7 @@ namespace Shovel.Vm
                 }
                 newStruct.Fields [i] = fieldNames [i].StringValue;
             }
-            api.CellsIncrementer(sizeIncrease);
+            api.CellsIncrementer (sizeIncrease);
             return Value.Make (newStruct);
         }
 
@@ -711,22 +711,22 @@ namespace Shovel.Vm
             }
             var result = new List<Value> ();
             var sizeIncrease = 1 + hash.HashValue.Count;
-            api.CellsIncrementHerald(sizeIncrease);
+            api.CellsIncrementHerald (sizeIncrease);
             result.AddRange (hash.HashValue.Keys);
             hash.ArrayValue = result;
             hash.Kind = Value.Kinds.Array;
-            api.CellsIncrementer(sizeIncrease);
+            api.CellsIncrementer (sizeIncrease);
         }
 
         static Value ArrayConstructor (VmApi api, Value[] args, int start, int length)
         {
             var result = new List<Value> ();
             var sizeIncrease = 1 + length;
-            api.CellsIncrementHerald(sizeIncrease);
+            api.CellsIncrementHerald (sizeIncrease);
             for (var i = start; i < start+length; i++) {
                 result.Add (args [i]);
             }
-            api.CellsIncrementer(sizeIncrease);
+            api.CellsIncrementer (sizeIncrease);
             return Value.Make (result);
         }
 
@@ -737,11 +737,11 @@ namespace Shovel.Vm
             }
             var result = new List<Value> ();
             var sizeIncrease = 1 + (int)size.IntegerValue;
-            api.CellsIncrementHerald(sizeIncrease);
+            api.CellsIncrementHerald (sizeIncrease);
             for (var i = 0; i < size.IntegerValue; i++) {
                 result.Add (Value.Make ());
             }
-            api.CellsIncrementer(sizeIncrease);
+            api.CellsIncrementer (sizeIncrease);
             return Value.Make (result);
         }
 
@@ -757,7 +757,7 @@ namespace Shovel.Vm
             CheckVector (api, ref array);
             array.ArrayValue.Add (value);
             array = value;
-            api.CellsIncrementer(1);
+            api.CellsIncrementer (1);
         }
 
         internal static void ArrayPop (VmApi api, ref Value array)
@@ -801,22 +801,36 @@ namespace Shovel.Vm
             }
         }
 
-        internal static void HashGetDot (VmApi api, ref Value obj, ref Value index)
+        static int FindLocationInStruct (VmApi api, Struct ztruct, string key)
+        {
+            for (int i = 0; i < ztruct.Fields.Length; i ++) {
+                if (key == ztruct.Fields [i]) {
+                    return i;
+                }
+            }
+            api.RaiseShovelError ("Key not found in struct.");
+            return -1;
+        }
+
+        internal static void HashOrStructGetDot (Vm vm, VmApi api, ref Value obj, ref Value index)
         {
             if (index.Kind != Value.Kinds.String) {
                 api.RaiseShovelError ("Second argument must be a string.");
             }
             if (obj.Kind == Value.Kinds.StructInstance) {
+                var cache = vm.GetCurrentCache ();
                 var structInstance = obj.StructInstanceValue;
                 var ztruct = structInstance.Struct;
-                var key = index.StringValue;
-                for (int i = 0; i < ztruct.Fields.Length; i ++) {
-                    if (key == ztruct.Fields [i]) {
-                        obj = structInstance.Values [i];
+                if (cache != null) {
+                    var info = (Tuple<Struct, int>)cache;
+                    if (info.Item1 == ztruct) {
+                        obj = structInstance.Values [info.Item2];
                         return;
                     }
                 }
-                api.RaiseShovelError ("Key not found in struct.");
+                int location = FindLocationInStruct (api, ztruct, index.StringValue);
+                obj = structInstance.Values [location];
+                vm.SetCurrentCache (Tuple.Create (ztruct, location));
             } else if (obj.Kind == Value.Kinds.Hash) {
                 if (!obj.HashValue.ContainsKey (index)) {
                     api.RaiseShovelError ("Key not found in hash table.");
@@ -827,26 +841,35 @@ namespace Shovel.Vm
             }
         }
 
-        internal static void ArrayOrHashOrStructInstanceSet (
-            VmApi api, ref Value obj, ref Value index, ref Value value)
+        internal static void HashOrStructDotSet (
+            Vm vm, VmApi api, ref Value obj, ref Value index, ref Value value)
         {
             if (obj.Kind == Value.Kinds.StructInstance) {
-                if (index.Kind == Value.Kinds.String) {
-                    var structInstance = obj.StructInstanceValue;
-                    var ztruct = structInstance.Struct;
-                    var key = index.StringValue;
-                    for (int i = 0; i < ztruct.Fields.Length; i ++) {
-                        if (key == ztruct.Fields [i]) {
-                            structInstance.Values [i] = value;
-                            obj = value;
-                            return;
-                        }
+                var cache = vm.GetCurrentCache ();
+                var structInstance = obj.StructInstanceValue;
+                var ztruct = structInstance.Struct;
+                if (cache != null) {
+                    var info = (Tuple<Struct, int>)cache;
+                    if (info.Item1 == ztruct) {
+                        structInstance.Values [info.Item2] = value;
+                        return;
                     }
-                    api.RaiseShovelError ("Key not found in struct.");
-                } else {
-                    api.RaiseShovelError ("Setting a struct instance field value requires a key that is a string.");
                 }
-            } else if (obj.Kind == Value.Kinds.Array) {
+                int location = FindLocationInStruct (api, ztruct, index.StringValue);
+                structInstance.Values [location] = value;
+                vm.SetCurrentCache (Tuple.Create (ztruct, location));
+            } else if (obj.Kind == Value.Kinds.Hash) {
+                obj.HashValue [index] = value;
+                obj = value;
+            } else {
+                api.RaiseShovelError ("First argument must be a hash or a struct instance.");
+            }
+        }
+
+        internal static void ArrayOrHashSet (
+            VmApi api, ref Value obj, ref Value index, ref Value value)
+        {
+            if (obj.Kind == Value.Kinds.Array) {
                 if (index.Kind == Value.Kinds.Integer) {
                     obj.ArrayValue [(int)index.IntegerValue] = value;
                     obj = value;
@@ -861,7 +884,7 @@ namespace Shovel.Vm
                     api.RaiseShovelError ("Setting a hash table value requires a key that is a string.");
                 }
             } else {
-                api.RaiseShovelError ("First argument must be a hash, an array, a string or a struct instance.");
+                api.RaiseShovelError ("First argument must be an array, a string or a struct instance.");
             }
         }
 
@@ -920,7 +943,7 @@ namespace Shovel.Vm
                 var realStart = (int)start.IntegerValue;
                 var realEnd = (int)end.IntegerValue;
                 AdjustRealStartEnd (api, ref realStart, ref realEnd, length);
-                api.CellsIncrementer(realEnd - realStart);
+                api.CellsIncrementer (realEnd - realStart);
                 return Value.Make (
                     arrayOrString.ArrayValue.GetRange (realStart, realEnd - realStart));
             } else if (arrayOrString.Kind == Value.Kinds.String) {
@@ -928,7 +951,7 @@ namespace Shovel.Vm
                 var realStart = (int)start.IntegerValue;
                 var realEnd = (int)end.IntegerValue;
                 AdjustRealStartEnd (api, ref realStart, ref realEnd, length);
-                api.CellsIncrementer(realEnd - realStart);
+                api.CellsIncrementer (realEnd - realStart);
                 return Value.Make (
                     arrayOrString.StringValue.Substring (realStart, realEnd - realStart));
             } else {
@@ -948,7 +971,7 @@ namespace Shovel.Vm
         {
             CheckString (api, str);
             api.CellsIncrementer (str.StringValue.Length);
-            api.CellsIncrementer(str.StringValue.Length);
+            api.CellsIncrementer (str.StringValue.Length);
             return Value.Make (str.StringValue.ToUpper ());
         }
 
@@ -956,7 +979,7 @@ namespace Shovel.Vm
         {
             CheckString (api, str);
             api.CellsIncrementer (str.StringValue.Length);
-            api.CellsIncrementer(str.StringValue.Length);
+            api.CellsIncrementer (str.StringValue.Length);
             return Value.Make (str.StringValue.ToLower ());
         }
 
@@ -1006,7 +1029,7 @@ namespace Shovel.Vm
             result [Value.Make ("hour")] = Value.MakeInt (date.Hour);
             result [Value.Make ("minute")] = Value.MakeInt (date.Minute);
             result [Value.Make ("second")] = Value.MakeInt (date.Second);
-            api.CellsIncrementer(8);
+            api.CellsIncrementer (8);
             return Value.Make (result);
         }
 
@@ -1120,7 +1143,7 @@ namespace Shovel.Vm
         internal static Value ShovelString (VmApi api, Value obj)
         {
             var result = ShovelStringImpl (api, obj);
-            api.CellsIncrementer(result.Length);
+            api.CellsIncrementer (result.Length);
             return Value.Make (result);
         }
 
@@ -1164,17 +1187,17 @@ namespace Shovel.Vm
             return result;
         }
 
-        private static string StructAsString(Struct ztruct)
+        private static string StructAsString (Struct ztruct)
         {
-            var sb = new StringBuilder();
-            sb.Append("defstruct(array(");
-            var pieces = new List<string>();
+            var sb = new StringBuilder ();
+            sb.Append ("defstruct(array(");
+            var pieces = new List<string> ();
             foreach (var str in ztruct.Fields) {
-                pieces.Add (String.Format("'{0}'", str));
+                pieces.Add (String.Format ("'{0}'", str));
             }
-            sb.Append(String.Join (", ", pieces));
-            sb.Append("))");
-            return sb.ToString();
+            sb.Append (String.Join (", ", pieces));
+            sb.Append ("))");
+            return sb.ToString ();
         }
 
         private static string ShovelStringRepresentationImpl (
@@ -1198,21 +1221,21 @@ namespace Shovel.Vm
                 }
                 return String.Format ("hash({0})", String.Join (", ", stringReps));
             } else if (obj.Kind == Value.Kinds.Struct) {
-                return StructAsString(obj.StructValue);
+                return StructAsString (obj.StructValue);
             } else if (obj.Kind == Value.Kinds.StructInstance) {
                 visited.Add (obj);
-                var sb = new StringBuilder();
+                var sb = new StringBuilder ();
                 sb.Append ("make(");
-                var pieces = new List<string>();
+                var pieces = new List<string> ();
                 var structInstance = obj.StructInstanceValue;
                 var ztruct = structInstance.Struct;
-                pieces.Add (StructAsString(ztruct));
+                pieces.Add (StructAsString (ztruct));
                 for (var i = 0; i < structInstance.Values.Length; i++) {
-                    pieces.Add (ShovelStringRepresentationImpl(api, structInstance.Values[i], visited));
+                    pieces.Add (ShovelStringRepresentationImpl (api, structInstance.Values [i], visited));
                 }
                 sb.Append (String.Join (", ", pieces));
                 sb.Append (")");
-                return sb.ToString();
+                return sb.ToString ();
             } else if (obj.Kind == Value.Kinds.Null
                 || obj.Kind == Value.Kinds.Integer
                 || obj.Kind == Value.Kinds.Double

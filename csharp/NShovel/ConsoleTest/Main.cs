@@ -144,12 +144,22 @@ main()
         public static void SimpleTest ()
         {
             var sources = Shovel.Api.MakeSources ("test.sho", @"
-var a = hash('a', 1, 'b', 2) delete(a, 'a') length(keys(a))
+var point = defstruct(array('x', 'y'))
+var point2 = defstruct(array('y', 'x'))
+var setX = fn (pt, newX) pt.x = newX
+var pt1 = make(point, 1, 2)
+setX(pt1, 3)
+// The code in mkpt should use optimizations on the second call,
+// but notice that we use a different structure and invalidate
+// the cache.
+var pt2 = make(point2, 1, 2)
+setX(pt2, 3)
+pt2.y
 "
                                                   );
             try {
-//                var bytecode = Shovel.Api.GetBytecode (sources);
-//                Console.WriteLine (Shovel.Api.PrintAssembledBytecode(bytecode));
+                //var bytecode = Shovel.Api.GetBytecode (sources);
+                Console.WriteLine (Shovel.Api.PrintRawBytecode(sources, true));
                 Console.WriteLine (Shovel.Api.TestRunVm(sources));
             } catch (Shovel.Exceptions.ShovelException shex) {
                 Console.WriteLine (shex.Message);

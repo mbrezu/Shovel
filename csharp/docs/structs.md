@@ -6,7 +6,9 @@
 
  * document `GetStructInstanceValue`, `SetStructInstanceValue`,
    `ListStructInstanceKeys` in Shovel.Api (maybe write some examples);
- * optimize structs.   
+ * integrate this document in the rest of the documentation - 
+   * language spec;
+   * VM spec.
 
 It turns out that using hashes everywhere is slow. By doubling the
 keys with every instance, it makes state larger and slows down

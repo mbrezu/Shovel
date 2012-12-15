@@ -94,7 +94,8 @@ namespace Shovel
 			IsCallable,
             Delete,
             IsStruct,
-            IsStructInstance
+            IsStructInstance,
+            SetDotIndexed,
 		}
 
 		internal Opcodes Opcode { get; set; }

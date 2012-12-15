@@ -406,6 +406,8 @@ namespace Shovel
                     return 57;
                 case Instruction.Opcodes.IsStructInstance:
                     return 58;
+                case Instruction.Opcodes.SetDotIndexed:
+                    return 59;
                 default:
                     Utils.Panic();
                     return 0;

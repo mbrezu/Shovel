@@ -200,6 +200,46 @@ isStructInstance(make(point, 10, 20), point) && isStructInstance(make(rectangle)
 ", Shovel.Value.Kinds.Bool, true);
         }
 
+        [Test]
+        public void StructOptimizations()
+        {
+            Utils.TestValue (@"
+var point = defstruct(array('x', 'y'))
+var mkpt = fn (x, y) {
+    var result = make(point)
+    result.x = x
+    result.y = y
+    result.x + result.y
+}
+mkpt(1, 2)
+// The code in mkpt should use optimizations on the second call.
+mkpt(1, 2)
+", Shovel.Value.Kinds.Integer, (long)3);
+            Utils.TestValue (@"
+var point = defstruct(array('x', 'y'))
+var point2 = defstruct(array('y', 'x'))
+var getX = fn pt pt.x
+getX(make(point, 1, 2))
+// The code in mkpt should use optimizations on the second call,
+// but notice that we use a different structure and invalidate
+// the cache.
+getX(make(point2, 1, 2))
+", Shovel.Value.Kinds.Integer, (long)2);
+            Utils.TestValue (@"
+var point = defstruct(array('x', 'y'))
+var point2 = defstruct(array('y', 'x'))
+var setX = fn (pt, newX) pt.x = newX
+var pt1 = make(point, 1, 2)
+setX(pt1, 3)
+// The code in mkpt should use optimizations on the second call,
+// but notice that we use a different structure and invalidate
+// the cache.
+var pt2 = make(point2, 1, 2)
+setX(pt2, 3)
+pt2.y
+", Shovel.Value.Kinds.Integer, (long)1);
+        }
+
     }
 }
 

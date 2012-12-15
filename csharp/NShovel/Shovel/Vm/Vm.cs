@@ -464,6 +464,7 @@ namespace Shovel.Vm
             Vm.HandleDelete,                   // 56
             Vm.HandleIsStruct,                 // 57
             Vm.HandleIsStructInstance,         // 58
+            Vm.HandleSetDotIndexed,            // 59
         };
 
         Instruction CurrentInstruction ()
@@ -471,12 +472,12 @@ namespace Shovel.Vm
             return this.bytecode [this.programCounter];
         }
 
-        object GetCurrentCache ()
+        internal object GetCurrentCache ()
         {
             return this.cache [this.programCounter];
         }
 
-        void SetCurrentCache (object cache)
+        internal void SetCurrentCache (object cache)
         {
             this.cache [this.programCounter] = cache;
         }
@@ -648,8 +649,19 @@ namespace Shovel.Vm
         static void HandleGrefDot (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            Prim0.HashGetDot (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
+            Prim0.HashOrStructGetDot (vm, vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
+            vm.programCounter++;
+        }
+
+        static void HandleSetDotIndexed (Vm vm)
+        {
+            var start = vm.stack.Count - 3;
+            Prim0.HashOrStructDotSet (vm, vm.api,
+                                  ref vm.stack.Storage [start], 
+                                  ref vm.stack.Storage [start + 1],
+                                  ref vm.stack.Storage [start + 2]);
+            vm.stack.PopMany (2);
             vm.programCounter++;
         }
 
@@ -688,7 +700,7 @@ namespace Shovel.Vm
         static void HandleSetIndexed (Vm vm)
         {
             var start = vm.stack.Count - 3;
-            Prim0.ArrayOrHashOrStructInstanceSet (vm.api, 
+            Prim0.ArrayOrHashSet (vm.api, 
                                   ref vm.stack.Storage [start], 
                                   ref vm.stack.Storage [start + 1],
                                   ref vm.stack.Storage [start + 2]);

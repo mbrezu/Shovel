@@ -248,6 +248,7 @@ namespace Shovel.Compiler
             Tuple.Create ("hasKey", Instruction.Opcodes.HasKey, 2),
             Tuple.Create ("pop", Instruction.Opcodes.Apop, 1),
             Tuple.Create ("svm_set_indexed", Instruction.Opcodes.SetIndexed, 3),
+            Tuple.Create ("svm_set_dot_indexed", Instruction.Opcodes.SetDotIndexed, 3),
             Tuple.Create ("length", Instruction.Opcodes.Len, 1),
             Tuple.Create ("isString", Instruction.Opcodes.IsString, 1),
             Tuple.Create ("isHash", Instruction.Opcodes.IsHash, 1),
@@ -404,13 +405,14 @@ namespace Shovel.Compiler
 				}
 				var arrayOrHash = leftHandSide.Children.ElementAt (1);
 				var index = leftHandSide.Children.ElementAt (2);
+                var literalStringIndex = index.Label == ParseTree.Labels.String;
 				var setOperator = leftHandSide.Children.ElementAt (0);
 				var primitiveParseTree = new ParseTree ()
                 {
                     Label = ParseTree.Labels.Prim0,
                     StartPos = setOperator.StartPos,
                     EndPos = setOperator.EndPos,
-                    Content = "svm_set_indexed"
+                    Content = literalStringIndex ? "svm_set_dot_indexed" : "svm_set_indexed"
                 };
 				var rightHandSide = ast.Children.ElementAt (2);
 				var callParseTree = new ParseTree ()
