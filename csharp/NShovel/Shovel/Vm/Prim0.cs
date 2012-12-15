@@ -98,12 +98,15 @@ namespace Shovel.Vm
             result.Struct = ztruct;
             result.Values = new Value[ztruct.Fields.Length];
             var hash = args[start+1].HashValue;
+            var sizeIncrease = 1 + ztruct.Fields.Length;
+            api.CellsIncrementHerald(sizeIncrease);
             for (int i = 0; i < ztruct.Fields.Length; i++) {
                 var svKey = Value.Make (ztruct.Fields[i]);
                 if (hash.ContainsKey(svKey)) {
                     result.Values [i] = hash[svKey];
                 }
             }
+            api.CellsIncrementer(sizeIncrease);
             return Value.Make (result);
         }
 
@@ -115,9 +118,12 @@ namespace Shovel.Vm
             var result = new Dictionary<Value, Value>();
             var structInstance = args[start].StructInstanceValue;
             var ztruct = structInstance.Struct;
+            var sizeIncrease = 1 + 2 * ztruct.Fields.Length;
+            api.CellsIncrementHerald(sizeIncrease);
             for (int i = 0; i < ztruct.Fields.Length; i++) {
                 result[Value.Make (ztruct.Fields[i])] = structInstance.Values[i];
             }
+            api.CellsIncrementer(sizeIncrease);
             return Value.Make (result);
         }
 
@@ -130,12 +136,15 @@ namespace Shovel.Vm
                 api.RaiseShovelError ("First argument must be a struct.");
             }
             var ztruct = args [start].StructValue;
+            var sizeIncrease = 1 + ztruct.Fields.Length;
+            api.CellsIncrementHerald(sizeIncrease);
             var result = new StructInstance ();
             result.Struct = ztruct;
             result.Values = new Value[ztruct.Fields.Length];
             for (int i = 1; i < length; i++) {
                 result.Values [i - 1] = args [start + i];
             }
+            api.CellsIncrementer(sizeIncrease);
             return Value.Make (result);
         }
 
@@ -145,6 +154,8 @@ namespace Shovel.Vm
                 api.RaiseShovelError ("Argument must be an array of strings.");
             }
             var fieldNames = args [start].ArrayValue;
+            var sizeIncrease = 1 + length;
+            api.CellsIncrementHerald(sizeIncrease);
             Struct newStruct = new Struct ();
             newStruct.Fields = new string[fieldNames.Count];
             for (int i = 0; i < newStruct.Fields.Length; i++) {
@@ -153,6 +164,7 @@ namespace Shovel.Vm
                 }
                 newStruct.Fields [i] = fieldNames [i].StringValue;
             }
+            api.CellsIncrementer(sizeIncrease);
             return Value.Make (newStruct);
         }
 
@@ -698,17 +710,23 @@ namespace Shovel.Vm
                 api.RaiseShovelError ("First argument must be a hash table.");
             }
             var result = new List<Value> ();
+            var sizeIncrease = 1 + hash.HashValue.Count;
+            api.CellsIncrementHerald(sizeIncrease);
             result.AddRange (hash.HashValue.Keys);
             hash.ArrayValue = result;
             hash.Kind = Value.Kinds.Array;
+            api.CellsIncrementer(sizeIncrease);
         }
 
         static Value ArrayConstructor (VmApi api, Value[] args, int start, int length)
         {
             var result = new List<Value> ();
+            var sizeIncrease = 1 + length;
+            api.CellsIncrementHerald(sizeIncrease);
             for (var i = start; i < start+length; i++) {
                 result.Add (args [i]);
             }
+            api.CellsIncrementer(sizeIncrease);
             return Value.Make (result);
         }
 
@@ -718,9 +736,12 @@ namespace Shovel.Vm
                 api.RaiseShovelError ("Argument must be an integer.");
             }
             var result = new List<Value> ();
+            var sizeIncrease = 1 + (int)size.IntegerValue;
+            api.CellsIncrementHerald(sizeIncrease);
             for (var i = 0; i < size.IntegerValue; i++) {
                 result.Add (Value.Make ());
             }
+            api.CellsIncrementer(sizeIncrease);
             return Value.Make (result);
         }
 
@@ -736,6 +757,7 @@ namespace Shovel.Vm
             CheckVector (api, ref array);
             array.ArrayValue.Add (value);
             array = value;
+            api.CellsIncrementer(1);
         }
 
         internal static void ArrayPop (VmApi api, ref Value array)
@@ -898,6 +920,7 @@ namespace Shovel.Vm
                 var realStart = (int)start.IntegerValue;
                 var realEnd = (int)end.IntegerValue;
                 AdjustRealStartEnd (api, ref realStart, ref realEnd, length);
+                api.CellsIncrementer(realEnd - realStart);
                 return Value.Make (
                     arrayOrString.ArrayValue.GetRange (realStart, realEnd - realStart));
             } else if (arrayOrString.Kind == Value.Kinds.String) {
@@ -905,6 +928,7 @@ namespace Shovel.Vm
                 var realStart = (int)start.IntegerValue;
                 var realEnd = (int)end.IntegerValue;
                 AdjustRealStartEnd (api, ref realStart, ref realEnd, length);
+                api.CellsIncrementer(realEnd - realStart);
                 return Value.Make (
                     arrayOrString.StringValue.Substring (realStart, realEnd - realStart));
             } else {
@@ -924,6 +948,7 @@ namespace Shovel.Vm
         {
             CheckString (api, str);
             api.CellsIncrementer (str.StringValue.Length);
+            api.CellsIncrementer(str.StringValue.Length);
             return Value.Make (str.StringValue.ToUpper ());
         }
 
@@ -931,6 +956,7 @@ namespace Shovel.Vm
         {
             CheckString (api, str);
             api.CellsIncrementer (str.StringValue.Length);
+            api.CellsIncrementer(str.StringValue.Length);
             return Value.Make (str.StringValue.ToLower ());
         }
 
@@ -980,6 +1006,7 @@ namespace Shovel.Vm
             result [Value.Make ("hour")] = Value.MakeInt (date.Hour);
             result [Value.Make ("minute")] = Value.MakeInt (date.Minute);
             result [Value.Make ("second")] = Value.MakeInt (date.Second);
+            api.CellsIncrementer(8);
             return Value.Make (result);
         }
 
@@ -1076,7 +1103,9 @@ namespace Shovel.Vm
 
         internal static Value ShovelString (VmApi api, Value obj)
         {
-            return Value.Make (ShovelStringImpl (api, obj));
+            var result = ShovelStringImpl (api, obj);
+            api.CellsIncrementer(result.Length);
+            return Value.Make (result);
         }
 
         static string ShovelStringImpl (VmApi api, Value obj)
