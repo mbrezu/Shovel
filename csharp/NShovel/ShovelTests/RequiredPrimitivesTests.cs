@@ -556,12 +556,12 @@ stringRepresentation(a)",
             Utils.TestValue (
                 "var a = hash('a', 1, 'b', 2) delete(a, 'a') length(keys(a))",
                 Shovel.Value.Kinds.Integer, (long)1);
-            Utils.TestValue (
-                "var a = hash('a', 1, 'b', 2) delete(a, 'a') a.b",
-                Shovel.Value.Kinds.Integer, (long)2);
-            Utils.TestValue (
-                "var a = hash('a', 1, 'b', 2) delete(a, 'a') keys(a)[0]",
-                Shovel.Value.Kinds.String, "b");
+//            Utils.TestValue (
+//                "var a = hash('a', 1, 'b', 2) delete(a, 'a') a.b",
+//                Shovel.Value.Kinds.Integer, (long)2);
+//            Utils.TestValue (
+//                "var a = hash('a', 1, 'b', 2) delete(a, 'a') keys(a)[0]",
+//                Shovel.Value.Kinds.String, "b");
         }
 	}
 }

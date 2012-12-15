@@ -402,6 +402,10 @@ namespace Shovel
                     return 55;
                 case Instruction.Opcodes.Delete:
                     return 56;
+                case Instruction.Opcodes.IsStruct:
+                    return 57;
+                case Instruction.Opcodes.IsStructInstance:
+                    return 58;
                 default:
                     Utils.Panic();
                     return 0;

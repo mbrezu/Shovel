@@ -219,52 +219,62 @@ namespace Shovel.Compiler
 			FinishInstruction (useVal, more);
 		}
 
-		static Tuple<string, Instruction.Opcodes>[] compilableAsInstructions =
-        new Tuple<string, Instruction.Opcodes>[] {
-            Tuple.Create ("/", Instruction.Opcodes.Div),
-            Tuple.Create ("%", Instruction.Opcodes.Mod),
-            Tuple.Create ("!=", Instruction.Opcodes.Neq),
-            Tuple.Create ("<", Instruction.Opcodes.Lt),
-            Tuple.Create ("+", Instruction.Opcodes.Add),
-            Tuple.Create ("svm_gref", Instruction.Opcodes.Gref),
-			Tuple.Create ("==", Instruction.Opcodes.Eq),
-            Tuple.Create ("push", Instruction.Opcodes.Apush),
-            Tuple.Create ("svm_gref_dot", Instruction.Opcodes.GrefDot),
-            Tuple.Create ("-", Instruction.Opcodes.Sub),
-            Tuple.Create ("unary_minus", Instruction.Opcodes.Neg),
-            Tuple.Create ("*", Instruction.Opcodes.Mul),
-            Tuple.Create ("<<", Instruction.Opcodes.Shl),
-            Tuple.Create (">>", Instruction.Opcodes.Shr),
-            Tuple.Create ("pow", Instruction.Opcodes.Pow),
-            Tuple.Create ("floor", Instruction.Opcodes.Floor),
-            Tuple.Create ("<=", Instruction.Opcodes.Lte),
-            Tuple.Create (">", Instruction.Opcodes.Gt),
-            Tuple.Create (">=", Instruction.Opcodes.Gte),
-            Tuple.Create ("!", Instruction.Opcodes.Not),
-            Tuple.Create ("&", Instruction.Opcodes.And),
-            Tuple.Create ("|", Instruction.Opcodes.Ior),
-            Tuple.Create ("^", Instruction.Opcodes.Xor),
-            Tuple.Create ("keys", Instruction.Opcodes.Keys),
-            Tuple.Create ("hasKey", Instruction.Opcodes.HasKey),
-            Tuple.Create ("pop", Instruction.Opcodes.Apop),
-            Tuple.Create ("svm_set_indexed", Instruction.Opcodes.SetIndexed),
-            Tuple.Create ("length", Instruction.Opcodes.Len),
-            Tuple.Create ("isString", Instruction.Opcodes.IsString),
-            Tuple.Create ("isHash", Instruction.Opcodes.IsHash),
-            Tuple.Create ("isBool", Instruction.Opcodes.IsBool),
-            Tuple.Create ("isArray", Instruction.Opcodes.IsArray),
-            Tuple.Create ("isNumber", Instruction.Opcodes.IsNumber),
-            Tuple.Create ("isInteger", Instruction.Opcodes.IsInteger),
-            Tuple.Create ("isCallable", Instruction.Opcodes.IsCallable),
-            Tuple.Create ("delete", Instruction.Opcodes.Delete),
+		static Tuple<string, Instruction.Opcodes, int>[] compilableAsInstructions =
+        new Tuple<string, Instruction.Opcodes, int>[] {
+            Tuple.Create ("/", Instruction.Opcodes.Div, 2),
+            Tuple.Create ("%", Instruction.Opcodes.Mod, 2),
+            Tuple.Create ("!=", Instruction.Opcodes.Neq, 2),
+            Tuple.Create ("<", Instruction.Opcodes.Lt, 2),
+            Tuple.Create ("+", Instruction.Opcodes.Add, 2),
+            Tuple.Create ("svm_gref", Instruction.Opcodes.Gref, 2),
+			Tuple.Create ("==", Instruction.Opcodes.Eq, 2),
+            Tuple.Create ("push", Instruction.Opcodes.Apush, 2),
+            Tuple.Create ("svm_gref_dot", Instruction.Opcodes.GrefDot, 2),
+            Tuple.Create ("-", Instruction.Opcodes.Sub, 2),
+            Tuple.Create ("unary_minus", Instruction.Opcodes.Neg, 1),
+            Tuple.Create ("*", Instruction.Opcodes.Mul, 2),
+            Tuple.Create ("<<", Instruction.Opcodes.Shl, 2),
+            Tuple.Create (">>", Instruction.Opcodes.Shr, 2),
+            Tuple.Create ("pow", Instruction.Opcodes.Pow, 2),
+            Tuple.Create ("floor", Instruction.Opcodes.Floor, 1),
+            Tuple.Create ("<=", Instruction.Opcodes.Lte, 2),
+            Tuple.Create (">", Instruction.Opcodes.Gt, 2),
+            Tuple.Create (">=", Instruction.Opcodes.Gte, 2),
+            Tuple.Create ("!", Instruction.Opcodes.Not, 1),
+            Tuple.Create ("&", Instruction.Opcodes.And, 2),
+            Tuple.Create ("|", Instruction.Opcodes.Ior, 2),
+            Tuple.Create ("^", Instruction.Opcodes.Xor, 2),
+            Tuple.Create ("keys", Instruction.Opcodes.Keys, 1),
+            Tuple.Create ("hasKey", Instruction.Opcodes.HasKey, 2),
+            Tuple.Create ("pop", Instruction.Opcodes.Apop, 1),
+            Tuple.Create ("svm_set_indexed", Instruction.Opcodes.SetIndexed, 3),
+            Tuple.Create ("length", Instruction.Opcodes.Len, 1),
+            Tuple.Create ("isString", Instruction.Opcodes.IsString, 1),
+            Tuple.Create ("isHash", Instruction.Opcodes.IsHash, 1),
+            Tuple.Create ("isBool", Instruction.Opcodes.IsBool, 1),
+            Tuple.Create ("isArray", Instruction.Opcodes.IsArray, 1),
+            Tuple.Create ("isNumber", Instruction.Opcodes.IsNumber, 1),
+            Tuple.Create ("isInteger", Instruction.Opcodes.IsInteger, 1),
+            Tuple.Create ("isCallable", Instruction.Opcodes.IsCallable, 1),
+            Tuple.Create ("delete", Instruction.Opcodes.Delete, 2),
+            Tuple.Create ("isStruct", Instruction.Opcodes.IsStruct, 1),
+            Tuple.Create ("isStructInstance", Instruction.Opcodes.IsStructInstance, 2),
         };
 
-		bool CompiledAsInstruction (ParseTree funAst, bool useVal, bool more)
+		bool CompiledAsInstruction (ParseTree funAst, int actualArity, bool useVal, bool more)
 		{
 			foreach (var pair in compilableAsInstructions) {
 				if (pair.Item1 == funAst.Content) {
-					this.Gen (pair.Item2, startPos: funAst.StartPos, endPos: funAst.EndPos);
-					this.FinishInstruction (useVal, more);
+                    if (actualArity == pair.Item3) {
+    					this.Gen (pair.Item2, startPos: funAst.StartPos, endPos: funAst.EndPos);
+    					this.FinishInstruction (useVal, more);
+                    } else {
+                        var message = String.Format (
+                            "Primitive requires {0} arguments, but was called with {1} arguments.",
+                            pair.Item3,
+                            actualArity);
+                        this.RaiseError (funAst.StartPos, funAst.EndPos, message);
+                    }
 					return true;
 				}
 			}
@@ -279,7 +289,8 @@ namespace Shovel.Compiler
 			var funAst = ast.Children.First ();
 			var compiledAsInstruction = false;
 			if (funAst.Label == ParseTree.Labels.Prim0) {
-				compiledAsInstruction = this.CompiledAsInstruction (funAst, useVal, more);
+				compiledAsInstruction = 
+                    this.CompiledAsInstruction (funAst, ast.Children.Count() - 1, useVal, more);
 			}
 			if (!compiledAsInstruction) {
 				this.CompileAst (funAst, env, true, true);

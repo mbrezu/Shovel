@@ -167,6 +167,39 @@ stringRepresentation(test)
 ", Shovel.Value.Kinds.String, "make(defstruct(array('x', 'y', 'loop')), 1, 2, [...loop...])");
         }
 
+        [Test]
+        public void IsStruct()
+        {
+            Utils.TestValue (@"
+var point = defstruct(array('x', 'y'))
+isStruct(point)
+", Shovel.Value.Kinds.Bool, true);
+            Utils.TestValue ("isStruct(10)", Shovel.Value.Kinds.Bool, false);
+        }
+
+        [Test]
+        public void IsStructInstance()
+        {
+            Utils.TestValue (@"
+var point = defstruct(array('x', 'y'))
+isStructInstance(make(point, 1, 2), point)
+", Shovel.Value.Kinds.Bool, true);
+            Utils.TestValue (@"
+var point = defstruct(array('x', 'y'))
+isStructInstance(10, point)
+", Shovel.Value.Kinds.Bool, false);
+            Utils.TestValue (@"
+var point = defstruct(array('x', 'y'))
+var rectangle = defstruct(array('left', 'top', 'right', 'bottom'))
+isStructInstance(make(point, 10, 20), rectangle)
+", Shovel.Value.Kinds.Bool, false);
+            Utils.TestValue (@"
+var point = defstruct(array('x', 'y'))
+var rectangle = defstruct(array('left', 'top', 'right', 'bottom'))
+isStructInstance(make(point, 10, 20), point) && isStructInstance(make(rectangle), rectangle)
+", Shovel.Value.Kinds.Bool, true);
+        }
+
     }
 }
 

@@ -6,8 +6,6 @@
 
  * document `GetStructInstanceValue`, `SetStructInstanceValue`,
    `ListStructInstanceKeys` in Shovel.Api (maybe write some examples);
- * add implementation for required primitives `isStruct` and
-   `isStructInstance` (documented below);
  * optimize structs.   
 
 It turns out that using hashes everywhere is slow. By doubling the

@@ -144,10 +144,7 @@ main()
         public static void SimpleTest ()
         {
             var sources = Shovel.Api.MakeSources ("test.sho", @"
-var point = defstruct(array('x', 'y', 'loop'))
-var test = make(point, 1, 2)
-test.loop = test
-stringRepresentation(test)
+var a = hash('a', 1, 'b', 2) delete(a, 'a') length(keys(a))
 "
                                                   );
             try {

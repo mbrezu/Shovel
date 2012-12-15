@@ -1101,6 +1101,22 @@ namespace Shovel.Vm
             obj.Kind = Value.Kinds.Bool;
         }
 
+        internal static void IsStruct (VmApi api, ref Value obj)
+        {
+            obj.BoolValue = obj.Kind == Value.Kinds.Struct;
+            obj.Kind = Value.Kinds.Bool;
+        }
+
+        internal static void IsStructInstance (VmApi api, ref Value obj, ref Value str)
+        {
+            if (str.Kind != Value.Kinds.Struct) {
+                api.RaiseShovelError ("Second argument must be a struct.");
+            }
+            var result = obj.Kind == Value.Kinds.StructInstance && obj.StructInstanceValue.Struct == str.StructValue;
+            obj.BoolValue = result;
+            obj.Kind = Value.Kinds.Bool;
+        }
+
         internal static Value ShovelString (VmApi api, Value obj)
         {
             var result = ShovelStringImpl (api, obj);
