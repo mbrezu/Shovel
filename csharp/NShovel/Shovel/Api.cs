@@ -270,6 +270,14 @@ namespace Shovel
             return false;
         }
 
+        public static string[] ListStructInstanceKeys(StructInstance str) 
+        {
+            var count = str.Struct.Fields.Length;
+            var result = new string[count];
+            Array.Copy(str.Struct.Fields, result, count);
+            return result;
+        }
+
     }
 }
 

@@ -4,9 +4,8 @@
 
 ## TODO:
 
- * document `GetStructInstanceValue`, `SetStructInstanceValue` in
-   Shovel.Api (maybe write some examples);
- * add a similar function to list the keys in a struct;
+ * document `GetStructInstanceValue`, `SetStructInstanceValue`,
+   `ListStructInstanceKeys` in Shovel.Api (maybe write some examples);
  * add implementation for required primitives `isStruct` and
    `isStructInstance` (documented below);
  * optimize structs.   
