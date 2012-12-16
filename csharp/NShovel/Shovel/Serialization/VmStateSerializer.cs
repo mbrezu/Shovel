@@ -80,22 +80,24 @@ namespace Shovel.Serialization
 
         internal void WriteToStream (Stream s)
         {
-            Utils.WriteBytes (s, BitConverter.GetBytes ((int)this.array.Count));
+            var bs = new BinaryWriter (s);
+            bs.Write ((int)this.array.Count);
             foreach (var obj in this.array) {
                 if (obj is string) {
-                    WriteString (s, (string)obj);
+                    WriteString (bs, (string)obj);
                 } else if (obj is long) {
-                    WriteLong (s, (long)obj);
+                    WriteLong (bs, (long)obj);
                 } else if (obj is int) {
-                    WriteLong (s, (int)obj);
+                    WriteLong (bs, (int)obj);
                 } else if (obj is Double) {
-                    WriteDouble (s, (double)obj);
+                    WriteDouble (bs, (double)obj);
                 } else if (obj is Composite) {
-                    WriteComposite (s, (Composite)obj);
+                    WriteComposite (bs, (Composite)obj);
                 } else {
                     Shovel.Utils.Panic ();
                 }
             }
+            bs.Flush ();
         }
 
         internal int Serialize (object obj)
@@ -136,8 +138,9 @@ namespace Shovel.Serialization
             var length = Utils.ReadInt (s);
             var serArray = new object[length];
             var objects = new object[length];
+            var br = new BinaryReader(s);
             for (var i = 0; i < length; i++) {
-                serArray [i] = ReadValue (s);
+                serArray [i] = ReadValue (br);
             }
             Func<int, object> reader = null;
             reader = (index) => {
@@ -171,102 +174,95 @@ namespace Shovel.Serialization
 
         #region Private Helper Functions - Deserializer
 
-        object ReadShortString (Stream s)
+        object ReadShortString (BinaryReader br)
         {
-            var length = s.ReadByte ();
-            var bytes = new byte[length];
-            s.Read (bytes, 0, length);
-            return Encoding.UTF8.GetString (bytes);
+            var length = br.ReadByte ();
+            AdjustBigBuf(length);
+            br.Read (bigBuf, 0, length);
+            return Encoding.UTF8.GetString (bigBuf, 0, length);
         }
 
-        object ReadString (Stream s)
+        object ReadString (BinaryReader br)
         {
-            var length = ReadInteger (s);
-            var bytes = new byte[length];
-            s.Read (bytes, 0, length);
-            return Encoding.UTF8.GetString (bytes);
+            var length = ReadInteger (br);
+            AdjustBigBuf(length);
+            br.Read (bigBuf, 0, length);
+            return Encoding.UTF8.GetString (bigBuf, 0, length);
         }
 
-        byte[] minibuf2 = new byte[2];
-        byte[] minibuf4 = new byte[4];
-        byte[] minibuf8 = new byte[8];
         byte[] bigBuf = new byte[1024];
 
-        short ReadShortInteger (Stream s)
+        short ReadShortInteger (BinaryReader br)
         {
-            s.Read (minibuf2, 0, 2);
-            return BitConverter.ToInt16 (minibuf2, 0);
+            return br.ReadInt16();
         }
 
-        int ReadInteger (Stream s)
+        int ReadInteger (BinaryReader br)
         {
-            s.Read (minibuf4, 0, 4);
-            return BitConverter.ToInt32 (minibuf4, 0);
+            return br.ReadInt32();
         }
 
-        long ReadLongInteger (Stream s)
+        long ReadLongInteger (BinaryReader br)
         {
-            s.Read (minibuf8, 0, 8);
-            return BitConverter.ToInt64 (minibuf8, 0);
+            return br.ReadInt64();
         }
 
-        double ReadDouble (Stream s)
+        double ReadDouble (BinaryReader br)
         {
-            s.Read (minibuf8, 0, 8);
-            return BitConverter.ToDouble (minibuf8, 0);
+            return br.ReadDouble();
         }
 
-        void AdjustBigBuf(int lengthInBytes) 
+        void AdjustBigBuf (int lengthInBytes)
         {
             if (bigBuf.Length < lengthInBytes) {
                 bigBuf = new byte[lengthInBytes];
             }
         }
 
-        Composite ReadCompositeImpl (Stream s, int length)
+        Composite ReadCompositeImpl (BinaryReader br, int length)
         {
             var result = new Composite ();
-            result.Kind = (ObjectTypes)s.ReadByte ();
+            result.Kind = (ObjectTypes)br.ReadByte ();
             var lengthInBytes = 4 * length;
-            AdjustBigBuf(lengthInBytes);
-            s.Read (bigBuf, 0, lengthInBytes);
+            AdjustBigBuf (lengthInBytes);
+            br.Read (bigBuf, 0, lengthInBytes);
             result.Elements = new int[length];
-            Buffer.BlockCopy(bigBuf, 0, result.Elements, 0, lengthInBytes);
+            Buffer.BlockCopy (bigBuf, 0, result.Elements, 0, lengthInBytes);
             return result;
         }
 
-        Composite ReadShortComposite (Stream s)
+        Composite ReadShortComposite (BinaryReader br)
         {
-            var length = s.ReadByte ();
-            return ReadCompositeImpl (s, length);
+            var length = br.ReadByte ();
+            return ReadCompositeImpl (br, length);
         }
 
-        Composite ReadComposite (Stream s)
+        Composite ReadComposite (BinaryReader br)
         {
-            var length = ReadInteger (s);
-            return ReadCompositeImpl (s, length);
+            var length = ReadInteger (br);
+            return ReadCompositeImpl (br, length);
         }
 
-        object ReadValue (Stream s)
+        object ReadValue (BinaryReader br)
         {
-            var type = (Types)s.ReadByte ();
+            var type = (Types)br.ReadByte ();
             switch (type) {
             case Types.ShortString:
-                return ReadShortString (s);
+                return ReadShortString (br);
             case Types.String:
-                return ReadString (s);
+                return ReadString (br);
             case Types.ShortInteger:
-                return (long)ReadShortInteger (s);
+                return (long)ReadShortInteger (br);
             case Types.Integer:
-                return (long)ReadInteger (s);
+                return (long)ReadInteger (br);
             case Types.LongInteger:
-                return (long)ReadLongInteger (s);
+                return (long)ReadLongInteger (br);
             case Types.Double:
-                return ReadDouble (s);
+                return ReadDouble (br);
             case Types.ShortComposite:
-                return ReadShortComposite (s);
+                return ReadShortComposite (br);
             case Types.Composite:
-                return ReadComposite (s);
+                return ReadComposite (br);
             default:
                 Shovel.Utils.Panic ();
                 throw new InvalidOperationException ();
@@ -422,10 +418,10 @@ namespace Shovel.Serialization
 
         Struct RebuildStruct (object[] objects, int index, Composite composite, Func<int, object> reader)
         {
-            var result = new Struct();
-            objects[index] = result;
+            var result = new Struct ();
+            objects [index] = result;
 
-            result.Fields = (string[])reader(composite.Elements[0]);
+            result.Fields = (string[])reader (composite.Elements [0]);
 
             return result;
         }
@@ -433,11 +429,11 @@ namespace Shovel.Serialization
         StructInstance RebuildStructInstance (
             object[] objects, int index, Composite composite, Func<int, object> reader)
         {
-            var result = new StructInstance();
-            objects[index] = result;
+            var result = new StructInstance ();
+            objects [index] = result;
 
-            result.Struct = (Struct)reader(composite.Elements[0]);
-            result.Values = (Value[])reader(composite.Elements[1]);
+            result.Struct = (Struct)reader (composite.Elements [0]);
+            result.Values = (Value[])reader (composite.Elements [1]);
 
             return result;
         }
@@ -702,54 +698,54 @@ namespace Shovel.Serialization
             }
         }
 
-        void WriteString (Stream s, string str)
+        void WriteString (BinaryWriter bs, string str)
         {
             byte[] bytes = Encoding.UTF8.GetBytes (str);
             if (bytes.Length <= 255) {
-                s.WriteByte ((byte)Types.ShortString);
-                s.WriteByte ((byte)bytes.Length);
+                bs.Write ((byte)Types.ShortString);
+                bs.Write ((byte)bytes.Length);
             } else {
-                s.WriteByte ((byte)Types.String);
-                Utils.WriteBytes (s, BitConverter.GetBytes (bytes.Length));
+                bs.Write ((byte)Types.String);
+                bs.Write (bytes.Length);
             }
-            Utils.WriteBytes (s, bytes);
+            bs.Write (bytes);
         }
 
-        void WriteLong (Stream s, long li)
+        void WriteLong (BinaryWriter bs, long li)
         {
             if (li <= Int16.MaxValue && li >= Int16.MinValue) {
-                s.WriteByte ((byte)Types.ShortInteger);
-                Utils.WriteBytes (s, BitConverter.GetBytes ((ushort)li));
+                bs.Write ((byte)Types.ShortInteger);
+                bs.Write ((ushort)li);
             } else if (li <= Int32.MaxValue && li >= Int32.MinValue) {
-                s.WriteByte ((byte)Types.Integer);
-                Utils.WriteBytes (s, BitConverter.GetBytes ((int)li));
+                bs.Write ((byte)Types.Integer);
+                bs.Write ((int)li);
             } else {
-                s.WriteByte ((byte)Types.LongInteger);
-                Utils.WriteBytes (s, BitConverter.GetBytes (li));
+                bs.Write ((byte)Types.LongInteger);
+                bs.Write (li);
             }
         }
 
-        void WriteDouble (Stream s, double d)
+        void WriteDouble (BinaryWriter bs, double d)
         {
-            s.WriteByte ((byte)Types.Double);
-            Utils.WriteBytes (s, BitConverter.GetBytes (d));
+            bs.Write ((byte)Types.Double);
+            bs.Write (d);
         }
 
-        void WriteComposite (Stream s, Composite composite)
+        void WriteComposite (BinaryWriter bs, Composite composite)
         {
             int length = composite.Elements.Length;
             if (length < 255) {
-                s.WriteByte ((byte)Types.ShortComposite);
-                s.WriteByte ((byte)length);
+                bs.Write ((byte)Types.ShortComposite);
+                bs.Write ((byte)length);
             } else {
-                s.WriteByte ((byte)Types.Composite);
-                Utils.WriteBytes (s, BitConverter.GetBytes (length));
+                bs.Write ((byte)Types.Composite);
+                bs.Write (length);
             }
-            s.WriteByte ((byte)composite.Kind);
+            bs.Write ((byte)composite.Kind);
             var lengthInBytes = 4 * composite.Elements.Length;
-            AdjustBigBuf(lengthInBytes);
-            Buffer.BlockCopy(composite.Elements, 0, bigBuf, 0, lengthInBytes);
-            s.Write (bigBuf, 0, lengthInBytes);
+            AdjustBigBuf (lengthInBytes);
+            Buffer.BlockCopy (composite.Elements, 0, bigBuf, 0, lengthInBytes);
+            bs.Write (bigBuf, 0, lengthInBytes);
         }
         #endregion
 
