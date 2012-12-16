@@ -190,6 +190,7 @@ namespace Shovel.Serialization
         byte[] minibuf2 = new byte[2];
         byte[] minibuf4 = new byte[4];
         byte[] minibuf8 = new byte[8];
+        byte[] bigBuf = new byte[1024];
 
         short ReadShortInteger (Stream s)
         {
@@ -215,17 +216,22 @@ namespace Shovel.Serialization
             return BitConverter.ToDouble (minibuf8, 0);
         }
 
+        void AdjustBigBuf(int lengthInBytes) 
+        {
+            if (bigBuf.Length < lengthInBytes) {
+                bigBuf = new byte[lengthInBytes];
+            }
+        }
+
         Composite ReadCompositeImpl (Stream s, int length)
         {
             var result = new Composite ();
             result.Kind = (ObjectTypes)s.ReadByte ();
-            // SLOW: I should change this to read directly into an
-            // array of bytes and copy it over into an array of ints.
-            // Not sure that is possible :-)
+            var lengthInBytes = 4 * length;
+            AdjustBigBuf(lengthInBytes);
+            s.Read (bigBuf, 0, lengthInBytes);
             result.Elements = new int[length];
-            for (var i = 0; i < length; i++) {
-                result.Elements [i] = ReadInteger (s);
-            }
+            Buffer.BlockCopy(bigBuf, 0, result.Elements, 0, lengthInBytes);
             return result;
         }
 
@@ -740,9 +746,10 @@ namespace Shovel.Serialization
                 Utils.WriteBytes (s, BitConverter.GetBytes (length));
             }
             s.WriteByte ((byte)composite.Kind);
-            for (var i = 0; i < composite.Elements.Length; i++) {
-                Utils.WriteBytes (s, BitConverter.GetBytes (composite.Elements [i]));
-            }
+            var lengthInBytes = 4 * composite.Elements.Length;
+            AdjustBigBuf(lengthInBytes);
+            Buffer.BlockCopy(composite.Elements, 0, bigBuf, 0, lengthInBytes);
+            s.Write (bigBuf, 0, lengthInBytes);
         }
         #endregion
 
