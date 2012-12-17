@@ -1388,6 +1388,10 @@ namespace Shovel.Vm
                     return 1 + CountCellsReturnAddress (sv.ReturnAddressValue, visited);
                 case Value.Kinds.NamedBlock:
                     return 1 + CountCellsNamedBlock (sv.NamedBlockValue, visited);
+                case Value.Kinds.Struct:
+                    return 1 + CountCellsStringArray(sv.StructValue.Fields, visited);
+                case Value.Kinds.StructInstance:
+                    return 1 + CountCellsSvArray(sv.StructInstanceValue.Values, visited);
                 default:
                     Utils.Panic ();
                     return 0;

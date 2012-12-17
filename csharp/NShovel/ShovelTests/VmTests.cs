@@ -222,39 +222,6 @@ stdlib.repeat(3, fn () {
             Assert.AreEqual ("3", log [2]);
         }
 
-        static IEnumerable<Shovel.Callable> GetPrintAndStopUdps (List<string> log, bool retryStop)
-        {
-            Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) => {
-                if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
-                    log.Add (args [0].StringValue);
-                } else {
-                    throw new InvalidOperationException ();
-                }
-            };
-            Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> stop;
-            if (retryStop) {
-                bool firstCallOfStop = true;
-                stop = (api, args, result) => {
-                    if (firstCallOfStop) {
-                        result.After = Shovel.UdpResult.AfterCall.NapAndRetryOnWakeUp;
-                        firstCallOfStop = false;
-                    } else {
-                        result.After = Shovel.UdpResult.AfterCall.Continue;
-                        result.Result = Shovel.Value.Make ("world");
-                    }
-                };
-
-            } else {
-                stop = (api, args, result) => {
-                    result.After = Shovel.UdpResult.AfterCall.Nap;
-                };
-            }
-            return new Shovel.Callable[] {
-                Shovel.Callable.MakeUdp ("print", print, 1),
-                Shovel.Callable.MakeUdp ("stop", stop, 0),
-            };
-        }
-
         [Test]
         public void StopAndWakeUp ()
         {
@@ -267,7 +234,7 @@ var b = ""world""
 "
             );
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps (log, false);
+            var userPrimitives = Utils.GetPrintAndStopUdps (log, false);
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
             Shovel.Api.WakeUpVm (vm);
             Shovel.Api.RunVm (vm, sources, userPrimitives);
@@ -286,7 +253,7 @@ var b = @stop()
 "
             );
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps (log, true);
+            var userPrimitives = Utils.GetPrintAndStopUdps (log, true);
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
             Shovel.Api.WakeUpVm (vm);
             Shovel.Api.RunVm (vm, sources, userPrimitives);
@@ -305,7 +272,7 @@ var b = @stop()
 "
             );
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps (log, true);
+            var userPrimitives = Utils.GetPrintAndStopUdps (log, true);
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
             var state = Shovel.Api.SerializeVmState (vm);
             Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
@@ -325,7 +292,7 @@ var b = ""world""
 "
             );
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps (log, false);
+            var userPrimitives = Utils.GetPrintAndStopUdps (log, false);
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
             var state = Shovel.Api.SerializeVmState (vm);
             Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
@@ -355,7 +322,7 @@ c2()
             );
             List<string> log = new List<string> ();
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps (log, false);
+            var userPrimitives = Utils.GetPrintAndStopUdps (log, false);
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
             var state = Shovel.Api.SerializeVmState (vm);
             Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
@@ -389,7 +356,7 @@ main()
             );
             List<string> log = new List<string> ();
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps (log, false);
+            var userPrimitives = Utils.GetPrintAndStopUdps (log, false);
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
             var state = Shovel.Api.SerializeVmState (vm);
             Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
@@ -415,7 +382,7 @@ main()
             );
             List<string> log = new List<string> ();
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps (log, false);
+            var userPrimitives = Utils.GetPrintAndStopUdps (log, false);
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
             var state = Shovel.Api.SerializeVmState (vm);
             Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
@@ -442,7 +409,7 @@ main()
             );
             List<string> log = new List<string> ();
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps (log, false);
+            var userPrimitives = Utils.GetPrintAndStopUdps (log, false);
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
             var state = Shovel.Api.SerializeVmState (vm);
             Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
@@ -466,7 +433,7 @@ main()
             );
             List<string> log = new List<string> ();
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps (log, false);
+            var userPrimitives = Utils.GetPrintAndStopUdps (log, false);
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
             var state = Shovel.Api.SerializeVmState (vm);
             Shovel.Api.RunVm (bytecode, sources, userPrimitives, state);
@@ -500,7 +467,7 @@ main()
             );
             List<string> log = new List<string> ();
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps (log, false);
+            var userPrimitives = Utils.GetPrintAndStopUdps (log, false);
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
             var state = Shovel.Api.SerializeVmState (vm);
             sources = Shovel.Api.MakeSources ("test.sho", @"'hello'");
@@ -609,7 +576,7 @@ c1()
             );
             List<string> log = new List<string> ();
             var bytecode = Shovel.Api.GetBytecode (sources);
-            var userPrimitives = GetPrintAndStopUdps (log, false);
+            var userPrimitives = Utils.GetPrintAndStopUdps (log, false);
             var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
             Assert.IsNotNull (Shovel.Api.VmUserDefinedPrimitiveError (vm));
         }

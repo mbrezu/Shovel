@@ -106,6 +106,38 @@ fib(10)
 			}
 		}
 
+        internal static IEnumerable<Shovel.Callable> GetPrintAndStopUdps (List<string> log, bool retryStop)
+        {
+            Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) => {
+                if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
+                    log.Add (args [0].StringValue);
+                } else {
+                    throw new InvalidOperationException ();
+                }
+            };
+            Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> stop;
+            if (retryStop) {
+                bool firstCallOfStop = true;
+                stop = (api, args, result) => {
+                    if (firstCallOfStop) {
+                        result.After = Shovel.UdpResult.AfterCall.NapAndRetryOnWakeUp;
+                        firstCallOfStop = false;
+                    } else {
+                        result.After = Shovel.UdpResult.AfterCall.Continue;
+                        result.Result = Shovel.Value.Make ("world");
+                    }
+                };
+
+            } else {
+                stop = (api, args, result) => {
+                    result.After = Shovel.UdpResult.AfterCall.Nap;
+                };
+            }
+            return new Shovel.Callable[] {
+                Shovel.Callable.MakeUdp ("print", print, 1),
+                Shovel.Callable.MakeUdp ("stop", stop, 0),
+            };
+        }
 
 
 	}

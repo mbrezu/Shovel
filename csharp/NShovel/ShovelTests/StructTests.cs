@@ -23,6 +23,7 @@ using System;
 using NUnit.Framework;
 using System.Text;
 using Shovel.Exceptions;
+using System.Collections.Generic;
 
 namespace ShovelTests
 {
@@ -142,14 +143,14 @@ p1.y
 var point = defstruct(array('x', 'y'))
 string(point)
 ", Shovel.Value.Kinds.String, "[...struct...]");
-            Utils.TestValue(@"
+            Utils.TestValue (@"
 var point = defstruct(array('x', 'y'))
 stringRepresentation(point)
 ", Shovel.Value.Kinds.String, "defstruct(array('x', 'y'))");
         }
 
         [Test]
-        public void PrintStructInstances()
+        public void PrintStructInstances ()
         {
             Utils.TestValue (@"
 var point = defstruct(array('x', 'y'))
@@ -168,7 +169,7 @@ stringRepresentation(test)
         }
 
         [Test]
-        public void IsStruct()
+        public void IsStruct ()
         {
             Utils.TestValue (@"
 var point = defstruct(array('x', 'y'))
@@ -178,7 +179,7 @@ isStruct(point)
         }
 
         [Test]
-        public void IsStructInstance()
+        public void IsStructInstance ()
         {
             Utils.TestValue (@"
 var point = defstruct(array('x', 'y'))
@@ -201,7 +202,7 @@ isStructInstance(make(point, 10, 20), point) && isStructInstance(make(rectangle)
         }
 
         [Test]
-        public void StructOptimizations()
+        public void StructOptimizations ()
         {
             Utils.TestValue (@"
 var point = defstruct(array('x', 'y'))
@@ -238,6 +239,22 @@ var pt2 = make(point2, 1, 2)
 setX(pt2, 3)
 pt2.y
 ", Shovel.Value.Kinds.Integer, (long)1);
+        }
+
+        [Test]
+        public void CountingStructs ()
+        {
+                        var sources = Shovel.Api.MakeSources ("test.sho", @"
+var point = defstruct(array('x', 'y'))
+var pt = make(point, 1, 2)
+@stop()
+"
+            );
+            List<string> log = new List<string> ();
+            var bytecode = Shovel.Api.GetBytecode (sources);
+            var userPrimitives = Utils.GetPrintAndStopUdps (log, false);
+            var vm = Shovel.Api.RunVm (bytecode, sources, userPrimitives);
+            Assert.AreEqual(29, Shovel.Api.VmUsedCells(vm));
         }
 
     }
