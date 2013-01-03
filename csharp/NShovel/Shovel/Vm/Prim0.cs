@@ -424,7 +424,7 @@ namespace Shovel.Vm
             }
         }
 
-        static void LessThanError (VmApi api)
+        static void RelationalError (VmApi api)
         {
             api.RaiseShovelError (
                 "Arguments must have the same type (numbers or strings).");
@@ -450,14 +450,14 @@ namespace Shovel.Vm
                 } else if (t2.Kind == Value.Kinds.Double) {
                     t1.BoolValue = t1.IntegerValue < t2.DoubleValue;
                 } else {
-                    LessThanError (api);
+                    RelationalError (api);
                 }
                 break;
             case Value.Kinds.String:
                 if (t2.Kind == Value.Kinds.String) {
                     t1.BoolValue = CompareStrings (t1.StringValue, t2.StringValue) == -1;
                 } else {
-                    LessThanError (api);
+                    RelationalError (api);
                 }
                 break;
             case Value.Kinds.Double:
@@ -466,8 +466,11 @@ namespace Shovel.Vm
                 } else if (t2.Kind == Value.Kinds.Integer) {
                     t1.BoolValue = t1.DoubleValue < t2.IntegerValue;
                 } else {
-                    LessThanError (api);
+                    RelationalError (api);
                 }
+                break;
+            default:
+                RelationalError(api);
                 break;
             }
             t1.Kind = Value.Kinds.Bool;
@@ -482,7 +485,7 @@ namespace Shovel.Vm
                 } else if (t2.Kind == Value.Kinds.Double) {
                     t1.BoolValue = t1.IntegerValue <= t2.DoubleValue;
                 } else {
-                    LessThanError (api);
+                    RelationalError (api);
                 }
                 break;
             case Value.Kinds.String:
@@ -490,7 +493,7 @@ namespace Shovel.Vm
                     var comparison = CompareStrings (t1.StringValue, t2.StringValue);
                     t1.BoolValue = comparison == -1 || comparison == 0;
                 } else {
-                    LessThanError (api);
+                    RelationalError (api);
                 }
                 break;
             case Value.Kinds.Double:
@@ -499,8 +502,11 @@ namespace Shovel.Vm
                 } else if (t2.Kind == Value.Kinds.Integer) {
                     t1.BoolValue = t1.DoubleValue <= t2.IntegerValue;
                 } else {
-                    LessThanError (api);
+                    RelationalError (api);
                 }
+                break;
+            default:
+                RelationalError(api);
                 break;
             }
             t1.Kind = Value.Kinds.Bool;
@@ -515,7 +521,7 @@ namespace Shovel.Vm
                 } else if (t2.Kind == Value.Kinds.Double) {
                     t1.BoolValue = t1.IntegerValue > t2.DoubleValue;
                 } else {
-                    LessThanError (api);
+                    RelationalError (api);
                 }
                 break;
             case Value.Kinds.String:
@@ -523,7 +529,7 @@ namespace Shovel.Vm
                     var comparison = CompareStrings (t1.StringValue, t2.StringValue);
                     t1.BoolValue = comparison == 1;
                 } else {
-                    LessThanError (api);
+                    RelationalError (api);
                 }
                 break;
             case Value.Kinds.Double:
@@ -532,8 +538,11 @@ namespace Shovel.Vm
                 } else if (t2.Kind == Value.Kinds.Integer) {
                     t1.BoolValue = t1.DoubleValue > t2.IntegerValue;
                 } else {
-                    LessThanError (api);
+                    RelationalError (api);
                 }
+                break;
+            default:
+                RelationalError(api);
                 break;
             }
             t1.Kind = Value.Kinds.Bool;
@@ -548,7 +557,7 @@ namespace Shovel.Vm
                 } else if (t2.Kind == Value.Kinds.Double) {
                     t1.BoolValue = t1.IntegerValue >= t2.DoubleValue;
                 } else {
-                    LessThanError (api);
+                    RelationalError (api);
                 }
                 break;
             case Value.Kinds.String:
@@ -556,7 +565,7 @@ namespace Shovel.Vm
                     var comparison = CompareStrings (t1.StringValue, t2.StringValue);
                     t1.BoolValue = comparison == 1 || comparison == 0;
                 } else {
-                    LessThanError (api);
+                    RelationalError (api);
                 }
                 break;
             case Value.Kinds.Double:
@@ -565,8 +574,11 @@ namespace Shovel.Vm
                 } else if (t2.Kind == Value.Kinds.Integer) {
                     t1.BoolValue = t1.DoubleValue >= t2.IntegerValue;
                 } else {
-                    LessThanError (api);
+                    RelationalError (api);
                 }
+                break;
+            default:
+                RelationalError(api);
                 break;
             }
             t1.Kind = Value.Kinds.Bool;
