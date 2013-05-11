@@ -48,21 +48,21 @@ language and a 2 VM implementations (Common Lisp and C#, with
 JavaScript and Java planned). The Shovel language is named
 ShovelScript.
 
-The [documentation trail for C#/.NET](shovel/blob/master/csharp/docs/index.md).
+The [documentation trail for C#/.NET](csharp/docs/index.md).
 
 The
-[documentation trail for Common Lisp](shovel/blob/master/common-lisp/docs/index.md).
+[documentation trail for Common Lisp](common-lisp/docs/index.md).
 
-The [specifications](shovel/blob/master/docs/specs.md).
+The [specifications](docs/specs.md).
 
-Some [notes for advanced scenarios](shovel/blob/master/docs/advanced.md).
+Some [notes for advanced scenarios](docs/advanced.md).
 
 ## License
 
 Shovel implementations and the associated documentation are
 distributed under the
 [2-clause](https://en.wikipedia.org/wiki/BSD_licenses#2-clause_license_.28.22Simplified_BSD_License.22_or_.22FreeBSD_License.22.29)
-BSD license (see the [license.txt](shovel/blob/master/license.txt)
+BSD license (see the [license.txt](license.txt)
 file).
 
 ## THANKS!
