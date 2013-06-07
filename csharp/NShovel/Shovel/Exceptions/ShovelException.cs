@@ -29,7 +29,13 @@ namespace Shovel.Exceptions
     {
         public string FileName { get; set; }
 
-        public new string Message { get; set; }
+        public override string Message { 
+            get {
+                return ShovelMessage;
+            }
+        }
+
+        public string ShovelMessage { get; set; }
 
         public bool AtEof { get; set; }
 

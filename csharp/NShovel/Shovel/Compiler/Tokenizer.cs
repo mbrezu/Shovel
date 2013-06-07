@@ -188,7 +188,7 @@ namespace Shovel.Compiler
                 var errorMessage = String.Format (
                     "{0}\n{1}\n{2}", message, lines [0], lines [1]);
                 throw new ShovelException () {
-                    Message = errorMessage,
+                    ShovelMessage = errorMessage,
                     FileName = pos.FileName,
                     Line = pos.Line,
                     Column = pos.Column
@@ -219,12 +219,12 @@ namespace Shovel.Compiler
             );  
             if (quoteCounter < 2) {
                 throw new ShovelException () {
-                    Message = "Expected an end quote, but reached the end of file.",
+                    ShovelMessage = "Expected an end quote, but reached the end of file.",
                     FileName = this.source.FileName,
                     AtEof = true
                 };
             }
-            result.Content = result.Content.Replace("\\\"", "\"").Replace("\\\'", "\'");
+            result.Content = result.Content.Replace ("\\\"", "\"").Replace ("\\\'", "\'");
             return result;
         }
         

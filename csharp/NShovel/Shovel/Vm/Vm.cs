@@ -116,7 +116,7 @@ namespace Shovel.Vm
             vm.untilNextNapTicksQuota = untilNextNapTicksQuota;
             if (state != null) {
 //                Utils.TimeIt ("Deserialize VM state", () => {
-                    vm.DeserializeState (state);
+                vm.DeserializeState (state);
 //                }
 //                );
             }
@@ -516,16 +516,16 @@ namespace Shovel.Vm
             vm.programCounter++;
         }
 
-        static void HandleIsStruct(Vm vm)
+        static void HandleIsStruct (Vm vm)
         {
             Prim0.IsStruct (vm.api, ref vm.stack.Storage [vm.stack.Count - 1]);
             vm.programCounter++;
         }
 
-        static void HandleIsStructInstance(Vm vm)
+        static void HandleIsStructInstance (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            Prim0.IsStructInstance(vm.api, ref vm.stack.Storage[start], ref vm.stack.Storage[start + 1]);
+            Prim0.IsStructInstance (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
             vm.stack.Pop ();
             vm.programCounter++;
         }
@@ -1389,9 +1389,9 @@ namespace Shovel.Vm
                 case Value.Kinds.NamedBlock:
                     return 1 + CountCellsNamedBlock (sv.NamedBlockValue, visited);
                 case Value.Kinds.Struct:
-                    return 1 + CountCellsStringArray(sv.StructValue.Fields, visited);
+                    return 1 + CountCellsStringArray (sv.StructValue.Fields, visited);
                 case Value.Kinds.StructInstance:
-                    return 1 + CountCellsSvArray(sv.StructInstanceValue.Values, visited);
+                    return 1 + CountCellsSvArray (sv.StructInstanceValue.Values, visited);
                 default:
                     Utils.Panic ();
                     return 0;
@@ -1483,8 +1483,8 @@ namespace Shovel.Vm
                 }
             }
             throw new ShovelException (){
-                    Message = sb.ToString(),
-                FileName = fileName,
+                    ShovelMessage = sb.ToString(),
+                    FileName = fileName,
                     Line = line,
                     Column = column
                 };
