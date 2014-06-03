@@ -229,6 +229,15 @@ with two keys, `stack` and `environment`, containing string
 representation of the stack trace and current environment at the
 moment the `context` expression is evaluated.
 
+## Comments
+ShovelScript supports single-line comments, indicated by double slash `//`
+
+```
+   @f(5) // Call f()
+```
+
+Multi-line comments are not supported.
+
 ## Types
 
 The following scalar types are available:
