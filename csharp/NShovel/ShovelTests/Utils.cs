@@ -25,86 +25,91 @@ using System.Collections.Generic;
 
 namespace ShovelTests
 {
-	public static class Utils
-	{
-		public static void ExpectException<T> (Action action, Action<T> check)
+    public static class Utils
+    {
+        public static string TrimCarriageReturn(this string str) 
+        {
+            return str.Replace("\r", "");
+        }
+        
+        public static void ExpectException<T> (Action action, Action<T> check)
             where T: class
-		{
-			try {
-				action ();
-				Assert.Fail ();
-			} catch (Exception ex) {
-				check (ex as T);
-			}
-		}
+        {
+            try {
+                action ();
+                Assert.Fail ();
+            } catch (Exception ex) {
+                check (ex as T);
+            }
+        }
 
-		public static string FactorialOfTenProgram ()
-		{
-			return @"
+        public static string FactorialOfTenProgram ()
+        {
+            return @"
 var fact = fn (n) {
     if n == 0
     1
     else n * fact(n - 1)
 }
 fact(10)";
-		}
+        }
 
-		public static string FibonacciOfTenProgram ()
-		{
-			return @"
+        public static string FibonacciOfTenProgram ()
+        {
+            return @"
 var fib = fn (n) {
-	if n == 0 || n == 1
+    if n == 0 || n == 1
     1
     else fib(n - 1) + fib(n - 2)
 }
 fib(10)
 ";
-		}
+        }
 
-		public static string QsortProgram ()
-		{
-			return "stdlib.sort(array(1, 3, 4, 5, 2), fn (a, b) a < b)";
-		}
+        public static string QsortProgram ()
+        {
+            return "stdlib.sort(array(1, 3, 4, 5, 2), fn (a, b) a < b)";
+        }
 
-		internal static void TestValue (
-			string source, Shovel.Value.Kinds expectedResultType, object expectedResult)
-		{
-			var sources = Shovel.Api.MakeSources ("test.sho", source);
-			var result = Shovel.Api.TestRunVm (sources);
-			Assert.IsTrue (result.Kind == expectedResultType);
-			switch (expectedResultType) {
-			case Shovel.Value.Kinds.Null:
+        internal static void TestValue (
+            string source, Shovel.Value.Kinds expectedResultType, object expectedResult)
+        {
+            var sources = Shovel.Api.MakeSources ("test.sho", source);
+            var result = Shovel.Api.TestRunVm (sources);
+            Assert.IsTrue (result.Kind == expectedResultType);
+            switch (expectedResultType) {
+            case Shovel.Value.Kinds.Null:
                 Assert.AreEqual (Shovel.Value.Kinds.Null, result.Kind);
-				break;
-			case Shovel.Value.Kinds.Integer:
-				Assert.AreEqual ((long)expectedResult, result.IntegerValue);
-				break;
-			case Shovel.Value.Kinds.String:
-				Assert.AreEqual ((string)expectedResult, result.StringValue);
-				break;
-			case Shovel.Value.Kinds.Double:
-				Assert.AreEqual ((double)expectedResult, result.DoubleValue);
-				break;
-			case Shovel.Value.Kinds.Bool:
-				Assert.AreEqual ((bool)expectedResult, result.BoolValue);
-				break;
-			case Shovel.Value.Kinds.Array:
-				Assert.Fail();
-				break;
-			case Shovel.Value.Kinds.Hash:
-				Assert.Fail();
-				break;
-			case Shovel.Value.Kinds.Callable:
-				Assert.Fail();
-				break;
-			case Shovel.Value.Kinds.ReturnAddress:
-				Assert.Fail();
-				break;
-			case Shovel.Value.Kinds.NamedBlock:
-				Assert.Fail();
-				break;
-			}
-		}
+                break;
+            case Shovel.Value.Kinds.Integer:
+                Assert.AreEqual ((long)expectedResult, result.IntegerValue);
+                break;
+            case Shovel.Value.Kinds.String:
+                Assert.AreEqual ((string)expectedResult, result.StringValue);
+                break;
+            case Shovel.Value.Kinds.Double:
+                Assert.AreEqual ((double)expectedResult, result.DoubleValue);
+                break;
+            case Shovel.Value.Kinds.Bool:
+                Assert.AreEqual ((bool)expectedResult, result.BoolValue);
+                break;
+            case Shovel.Value.Kinds.Array:
+                Assert.Fail();
+                break;
+            case Shovel.Value.Kinds.Hash:
+                Assert.Fail();
+                break;
+            case Shovel.Value.Kinds.Callable:
+                Assert.Fail();
+                break;
+            case Shovel.Value.Kinds.ReturnAddress:
+                Assert.Fail();
+                break;
+            case Shovel.Value.Kinds.NamedBlock:
+                Assert.Fail();
+                break;
+            }
+        }
 
         internal static IEnumerable<Shovel.Callable> GetPrintAndStopUdps (List<string> log, bool retryStop)
         {
@@ -140,6 +145,6 @@ fib(10)
         }
 
 
-	}
+    }
 }
 

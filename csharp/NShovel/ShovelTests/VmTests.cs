@@ -59,7 +59,7 @@ h = [...callable...]
 g = [...callable...]
 f = [...callable...]
 
-", result.HashValue [Shovel.Value.Make ("environment")].StringValue);
+", result.HashValue [Shovel.Value.Make ("environment")].StringValue.TrimCarriageReturn());
             Assert.AreEqual (@"file 'test.sho' line 3: var h = fn (x) context
 file 'test.sho' line 3:                ^^^^^^^
 file 'test.sho' line 4: var g = fn (x) id(h(x))
@@ -68,7 +68,7 @@ file 'test.sho' line 5: var f = fn (x) id(g(x))
 file 'test.sho' line 5:                   ^^^^
 file 'test.sho' line 6: f(3)
 file 'test.sho' line 6: ^^^^
-", result.HashValue [Shovel.Value.Make ("stack")].StringValue);
+", result.HashValue [Shovel.Value.Make ("stack")].StringValue.TrimCarriageReturn());
         }
 
         [Test]
@@ -100,12 +100,12 @@ h = [...callable...]
 g = [...callable...]
 f = [...callable...]
 
-", result.HashValue [Shovel.Value.Make ("environment")].StringValue);
+", result.HashValue [Shovel.Value.Make ("environment")].StringValue.TrimCarriageReturn());
             Assert.AreEqual (@"file 'test.sho' line 2: var h = fn (x) context
 file 'test.sho' line 2:                ^^^^^^^
 file 'test.sho' line 5: f(3)
 file 'test.sho' line 5: ^^^^
-", result.HashValue [Shovel.Value.Make ("stack")].StringValue);
+", result.HashValue [Shovel.Value.Make ("stack")].StringValue.TrimCarriageReturn());
         }
 
         [Test]

@@ -56,7 +56,7 @@ namespace ShovelTests
 [Token: Type=Identifier, StartPos=4, EndPos=4, Content='a']
 [Token: Type=Punctuation, StartPos=6, EndPos=6, Content='=']
 [Token: Type=Number, StartPos=8, EndPos=9, Content='20']
-", sb.ToString ());
+", sb.ToString().TrimCarriageReturn());
         }
 
         [Test]
