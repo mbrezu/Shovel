@@ -227,7 +227,7 @@ namespace Shovel.Compiler
             Tuple.Create ("<", Instruction.Opcodes.Lt, 2),
             Tuple.Create ("+", Instruction.Opcodes.Add, 2),
             Tuple.Create ("svm_gref", Instruction.Opcodes.Gref, 2),
-			Tuple.Create ("==", Instruction.Opcodes.Eq, 2),
+            Tuple.Create ("==", Instruction.Opcodes.Eq, 2),
             Tuple.Create ("push", Instruction.Opcodes.Apush, 2),
             Tuple.Create ("svm_gref_dot", Instruction.Opcodes.GrefDot, 2),
             Tuple.Create ("-", Instruction.Opcodes.Sub, 2),

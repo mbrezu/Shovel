@@ -65,12 +65,43 @@ namespace Shovel.Compiler
             );
             this.tokenIndex = 1;
             while (!this.Finished()) {
-                result.Add (this.ParseStatement ());
+                var pt = this.ParseStatement();
+                pt = RunWeaveMacro(pt);
+                result.Add (pt);
             }
             return result;
         }
 
-        bool Finished ()
+        private static ParseTree RunWeaveMacro(ParseTree source)
+        {
+            if (source.Label == ParseTree.Labels.Call && source.Children.First().Content == "->")
+            {
+                var leftSide = source.Children.ElementAt(1);
+                var rightSide = source.Children.ElementAt(2);
+                ReplacePlaceholder(rightSide, leftSide);
+                return RunWeaveMacro(rightSide);
+            }
+            else
+            {
+                source.RunOnChildren(RunWeaveMacro);
+                return source;
+            }
+        }
+
+        private static ParseTree ReplacePlaceholder(ParseTree source, ParseTree replacement)
+        {
+            if (source.Content == "$" && source.Label == ParseTree.Labels.Placeholder)
+            {
+                return replacement;
+            }
+            else
+            {
+                source.RunOnChildren(pt => ReplacePlaceholder(pt, replacement));
+                return source;
+            }
+        }
+
+        bool Finished()
         {
             return this.tokenIndex == this.tokens.Count;
         }
@@ -80,9 +111,9 @@ namespace Shovel.Compiler
             return this.WithNewParseTree (ParseTree.Labels.BlockReturn, pt => {
                 this.ConsumeToken (Token.Types.Keyword, "return");
                 pt.Children = new ParseTree[] { 
-					this.ParseExpression (),
-					this.ParseExpression ()
-				};
+                    this.ParseExpression (),
+                    this.ParseExpression ()
+                };
             }
             );
         }
@@ -176,9 +207,9 @@ namespace Shovel.Compiler
                 );
             } else {
                 return this.LeftAssoc (
-					this.ParseOrTerm, 
-					token => token.IsLogicalOrOp,
-					this.PostProcessLogicalOr);
+                    this.ParseOrTerm, 
+                    token => token.IsLogicalOrOp,
+                    this.PostProcessLogicalOr);
             }
         }
 
@@ -188,11 +219,11 @@ namespace Shovel.Compiler
         {
             if (Parser.trueParseTree == null) {
                 Parser.trueParseTree = new ParseTree () {
-					Label = ParseTree.Labels.Bool,
-					Content = "true",
-					StartPos = -1,
-					EndPos = -1
-				};
+                    Label = ParseTree.Labels.Bool,
+                    Content = "true",
+                    StartPos = -1,
+                    EndPos = -1
+                };
             }
             return Parser.trueParseTree;
         }
@@ -203,11 +234,11 @@ namespace Shovel.Compiler
         {
             if (Parser.falseParseTree == null) {
                 Parser.falseParseTree = new ParseTree () {
-					Label = ParseTree.Labels.Bool,
-					Content = "false",
-					StartPos = -1,
-					EndPos = -1
-				};
+                    Label = ParseTree.Labels.Bool,
+                    Content = "false",
+                    StartPos = -1,
+                    EndPos = -1
+                };
             }
             return Parser.falseParseTree;
         }
@@ -217,19 +248,19 @@ namespace Shovel.Compiler
         {
             if (Parser.nullParseTree == null) {
                 Parser.nullParseTree = new ParseTree () {
-					Label = ParseTree.Labels.Void,
-					Content = "null",
-					StartPos = -1,
-					EndPos = -1
-				};
+                    Label = ParseTree.Labels.Void,
+                    Content = "null",
+                    StartPos = -1,
+                    EndPos = -1
+                };
             }
             return Parser.nullParseTree;
         }		
 
         ParseTree MaybeRewriteAsIfExpression (
-			ParseTree parseTree, 
-			string opName, 
-			Func<ParseTree, ParseTree, IEnumerable<ParseTree>> ifChildren)
+            ParseTree parseTree, 
+            string opName, 
+            Func<ParseTree, ParseTree, IEnumerable<ParseTree>> ifChildren)
         {
             if (this.IsRequiredPrimitiveCall (parseTree, opName)) {
                 var operands = parseTree.Children.ToArray ();
@@ -237,11 +268,11 @@ namespace Shovel.Compiler
                 var t1 = operands [1];
                 var t2 = operands [2];
                 return new ParseTree () {
-					Label = ParseTree.Labels.If,
-					StartPos = op.StartPos,
-					EndPos = op.EndPos,
-					Children = ifChildren(t1, t2)
-				};
+                    Label = ParseTree.Labels.If,
+                    StartPos = op.StartPos,
+                    EndPos = op.EndPos,
+                    Children = ifChildren(t1, t2)
+                };
             } else {
                 return parseTree;
             }
@@ -261,23 +292,23 @@ namespace Shovel.Compiler
         ParseTree PostProcessLogicalOr (ParseTree arg)
         {
             return this.MaybeRewriteAsIfExpression (
-				arg, "||", 
-				(t1, t2) => new ParseTree[] { t1, Parser.GetTrueParseTree (), t2 });
+                arg, "||", 
+                (t1, t2) => new ParseTree[] { t1, Parser.GetTrueParseTree (), t2 });
         }
 
         ParseTree PostProcessLogicalAnd (ParseTree arg)
         {
             return this.MaybeRewriteAsIfExpression (
-				arg, "&&", 
-				(t1, t2) => new ParseTree[] { t1, t2, Parser.GetFalseParseTree () });
+                arg, "&&", 
+                (t1, t2) => new ParseTree[] { t1, t2, Parser.GetFalseParseTree () });
         }
 
         ParseTree ParseOrTerm ()
         {
             return LeftAssoc (
-				this.ParseAndTerm, 
-				token => token.IsLogicalAndOp,
-				this.PostProcessLogicalAnd);
+                this.ParseAndTerm, 
+                token => token.IsLogicalAndOp,
+                this.PostProcessLogicalAnd);
         }
 
         ParseTree ParseAndTerm ()
@@ -295,7 +326,12 @@ namespace Shovel.Compiler
             return LeftAssoc (this.ParseMultiplicationTerm, token => token.IsMultiplierOp);
         }
 
-        ParseTree ParseMultiplicationTerm ()
+        ParseTree ParseMultiplicationTerm()
+        {
+            return LeftAssoc(this.ParsePostfixTerm, token => token.IsPostfixOp);
+        }
+
+        ParseTree ParsePostfixTerm ()
         {
             if (this.TokenIs (Token.Types.Punctuation, "-")) {
                 return this.ParseUnaryMinus ();
@@ -337,10 +373,10 @@ namespace Shovel.Compiler
                 var first = this.WithAnchoredParseTree (start.StartPos, ParseTree.Labels.Call, pt => {
                     this.RequireTokenExactly (Token.Types.Punctuation, ".");
                     pt.Children = new ParseTree[] {
-						this.MakePrim0ParseTree ("svm_gref_dot"),
-						start,
-						this.ParseNameAsString ()
-					};
+                        this.MakePrim0ParseTree ("svm_gref_dot"),
+                        start,
+                        this.ParseNameAsString ()
+                    };
                 }
                 );
                 return this.ParseIdentifierOrCallOrRef (first);
@@ -349,8 +385,8 @@ namespace Shovel.Compiler
                     var children = new List<ParseTree> ();
                     children.Add (start);
                     children.AddRange (this.ParseList (
-						this.ParseExpression, 
-						Parser.OpenParenthesis, Parser.Comma, Parser.CloseParenthesis)
+                        this.ParseExpression, 
+                        Parser.OpenParenthesis, Parser.Comma, Parser.CloseParenthesis)
                     );
                     pt.Children = children;
                 }
@@ -365,10 +401,10 @@ namespace Shovel.Compiler
                     this.RequireTokenExactly (Token.Types.Punctuation, "[");
                     grefParseTree = this.MakePrim0ParseTree ("svm_gref");
                     pt.Children = new ParseTree[] {
-						grefParseTree,
-						start,
-						this.ParseExpression ()
-					};
+                        grefParseTree,
+                        start,
+                        this.ParseExpression ()
+                    };
                     this.ConsumeToken (Token.Types.Punctuation, "]");
                     grefEndPos = this.LastToken ().EndPos;
                 }
@@ -382,10 +418,10 @@ namespace Shovel.Compiler
         }
 
         IEnumerable<ParseTree> ParseList (
-			Func<ParseTree> itemParser, 
-			Tuple<Token.Types, String> openParen, 
-			Tuple<Token.Types, String> sep, 
-			Tuple<Token.Types, String> closeParen)
+            Func<ParseTree> itemParser, 
+            Tuple<Token.Types, String> openParen, 
+            Tuple<Token.Types, String> sep, 
+            Tuple<Token.Types, String> closeParen)
         {
             this.ConsumeToken (openParen.Item1, openParen.Item2);
             var result = new List<ParseTree> ();
@@ -411,9 +447,9 @@ namespace Shovel.Compiler
                 }
             }
             this.RequireTokenError (
-				alternatives.Select (alt => (Token.Types?)alt.Item1),
-				alternatives.Select (alt => alt.Item2),
-				this.CurrentToken ());
+                alternatives.Select (alt => (Token.Types?)alt.Item1),
+                alternatives.Select (alt => alt.Item2),
+                this.CurrentToken ());
         }
 
         ParseTree ParseNameAsString ()
@@ -426,7 +462,9 @@ namespace Shovel.Compiler
 
         ParseTree ParseParenthesizedOrName ()
         {
-            if (this.TokenIs (Token.Types.Identifier)) {
+            if (this.TokenIs(Token.Types.Punctuation, "$")) {
+                return TokenAsParseTree(ParseTree.Labels.Placeholder);
+            } else if (this.TokenIs (Token.Types.Identifier)) {
                 return this.ParseName ();
             } else if (this.TokenIs (Token.Types.Keyword, "context")) {
                 return this.ParseContext ();
@@ -560,8 +598,8 @@ namespace Shovel.Compiler
                 if (this.TokenIs (Token.Types.Keyword, "else")) {
                     this.NextToken ();
                     pt.Children = new ParseTree[] {
-						pred, then, this.ParseStatement ()
-					};
+                        pred, then, this.ParseStatement ()
+                    };
                 } else {
                     pt.Children = new ParseTree[] { pred, then, Parser.GetNullParseTree () };
                 }
@@ -585,10 +623,10 @@ namespace Shovel.Compiler
             return this.WithNewParseTree (ParseTree.Labels.List, pt => {
                 if (this.TokenIs (Token.Types.Punctuation, "(")) {
                     pt.Children = this.ParseList (
-						() => this.ParseName (false),
-						Parser.OpenParenthesis,
-						Parser.Comma,
-						Parser.CloseParenthesis);
+                        () => this.ParseName (false),
+                        Parser.OpenParenthesis,
+                        Parser.Comma,
+                        Parser.CloseParenthesis);
                 } else {
                     pt.Children = new ParseTree[] { this.ParseName (false) };
                 }

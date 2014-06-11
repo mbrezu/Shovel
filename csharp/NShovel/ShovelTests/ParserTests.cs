@@ -26,95 +26,95 @@ using Shovel.Exceptions;
 
 namespace ShovelTests
 {
-	[TestFixture]
-	public class ParserTests
-	{
-		static void ParserErrorMessageHelper (string source, Action<ShovelException> exceptionTest)
-		{
-			var sources = Shovel.Api.MakeSources ("test.sho", source);
-			var tokenizer = new Shovel.Compiler.Tokenizer (sources [0]);
-			var parser = new Shovel.Compiler.Parser (tokenizer.Tokens, sources);
-			Utils.ExpectException<ShovelException> (() => {
-				foreach (var pt in parser.ParseTrees) {
-					Console.WriteLine (pt);
-				}
-			},
-			exceptionTest);
-		}
+    [TestFixture]
+    public class ParserTests
+    {
+        static void ParserErrorMessageHelper (string source, Action<ShovelException> exceptionTest)
+        {
+            var sources = Shovel.Api.MakeSources ("test.sho", source);
+            var tokenizer = new Shovel.Compiler.Tokenizer (sources [0]);
+            var parser = new Shovel.Compiler.Parser (tokenizer.Tokens, sources);
+            Utils.ExpectException<ShovelException> (() => {
+                foreach (var pt in parser.ParseTrees) {
+                    Console.WriteLine (pt);
+                }
+            },
+            exceptionTest);
+        }
 
-		[Test]
-		public void ParserErrorMessageUnexpectedToken ()
-		{
-			ParserErrorMessageHelper (@"
+        [Test]
+        public void ParserErrorMessageUnexpectedToken ()
+        {
+            ParserErrorMessageHelper (@"
 b(]",
-			ex => {
-				Assert.IsNotNull (ex);
-				Assert.AreEqual (@"Unexpected token ']'.
+            ex => {
+                Assert.IsNotNull (ex);
+                Assert.AreEqual (@"Unexpected token ']'.
 file 'test.sho' line 2: b(]
 file 'test.sho' line 2:   ^", ex.Message);
-				Assert.AreEqual (2, ex.Line);
-				Assert.AreEqual (3, ex.Column);
-			}
-			);
-		}
+                Assert.AreEqual (2, ex.Line);
+                Assert.AreEqual (3, ex.Column);
+            }
+            );
+        }
 
-		[Test]
-		public void ParserErrorMessageExpectedIdentifier ()
-		{
-			ParserErrorMessageHelper (@"
+        [Test]
+        public void ParserErrorMessageExpectedIdentifier ()
+        {
+            ParserErrorMessageHelper (@"
 var a = fn [x] 1",
-			ex => {
-				Assert.IsNotNull (ex);
-				Assert.AreEqual (@"Expected a identifier, but got '['.
+            ex => {
+                Assert.IsNotNull (ex);
+                Assert.AreEqual (@"Expected a identifier, but got '['.
 file 'test.sho' line 2: var a = fn [x] 1
 file 'test.sho' line 2:            ^", ex.Message);
-				Assert.AreEqual (2, ex.Line);
-				Assert.AreEqual (12, ex.Column);
-			}
-			);
-			ParserErrorMessageHelper (@"
+                Assert.AreEqual (2, ex.Line);
+                Assert.AreEqual (12, ex.Column);
+            }
+            );
+            ParserErrorMessageHelper (@"
 var fn = 1",
-			ex => {
-				Assert.IsNotNull (ex);
-				Assert.AreEqual (@"Expected a identifier, but got 'fn'.
+            ex => {
+                Assert.IsNotNull (ex);
+                Assert.AreEqual (@"Expected a identifier, but got 'fn'.
 file 'test.sho' line 2: var fn = 1
 file 'test.sho' line 2:     ^^", ex.Message);
-				Assert.AreEqual (2, ex.Line);
-				Assert.AreEqual (5, ex.Column);
-			}
-			);
-		}
+                Assert.AreEqual (2, ex.Line);
+                Assert.AreEqual (5, ex.Column);
+            }
+            );
+        }
 
-		[Test]
-		public void ParserErrorRequiredPrimitive()
-		{
-			ParserErrorMessageHelper (@"
+        [Test]
+        public void ParserErrorRequiredPrimitive()
+        {
+            ParserErrorMessageHelper (@"
 var slice = 1",
-			ex => {
-				Assert.IsNotNull (ex);
-				Assert.AreEqual (@"Name 'slice' is reserved for a primitive.
+            ex => {
+                Assert.IsNotNull (ex);
+                Assert.AreEqual (@"Name 'slice' is reserved for a primitive.
 file 'test.sho' line 2: var slice = 1
 file 'test.sho' line 2:     ^^^^^", ex.Message);
-				Assert.AreEqual (2, ex.Line);
-				Assert.AreEqual (5, ex.Column);
-			}
-			);
-		}
+                Assert.AreEqual (2, ex.Line);
+                Assert.AreEqual (5, ex.Column);
+            }
+            );
+        }
 
-		[Test]
-		public void ParseResult()
-		{
-						var source = @"
+        [Test]
+        public void ParseResult()
+        {
+                        var source = @"
 var fact = fn n if n == 0 1 else n * fact(n - 1)
 ";
-			var sources = Shovel.Api.MakeSources ("test.sho", source);
-			var tokenizer = new Shovel.Compiler.Tokenizer (sources [0]);
-			var parser = new Shovel.Compiler.Parser (tokenizer.Tokens, sources);
-			var sb = new StringBuilder();
-			foreach (var pt in parser.ParseTrees) {
-				sb.Append (pt.ToString());
-			}
-			Assert.AreEqual (@"FileName (0 -- 0) 'test.sho'
+            var sources = Shovel.Api.MakeSources ("test.sho", source);
+            var tokenizer = new Shovel.Compiler.Tokenizer (sources [0]);
+            var parser = new Shovel.Compiler.Parser (tokenizer.Tokens, sources);
+            var sb = new StringBuilder();
+            foreach (var pt in parser.ParseTrees) {
+                sb.Append (pt.ToString());
+            }
+            Assert.AreEqual (@"FileName (0 -- 0) 'test.sho'
 Var (1 -- 48)
   Name (5 -- 8) 'fact'
   Fn (12 -- 48)
@@ -136,7 +136,7 @@ Var (1 -- 48)
             Name (43 -- 43) 'n'
             Number (47 -- 47) '1'
 ", sb.ToString());
-		}
-	}
+        }
+    }
 }
 

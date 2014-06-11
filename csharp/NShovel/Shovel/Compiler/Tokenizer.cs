@@ -117,10 +117,23 @@ namespace Shovel.Compiler
                 }
                 result.IsRelational = isRelational;
                 return result;
-            } else if (ch == '+' || ch == '-') {
+            } else if (ch == '+') {
                 var result = this.MakePunctuationToken (1);
                 result.IsAdderOp = true;
                 return result;
+            } else if (ch == '-') {
+                var la = this.LookAhead();
+                if (la == '>')
+                {
+                    var result = this.MakePunctuationToken(2);
+                    result.IsPostfixOp = true;
+                    return result;
+                }
+                else { 
+                    var result = this.MakePunctuationToken (1);
+                    result.IsAdderOp = true;
+                    return result;
+                }
             } else if (ch == '<' || ch == '>') {
                 var la = this.LookAhead ();
                 var isLongRelational = la == '=';
@@ -180,6 +193,8 @@ namespace Shovel.Compiler
                 }
                 result.IsRelational = isRelational;
                 return result;
+            } else if (ch == '$') {
+                return this.MakePunctuationToken(1);
             } else {
                 var pos = Position.CalculatePosition (this.source, this.pos);
                 var message = String.Format ("Unexpected character '{0}'.", ch);

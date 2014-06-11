@@ -25,61 +25,75 @@ using System.Text;
 
 namespace Shovel.Compiler.Types
 {
-	public class ParseTree
-	{
-		public enum Labels
-		{
-			FileName,
-			Var,
-			Assignment,
-			Prim0,
-			Name,
-			NamedBlock,
-			Call,
-			BlockReturn,
-			Void,
-			Bool,
-			String,
-			Number,
-			List,
-			UserDefinedPrimitive,
-			Context,
-			If,
-			Fn,
-			Begin
-		}
+    public class ParseTree
+    {
+        public enum Labels
+        {
+            FileName,
+            Var,
+            Assignment,
+            Prim0,
+            Name,
+            NamedBlock,
+            Call,
+            BlockReturn,
+            Void,
+            Bool,
+            String,
+            Number,
+            List,
+            UserDefinedPrimitive,
+            Context,
+            If,
+            Fn,
+            Begin,
+            Placeholder
+        }
 
-		public Labels Label { get; set; }
+        public Labels Label { get; set; }
 
-		public int StartPos { get; set; }
+        public int StartPos { get; set; }
 
-		public int EndPos { get; set; }
+        public int EndPos { get; set; }
 
-		public IEnumerable<ParseTree> Children { get; set; }
+        public IEnumerable<ParseTree> Children { get; set; }
 
-		public string Content { get; set; }
+        public string Content { get; set; }
 
-		public override string ToString ()
-		{
-			var sb = new StringBuilder ();
-			this.RenderToStringBuilder (sb, 0);
-			return sb.ToString ();
-		}
+        public override string ToString ()
+        {
+            var sb = new StringBuilder ();
+            this.RenderToStringBuilder (sb, 0);
+            return sb.ToString ();
+        }
 
-		public void RenderToStringBuilder (StringBuilder sb, int indentation)
-		{
-			var content = String.IsNullOrEmpty(this.Content) ? "" : String.Format (" '{0}'", this.Content);
-			sb.AppendFormat ("{4}{0} ({1} -- {2}){3}\n", 
-			                 this.Label, 
-			                 this.StartPos, this.EndPos,
-				             content,			                 
-			                 new String (' ', indentation));
-			if (this.Children != null) {
-				foreach (var child in this.Children) {
-					child.RenderToStringBuilder (sb, indentation + 2);
-				}
-			}
-		}
-	}
+        public void RenderToStringBuilder (StringBuilder sb, int indentation)
+        {
+            var content = String.IsNullOrEmpty(this.Content) ? "" : String.Format (" '{0}'", this.Content);
+            sb.AppendFormat ("{4}{0} ({1} -- {2}){3}\n", 
+                             this.Label, 
+                             this.StartPos, this.EndPos,
+                             content,			                 
+                             new String (' ', indentation));
+            if (this.Children != null) {
+                foreach (var child in this.Children) {
+                    child.RenderToStringBuilder (sb, indentation + 2);
+                }
+            }
+        }
+
+        public void RunOnChildren(Func<ParseTree, ParseTree> fn)
+        {
+            if (Children != null)
+            {
+                var newChildren = new List<ParseTree>();
+                foreach (var pt in Children)
+                {
+                    newChildren.Add(fn(pt));
+                }
+                Children = newChildren;
+            }
+        }
+    }
 }
 

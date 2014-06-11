@@ -32,10 +32,37 @@ namespace ConsoleTest
         public static void Main (string[] args)
         {
             //MasterMindBenchmark();
-            SimpleTest ();
+            //SimpleTest ();
+            PostfixTest();
             //AnotherSimpleTest ();
             //SerializerTest ();
             //UdpTest();
+        }
+
+        static void PostfixTest()
+        {
+            var sources = Shovel.Api.MakeSources("test.sho", @"
+var f = fn (n, x) n + x
+var g = fn (x, n) n * x
+var x = 10
+//var z = x -> (fn (x) x + $)
+x -> (3 + $) -> f(3, $) -> g($, 2)
+            ");
+            try
+            {
+                //var bytecode = Shovel.Api.GetBytecode (sources);
+                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                Console.WriteLine(Shovel.Api.TestRunVm(sources));
+                var tokenizer = new Shovel.Compiler.Tokenizer(sources[0]);
+                var parser = new Shovel.Compiler.Parser(tokenizer.Tokens, sources);
+                foreach (var pt in parser.ParseTrees) {
+                    Console.WriteLine(pt);
+                }
+            }
+            catch (Shovel.Exceptions.ShovelException shex)
+            {
+                Console.WriteLine(shex.Message);
+            }
         }
 
         static void UdpTest ()

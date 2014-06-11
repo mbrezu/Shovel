@@ -55,6 +55,8 @@ namespace Shovel.Compiler.Types
 
         public bool IsLogicalAndOp { get; set; }
 
+        public bool IsPostfixOp { get;set; }
+
         public override string ToString ()
         {
             return string.Format (

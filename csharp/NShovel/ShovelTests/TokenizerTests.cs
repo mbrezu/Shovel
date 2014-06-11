@@ -82,7 +82,7 @@ namespace ShovelTests
         [Test]
         public void TestUnknownCharacter ()
         {
-            var text = "var a = $";
+            var text = "var a = `";
             var source = new Shovel.SourceFile () {
                 FileName = "test.sho",
                 Content = text
@@ -92,8 +92,8 @@ namespace ShovelTests
             },
             (ex) => {
                 Assert.IsNotNull (ex);
-                Assert.AreEqual (@"Unexpected character '$'.
-file 'test.sho' line 1: var a = $
+                Assert.AreEqual (@"Unexpected character '`'.
+file 'test.sho' line 1: var a = `
 file 'test.sho' line 1:         ^", ex.Message);
                 Assert.AreEqual ("test.sho", ex.FileName);
                 Assert.AreEqual (false, ex.AtEof);
