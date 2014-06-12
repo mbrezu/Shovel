@@ -24,39 +24,39 @@ using System.Collections.Generic;
 
 namespace Shovel.Compiler
 {
-	internal static class RawBytecodeOptimizations
-	{
-		internal static List<Instruction> Optimize(List<Instruction> bytecode)
-		{
-			bytecode = OptimizeLsetPopLget(bytecode);
-			return bytecode;
-		}
-
-		private static List<Instruction> OptimizeLsetPopLget(List<Instruction> bytecode)
+    internal static class RawBytecodeOptimizations
+    {
+        internal static List<Instruction> Optimize(List<Instruction> bytecode)
         {
-			var result = new List<Instruction>();
-			var i = 0;
-			while (i < bytecode.Count) {
-				var instruction = bytecode[i];
-				if (instruction.Opcode == Instruction.Opcodes.Lset && i <= bytecode.Count - 3) {
-					var lsetArgs = (int[])instruction.Arguments;
-					var next = bytecode[i+1];
-					var next2 = bytecode[i+2];
-					if (next.Opcode == Instruction.Opcodes.Pop && next2.Opcode == Instruction.Opcodes.Lget) {
-						var lgetArgs = (int[])next2.Arguments;
-						if (lsetArgs[0] == lgetArgs[0] && lsetArgs[1] == lgetArgs[1]) {
-							result.Add (instruction);
-							i += 3;
-							continue;
-						}
-					}
-				}
-				result.Add (instruction);
-				i++;
-			}
+            bytecode = OptimizeLsetPopLget(bytecode);
+            return bytecode;
+        }
+
+        private static List<Instruction> OptimizeLsetPopLget(List<Instruction> bytecode)
+        {
+            var result = new List<Instruction>();
+            var i = 0;
+            while (i < bytecode.Count) {
+                var instruction = bytecode[i];
+                if (instruction.Opcode == Instruction.Opcodes.Lset && i <= bytecode.Count - 3) {
+                    var lsetArgs = (int[])instruction.Arguments;
+                    var next = bytecode[i+1];
+                    var next2 = bytecode[i+2];
+                    if (next.Opcode == Instruction.Opcodes.Pop && next2.Opcode == Instruction.Opcodes.Lget) {
+                        var lgetArgs = (int[])next2.Arguments;
+                        if (lsetArgs[0] == lgetArgs[0] && lsetArgs[1] == lgetArgs[1]) {
+                            result.Add (instruction);
+                            i += 3;
+                            continue;
+                        }
+                    }
+                }
+                result.Add (instruction);
+                i++;
+            }
             return result;
         }
 
-	}
+    }
 }
 

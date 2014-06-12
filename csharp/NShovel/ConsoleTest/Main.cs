@@ -34,10 +34,40 @@ namespace ConsoleTest
             //MasterMindBenchmark();
             //SimpleTest ();
             //PostfixTest();
-            IndirectTest();
+            //IndirectTest();
+            ApplyTest();
             //AnotherSimpleTest ();
             //SerializerTest ();
             //UdpTest();
+        }
+
+        static void ApplyTest()
+        {
+            var sources = Shovel.Api.MakeSources("test.sho", @"
+var fun = fn (x, y, z) x + y + z
+var x = 2
+fun(1, x, 3)
+var args = array(1, 2, 3)
+//apply(fun, args)
+apply(args, fun)
+            ");
+            try
+            {
+                //var bytecode = Shovel.Api.GetBytecode (sources);
+                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                Console.WriteLine(Shovel.Api.TestRunVm(sources));
+                Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                var tokenizer = new Shovel.Compiler.Tokenizer(sources[0]);
+                var parser = new Shovel.Compiler.Parser(tokenizer.Tokens, sources);
+                foreach (var pt in parser.ParseTrees)
+                {
+                    //Console.WriteLine(pt);
+                }
+            }
+            catch (Shovel.Exceptions.ShovelException shex)
+            {
+                Console.WriteLine(shex.Message);
+            }
         }
 
         static void IndirectTest()

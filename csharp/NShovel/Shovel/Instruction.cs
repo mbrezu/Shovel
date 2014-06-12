@@ -25,38 +25,38 @@ using System.Collections.Generic;
 
 namespace Shovel
 {
-	public class Instruction
-	{
-		// Do not change the order of Opcodes, they are serialized as ints.
-		// The only valid way to change this list is to add a new opcode 
-		// at the end (additive changes).
-		internal enum Opcodes
-		{ 
-			VmVersion,
-			VmSourcesMd5,
-			VmBytecodeMd5,
-			FileName,
-			Prim0,
-			Return,
-			Pop,
-			Prim,
-			Const,
-			Context,
-			BlockReturn,
-			Block,
-			Label,
-			PopBlock,
-			Call,
-			CallJ,
-			Lget,
-			Fjump,
-			Jump,
-			Lset,
-			Fn,
-			NewFrame,
-			Args,
-			DropFrame,
-			Tjump,
+    public class Instruction
+    {
+        // Do not change the order of Opcodes, they are serialized as ints.
+        // The only valid way to change this list is to add a new opcode 
+        // at the end (additive changes).
+        internal enum Opcodes
+        { 
+            VmVersion,
+            VmSourcesMd5,
+            VmBytecodeMd5,
+            FileName,
+            Prim0,
+            Return,
+            Pop,
+            Prim,
+            Const,
+            Context,
+            BlockReturn,
+            Block,
+            Label,
+            PopBlock,
+            Call,
+            CallJ,
+            Lget,
+            Fjump,
+            Jump,
+            Lset,
+            Fn,
+            NewFrame,
+            Args,
+            DropFrame,
+            Tjump,
             Div,
             Mod,
             Neq,
@@ -66,80 +66,81 @@ namespace Shovel
             Eq,
             Apush,
             GrefDot,
-			Sub,
-			Neg,
-			Mul,
-			Shl,
-			Shr,
-			Pow,
-			Floor,
-			Lte,
-			Gt,
-			Gte,
-			Not,
-			And,
-			Ior,
-			Xor,
-			Keys,
-			HasKey,
-			Apop,
-			SetIndexed,
-			Len,
-			IsString,
-			IsHash,
-			IsBool,
-			IsArray,
-			IsNumber,
-			IsInteger,
-			IsCallable,
+            Sub,
+            Neg,
+            Mul,
+            Shl,
+            Shr,
+            Pow,
+            Floor,
+            Lte,
+            Gt,
+            Gte,
+            Not,
+            And,
+            Ior,
+            Xor,
+            Keys,
+            HasKey,
+            Apop,
+            SetIndexed,
+            Len,
+            IsString,
+            IsHash,
+            IsBool,
+            IsArray,
+            IsNumber,
+            IsInteger,
+            IsCallable,
             Delete,
             IsStruct,
             IsStructInstance,
             SetDotIndexed,
-		}
+            Apply,
+        }
 
-		internal Opcodes Opcode { get; set; }
+        internal Opcodes Opcode { get; set; }
 
-		internal object Arguments { get; set; }
+        internal object Arguments { get; set; }
 
-		internal int? StartPos { get; set; }
+        internal int? StartPos { get; set; }
 
-		internal int? EndPos { get; set; }
+        internal int? EndPos { get; set; }
 
-		internal string Comments { get; set; }
+        internal string Comments { get; set; }
 
-		internal int NumericOpcode { get; set; }
+        internal int NumericOpcode { get; set; }
 
-		public override string ToString ()
-		{
-			var sb = new StringBuilder();
-			if (this.Comments != null) {
-				sb.Append (this.Comments);
-			}
-			if (this.Opcode == Opcodes.Label) {
-				sb.AppendLine (this.Arguments.ToString().ToUpper() + ":");
-			} else {
-				sb.Append ("    ");
-				sb.Append (this.Opcode.ToString().ToUpper());
-				if (this.Arguments != null) {
-					sb.Append (" ");
-					if (this.Arguments is System.Collections.IEnumerable && !(this.Arguments is String)) {
-						var args = new List<string>();
-						foreach (var arg in (System.Collections.IEnumerable)this.Arguments) {
-							args.Add (arg.ToString());
-						}
-						sb.Append (String.Join (", ", args));
-					} else {
-						sb.Append (this.Arguments.ToString());
-					}
-				}
-				if (this.Opcode == Opcodes.Const && this.Arguments == null) {
-					sb.Append (" NULL");
-				}
-				sb.Append (System.Environment.NewLine);
-			}
-			return sb.ToString();
-		}
-	}
+        public override string ToString ()
+        {
+            var sb = new StringBuilder();
+            if (this.Comments != null) {
+                sb.Append (this.Comments);
+            }
+            if (this.Opcode == Opcodes.Label) {
+                sb.AppendLine (this.Arguments.ToString().ToUpper() + ":");
+            } else {
+                sb.Append ("    ");
+                sb.Append (this.Opcode.ToString().ToUpper());
+                if (this.Arguments != null) {
+                    sb.Append (" ");
+                    if (this.Arguments is System.Collections.IEnumerable && !(this.Arguments is String)) {
+                        var args = new List<string>();
+                        foreach (var arg in (System.Collections.IEnumerable)this.Arguments) {
+                            args.Add (arg.ToString());
+                        }
+                        sb.Append (String.Join (", ", args));
+                    } else {
+                        sb.Append (this.Arguments.ToString());
+                    }
+                }
+                if (this.Opcode == Opcodes.Const && this.Arguments == null) {
+                    sb.Append (" NULL");
+                }
+                sb.Append (System.Environment.NewLine);
+            }
+            return sb.ToString();
+        }
+    }
 }
 

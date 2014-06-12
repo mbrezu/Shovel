@@ -465,6 +465,7 @@ namespace Shovel.Vm
             Vm.HandleIsStruct,                 // 57
             Vm.HandleIsStructInstance,         // 58
             Vm.HandleSetDotIndexed,            // 59
+            Vm.HandleApply,                    // 60
         };
 
         Instruction CurrentInstruction ()
@@ -840,6 +841,28 @@ namespace Shovel.Vm
             var instruction = vm.CurrentInstruction ();
             var numArgs = (int)instruction.Arguments;
             Vm.HandleCallImpl (vm, numArgs, true);
+        }
+
+        static void HandleApply(Vm vm)
+        {
+            var maybeArray = vm.stack.Top();
+            vm.stack.Pop();
+            var maybeCallable = vm.stack.Top();
+            vm.stack.Pop();
+            if (maybeArray.Kind != Value.Kinds.Array)
+            {
+                vm.RaiseShovelError(String.Format(
+                    "Object [{0}] is not an array.", Prim0.ShovelStringRepresentation(vm.api, maybeArray))
+                );
+            }
+            var numArgs = maybeArray.ArrayValue.Count;
+            foreach (var value in maybeArray.ArrayValue)
+            {
+                vm.stack.Push((Value)value);
+                vm.IncrementCells(1);
+            }
+            vm.stack.Push(maybeCallable);
+            Vm.HandleCallImpl(vm, numArgs, true);
         }
 
         static void HandleCallImpl (Vm vm, int numArgs, bool saveReturnAddress)

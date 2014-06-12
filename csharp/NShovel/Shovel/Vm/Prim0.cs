@@ -757,7 +757,7 @@ namespace Shovel.Vm
             return Value.Make (result);
         }
 
-        static void CheckVector (VmApi api, ref Value vector)
+        static void CheckVector(VmApi api, ref Value vector)
         {
             if (vector.Kind != Value.Kinds.Array) {
                 api.RaiseShovelError ("First argument must be a vector.");

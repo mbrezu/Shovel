@@ -292,7 +292,7 @@ namespace Shovel.Compiler
           "string", "stringRepresentation",
           "parseInt", "parseFloat", "floor",
           "panic", "delete",
-          "defstruct", "make", "hashToStruct", "structToHash", "isStruct", "isStructInstance" }
+          "defstruct", "make", "hashToStruct", "structToHash", "isStruct", "isStructInstance", "apply" }
             );
         
         Token TokenizePred (Token.Types type, Func<char, bool> pred)

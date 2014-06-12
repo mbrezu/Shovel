@@ -408,6 +408,8 @@ namespace Shovel
                     return 58;
                 case Instruction.Opcodes.SetDotIndexed:
                     return 59;
+                case Instruction.Opcodes.Apply:
+                    return 60;
                 default:
                     Utils.Panic();
                     return 0;

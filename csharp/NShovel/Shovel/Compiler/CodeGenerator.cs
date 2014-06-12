@@ -296,7 +296,10 @@ namespace Shovel.Compiler
             if (!compiledAsInstruction) {
                 this.CompileAst (funAst, env, true, true);
                 if (more) {
-                    this.Gen (Instruction.Opcodes.Call, ast.Children.Count () - 1, ast);
+                    var isApply = funAst.Label == ParseTree.Labels.Prim0 && funAst.Content == "apply";
+                    if (!isApply) { 
+                        this.Gen (Instruction.Opcodes.Call, ast.Children.Count () - 1, ast);
+                    }
                     if (!useVal) {
                         this.Gen (Instruction.Opcodes.Pop);
                     }
@@ -308,7 +311,13 @@ namespace Shovel.Compiler
 
         void CompilePrim0 (ParseTree ast, bool useVal, bool more)
         {
-            this.Gen (Instruction.Opcodes.Prim0, ast.Content, ast);
+            if (ast.Content != "apply") { 
+                this.Gen (Instruction.Opcodes.Prim0, ast.Content, ast);
+            }
+            else
+            {
+                this.Gen(Instruction.Opcodes.Apply, null, ast);
+            }
             FinishInstruction (useVal, more);
         }
 
