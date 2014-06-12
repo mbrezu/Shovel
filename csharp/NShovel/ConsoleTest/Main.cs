@@ -48,8 +48,8 @@ var fun = fn (x, y, z) x + y + z
 var x = 2
 fun(1, x, 3)
 var args = array(1, 2, 3)
-//apply(fun, args)
-apply(args, fun)
+apply(fun, args)
+//apply(args, fun)
             ");
             try
             {
