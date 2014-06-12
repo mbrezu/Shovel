@@ -195,6 +195,8 @@ namespace Shovel.Compiler
                 return result;
             } else if (ch == '$') {
                 return this.MakePunctuationToken(1);
+            } else if (ch == ':') {
+                return this.MakePunctuationToken(1);
             } else {
                 var pos = Position.CalculatePosition (this.source, this.pos);
                 var message = String.Format ("Unexpected character '{0}'.", ch);

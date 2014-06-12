@@ -22,6 +22,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
 namespace Shovel.Compiler.Types
 {
@@ -86,12 +87,26 @@ namespace Shovel.Compiler.Types
         {
             if (Children != null)
             {
-                var newChildren = new List<ParseTree>();
-                foreach (var pt in Children)
+                if (Children is ParseTree[])
                 {
-                    newChildren.Add(fn(pt));
+                    var arChildren = (ParseTree[])Children;
+                    for (int i = 0; i < arChildren.Length; i++)
+                    {
+                        arChildren[i] = fn(arChildren[i]);
+                    }
                 }
-                Children = newChildren;
+                else if (Children is List<ParseTree>)
+                {
+                    var liChildren = (List<ParseTree>)Children;
+                    for (int i = 0; i < liChildren.Count; i++)
+                    {
+                        liChildren[i] = fn(liChildren[i]);
+                    }
+                }
+                else
+                {
+                    Children = Children.Select(fn).ToArray<ParseTree>();
+                }
             }
         }
     }
