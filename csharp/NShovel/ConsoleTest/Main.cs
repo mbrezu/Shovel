@@ -46,7 +46,7 @@ namespace ConsoleTest
 var slothFactory = fn () {
     var realHash = hash()
     hash('indirectGet', fn name realHash[name],
-         'indirectSet', fn (name, value) { realHash[name] = value value })
+         'indirectSet', fn (name, value) realHash[name] = value)
 }
 var a = slothFactory()
 a:b = slothFactory()
