@@ -30,6 +30,8 @@ namespace Shovel
 
         internal string Prim0Name { get; set; }
 
+        internal bool HasCollectParams { get; set; }
+
         // FIXME: Arity and Program counter should be plain ints (saves memory).
         // For both of them the 'null' case can be encoded as -1.
         internal int? Arity { get; set; }

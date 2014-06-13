@@ -240,6 +240,12 @@ namespace Shovel.Compiler
 
         ParseTree ParseName (bool canBeRequiredPrimitive = true)
         {
+            var isCollectName = false;
+            if (TokenIs(Token.Types.Punctuation, "..."))
+            {
+                isCollectName = true;
+                NextToken();
+            }
             this.RequireTokenType (Token.Types.Identifier);
             var token = this.CurrentToken ();
             if (token.IsRequiredPrimitive) {
@@ -249,7 +255,7 @@ namespace Shovel.Compiler
                     this.RaiseError (String.Format ("Name '{0}' is reserved for a primitive.", token.Content));
                 }
             }
-            return this.TokenAsParseTree (ParseTree.Labels.Name);
+            return this.TokenAsParseTree (isCollectName ? ParseTree.Labels.CollectName : ParseTree.Labels.Name);
         }
 
         ParseTree ParseExpression ()
@@ -682,7 +688,7 @@ namespace Shovel.Compiler
 
         ParseTree ParseLambdaArgs ()
         {
-            return this.WithNewParseTree (ParseTree.Labels.List, pt => {
+            var result = this.WithNewParseTree (ParseTree.Labels.List, pt => {
                 if (this.TokenIs (Token.Types.Punctuation, "(")) {
                     pt.Children = this.ParseList (
                         () => this.ParseName (false),
@@ -692,8 +698,21 @@ namespace Shovel.Compiler
                 } else {
                     pt.Children = new ParseTree[] { this.ParseName (false) };
                 }
+            });
+            var collects = result.Children.Where(pt => pt.Label == ParseTree.Labels.CollectName);
+            var collectCount = collects.Count();
+            if (collectCount > 1) {
+                var faultyCollect = collects.ElementAt(1);
+                RaiseErrorAt("Only one collect argument (e.g. \"...rest\") allowed.", 
+                    faultyCollect.StartPos, faultyCollect.EndPos);
+            } 
+            else if (collectCount == 1 && result.Children.Last().Label != ParseTree.Labels.CollectName)
+            {
+                var faultyCollect = collects.ElementAt(0);
+                RaiseErrorAt("Collect arguments (e.g. \"...rest\") allowed only at the end of the argument list.", 
+                    faultyCollect.StartPos, faultyCollect.EndPos);
             }
-            );
+            return result;
         }
 
         ParseTree WithNewParseTree (ParseTree.Labels label, Action<ParseTree> action)
@@ -795,31 +814,48 @@ namespace Shovel.Compiler
             }
         }
 
-        void RaiseError (string message)
+        void RaiseErrorAt(string message, int? startPosition, int? endPosition)
         {
-            var token = this.CurrentToken ();
-            Position pos = token != null ? this.GetPosition (token.StartPos) : null;
+            Position pos = startPosition != null ? this.GetPosition(startPosition.Value) : null;
             string fileName = pos != null ? pos.FileName : null;
-            bool atEof = token == null;
+            bool atEof = startPosition == null && endPosition == null;
             string errorMessage;
-            if (pos != null) {
+            if (pos != null)
+            {
                 var startPos = pos;
-                var endPos = this.GetPosition (token.EndPos);
-                var lines = Utils.ExtractRelevantSource (GetSourceFile ().Content.Split ('\n'), startPos, endPos);
-                errorMessage = String.Format ("{0}\n{1}\n{2}", message, lines [0], lines [1]);
-            } else {
+                var endPos = this.GetPosition(endPosition.Value);
+                var lines = Utils.ExtractRelevantSource(GetSourceFile().Content.Split('\n'), startPos, endPos);
+                errorMessage = String.Format("{0}\n{1}\n{2}", message, lines[0], lines[1]);
+            }
+            else
+            {
                 errorMessage = message;
             }
-            var error = new ShovelException ();
+            var error = new ShovelException();
             error.ShovelMessage = errorMessage;
-            if (pos != null) {
+            if (pos != null)
+            {
                 error.Line = pos.Line;
                 error.Column = pos.Column;
-            } else {
+            }
+            else
+            {
                 error.AtEof = atEof;
             }
             error.FileName = fileName;
             throw error;
+        }
+
+        void RaiseError (string message)
+        {
+            var token = this.CurrentToken ();
+            if (token != null) {
+                RaiseErrorAt(message, token.StartPos, token.EndPos);
+            }
+            else
+            {
+                RaiseErrorAt(message, null, null);
+            }
         }
 
         SourceFile GetSourceFile ()

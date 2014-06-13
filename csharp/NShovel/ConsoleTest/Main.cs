@@ -43,28 +43,24 @@ namespace ConsoleTest
 
         static void ApplyTest()
         {
-            var sources = Shovel.Api.MakeSourcesWithStdlib("test.sho", @"
-var i = 0
-var result = null
-stdlib.while (fn () i < 100, fn () {
-    var fun = fn (x, y, z, t) x + y + z + t
-    var x = 2
-    //result = fun(1, x, 3, 4)
-    var args = array(1, 2, 3, 4)
-    result = apply(fun, args)
-    //apply(args, fun)
-    //args[2] = 3
-    //length(args, 2)
-    i = i + 1
-})
-result
+            var sources = Shovel.Api.MakeSources("test.sho", @"
+var fun2 = fn (x, y, z, ...rest) rest
+var fun = fn (x, y, z, t) x + y + z + t
+var x = 2
+//fun(1, x, 3, 4)
+var args = array(1, 2, 3, 4)
+apply(fun, args)
+//apply(args, fun)
+//args[2] = 3
+//length(args, 2)
+stringRepresentation(array(1, 2, 3) + array(4, 5, 6))
             ");
             try
             {
                 //var bytecode = Shovel.Api.GetBytecode (sources);
                 //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
                 Console.WriteLine(Shovel.Api.TestRunVm(sources));
-                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
                 var tokenizer = new Shovel.Compiler.Tokenizer(sources[0]);
                 var parser = new Shovel.Compiler.Parser(tokenizer.Tokens, sources);
                 foreach (var pt in parser.ParseTrees)

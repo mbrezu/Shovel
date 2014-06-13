@@ -73,9 +73,9 @@ namespace Shovel.Compiler
             return result;
         }
         
-        char? LookAhead ()
+        char? LookAhead (int howFar = 1)
         {
-            var laPos = this.pos + 1;
+            var laPos = this.pos + howFar;
             if (laPos < this.source.Content.Length) {
                 return this.source.Content [laPos];
             } else {
@@ -100,11 +100,27 @@ namespace Shovel.Compiler
         Token TokenizePunctuation ()
         {
             var ch = this.CurrentChar ();
-            if (ch == '.' 
-                || ch == '(' || ch == ')' 
+            if (ch == '.')
+            {
+                var la = this.LookAhead();
+                if (la != '.') { 
+                    return this.MakePunctuationToken(1);
+                }
+                else
+                {
+                    var la2 = this.LookAhead(2);
+                    if (la2 == '.') {
+                        return this.MakePunctuationToken(3);
+                    } else {
+                        RaiseTokenizerError("Unknown token '..'. Did you mean '...'?");
+                        throw new Exception(); // Just to keep the compiler happy.
+                    }
+                }
+            } else if (ch == '(' || ch == ')' 
                 || ch == '[' || ch == ']'
                 || ch == '{' || ch == '}'
-                || ch == ',') {
+                || ch == ',') 
+            {
                 return this.MakePunctuationToken (1);
             } else if (ch == '=') {
                 var la = this.LookAhead ();
@@ -198,19 +214,25 @@ namespace Shovel.Compiler
             } else if (ch == ':') {
                 return this.MakePunctuationToken(1);
             } else {
-                var pos = Position.CalculatePosition (this.source, this.pos);
-                var message = String.Format ("Unexpected character '{0}'.", ch);
-                var lines = Utils.ExtractRelevantSource (
-                    this.source.Content.Split ('\n'), pos, pos);
-                var errorMessage = String.Format (
-                    "{0}\n{1}\n{2}", message, lines [0], lines [1]);
-                throw new ShovelException () {
-                    ShovelMessage = errorMessage,
-                    FileName = pos.FileName,
-                    Line = pos.Line,
-                    Column = pos.Column
-                };
+                RaiseTokenizerError(String.Format("Unexpected character '{0}'.", ch));
+                throw new Exception(); // Just to keep the compiler happy.
             }
+        }
+
+        private void RaiseTokenizerError(string message)
+        {
+            var pos = Position.CalculatePosition(this.source, this.pos);
+            var lines = Utils.ExtractRelevantSource(
+                this.source.Content.Split('\n'), pos, pos);
+            var errorMessage = String.Format(
+                "{0}\n{1}\n{2}", message, lines[0], lines[1]);
+            throw new ShovelException()
+            {
+                ShovelMessage = errorMessage,
+                FileName = pos.FileName,
+                Line = pos.Line,
+                Column = pos.Column
+            };
         }
         
         void TokenizeComment ()

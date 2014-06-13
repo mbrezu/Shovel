@@ -847,10 +847,8 @@ namespace Shovel.Vm
 
         static void HandleApply(Vm vm)
         {
-            var maybeArray = vm.stack.Top();
-            vm.stack.Pop();
-            var maybeCallable = vm.stack.Top();
-            vm.stack.Pop();
+            var maybeArray = vm.stack.PopTop();
+            var maybeCallable = vm.stack.PopTop();
             if (maybeArray.Kind != Value.Kinds.Array)
             {
                 vm.RaiseShovelError(String.Format(

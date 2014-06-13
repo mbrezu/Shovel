@@ -35,6 +35,7 @@ namespace Shovel.Compiler.Types
             Assignment,
             Prim0,
             Name,
+            CollectName,
             NamedBlock,
             Call,
             BlockReturn,
