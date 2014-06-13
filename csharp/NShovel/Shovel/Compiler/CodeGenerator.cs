@@ -260,6 +260,7 @@ namespace Shovel.Compiler
             Tuple.Create ("delete", Instruction.Opcodes.Delete, 2),
             Tuple.Create ("isStruct", Instruction.Opcodes.IsStruct, 1),
             Tuple.Create ("isStructInstance", Instruction.Opcodes.IsStructInstance, 2),
+            Tuple.Create ("apply", Instruction.Opcodes.Apply, 2),
         };
 
         bool CompiledAsInstruction (ParseTree funAst, int actualArity, bool useVal, bool more)
@@ -296,10 +297,7 @@ namespace Shovel.Compiler
             if (!compiledAsInstruction) {
                 this.CompileAst (funAst, env, true, true);
                 if (more) {
-                    var isApply = funAst.Label == ParseTree.Labels.Prim0 && funAst.Content == "apply";
-                    if (!isApply) { 
-                        this.Gen (Instruction.Opcodes.Call, ast.Children.Count () - 1, ast);
-                    }
+                    this.Gen (Instruction.Opcodes.Call, ast.Children.Count () - 1, ast);
                     if (!useVal) {
                         this.Gen (Instruction.Opcodes.Pop);
                     }
@@ -311,13 +309,7 @@ namespace Shovel.Compiler
 
         void CompilePrim0 (ParseTree ast, bool useVal, bool more)
         {
-            if (ast.Content != "apply") { 
-                this.Gen (Instruction.Opcodes.Prim0, ast.Content, ast);
-            }
-            else
-            {
-                this.Gen(Instruction.Opcodes.Apply, null, ast);
-            }
+            this.Gen (Instruction.Opcodes.Prim0, ast.Content, ast);
             FinishInstruction (useVal, more);
         }
 

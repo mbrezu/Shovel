@@ -50,6 +50,8 @@ fun(1, x, 3)
 var args = array(1, 2, 3)
 apply(fun, args)
 //apply(args, fun)
+//args[2] = 3
+//length(args, 2)
             ");
             try
             {
