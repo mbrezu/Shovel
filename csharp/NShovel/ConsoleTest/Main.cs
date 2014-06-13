@@ -35,10 +35,64 @@ namespace ConsoleTest
             //SimpleTest ();
             //PostfixTest();
             //IndirectTest();
-            CurryTest();
+            //CurryTest();
+            //ApplyTestTails();
+            CollectTestTails();
             //AnotherSimpleTest ();
             //SerializerTest ();
             //UdpTest();
+        }
+
+        static void CollectTestTails()
+        {
+            var sources = Shovel.Api.MakeSources("test.sho", @"
+var fun1 = fn (x, ...rest) { push(rest, x) rest }
+var fun2 = fn (...rest1) fun1(rest1[0] + rest1[1], 1, 2)
+stringRepresentation(fun2(1, 2))
+            ");
+            try
+            {
+                //var bytecode = Shovel.Api.GetBytecode (sources);
+                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                Console.WriteLine(Shovel.Api.TestRunVm(sources));
+                Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                var tokenizer = new Shovel.Compiler.Tokenizer(sources[0]);
+                var parser = new Shovel.Compiler.Parser(tokenizer.Tokens, sources);
+                foreach (var pt in parser.ParseTrees)
+                {
+                    //Console.WriteLine(pt);
+                }
+            }
+            catch (Shovel.Exceptions.ShovelException shex)
+            {
+                Console.WriteLine(shex.Message);
+            }
+        }
+
+        static void ApplyTestTails()
+        {
+            var sources = Shovel.Api.MakeSources("test.sho", @"
+var fun1 = fn (x) x * x            
+var fun2 = fn (x, y) fun1(x + y)
+fun1(apply(fun2, array(1, 2)))
+            ");
+            try
+            {
+                //var bytecode = Shovel.Api.GetBytecode (sources);
+                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                Console.WriteLine(Shovel.Api.TestRunVm(sources));
+                Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                var tokenizer = new Shovel.Compiler.Tokenizer(sources[0]);
+                var parser = new Shovel.Compiler.Parser(tokenizer.Tokens, sources);
+                foreach (var pt in parser.ParseTrees)
+                {
+                    //Console.WriteLine(pt);
+                }
+            }
+            catch (Shovel.Exceptions.ShovelException shex)
+            {
+                Console.WriteLine(shex.Message);
+            }            
         }
 
         static void CurryTest()

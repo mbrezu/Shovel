@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.IO;
 using Shovel.Vm.Types;
 using System.Text;
+using System.Linq;
 
 namespace Shovel.Serialization
 {
@@ -129,11 +130,10 @@ namespace Shovel.Serialization
         {
             return Utils.SerializeWithMd5CheckSum (str => {
                 vm.SerializeState (str);
-            }
-            );
+            });
         }
 
-        internal void Deserialize (Stream s, Action<Func<int, object>> action)
+        internal void Deserialize (Stream s, int version, Action<Func<int, object>> action)
         {
             var length = Utils.ReadInt (s);
             var serArray = new object[length];
@@ -160,7 +160,7 @@ namespace Shovel.Serialization
                     if (serArray [index] is string || serArray [index] is long || serArray [index] is double) {
                         objects [index] = serArray [index];
                     } else if (serArray [index] is Composite) {
-                        RebuildFromComposite (objects, index, (Composite)serArray [index], reader);
+                        RebuildFromComposite (objects, index, (Composite)serArray [index], reader, version);
                     } else {
                         Shovel.Utils.Panic ();
                         throw new NotImplementedException ();
@@ -281,10 +281,10 @@ namespace Shovel.Serialization
                 return Value.Make ();
             } else if (par is bool) {
                 return Value.Make ((bool)par);
-            } else if (par is List<Value>) {
-                return Value.Make ((List<Value>)par);
-            } else if (par is Dictionary<Value, Value>) {
-                return Value.Make ((Dictionary<Value, Value>)par);
+            } else if (par is ArrayInstance) {
+                return Value.Make ((ArrayInstance)par);
+            } else if (par is HashInstance) {
+                return Value.Make ((HashInstance)par);
             } else if (par is Callable) {
                 return Value.Make ((Callable)par);
             } else if (par is ReturnAddress) {
@@ -301,14 +301,27 @@ namespace Shovel.Serialization
             }
         }
 
-        List<Value> RebuildShovelValueList (
-            object[] objects, int index, Composite composite, Func<int, object> reader)
+        ArrayInstance RebuildShovelValueList (
+            object[] objects, int index, Composite composite, Func<int, object> reader, int version)
         {
-            var result = new List<Value> ();
+            var result = new ArrayInstance ();
             objects [index] = result;
 
-            for (var i = 0; i < composite.Elements.Length; i++) {
+            var length = composite.Elements.Length;
+            if (version > 4)
+            {
+                length -= 2;
+            }
+
+            for (var i = 0; i < length; i++) {
                 result.Add (RebuildShovelValue (reader (composite.Elements [i])));
+            }
+
+            if (version > 4)
+            {
+                // The indirect get/set are stored as the last elements of the array.
+                result.IndirectGet = RebuildShovelValue(reader(composite.Elements[length])).CallableValue;
+                result.IndirectSet = RebuildShovelValue(reader(composite.Elements[length + 1])).CallableValue;
             }
             return result;
         }
@@ -337,16 +350,27 @@ namespace Shovel.Serialization
             return result;
         }
 
-        Dictionary<Value, Value> RebuildHash (
-            object[] objects, int index, Composite composite, Func<int, object> reader)
+        HashInstance RebuildHash (
+            object[] objects, int index, Composite composite, Func<int, object> reader, int version)
         {
-            var result = new Dictionary<Value, Value> ();
+            var result = new HashInstance ();
             objects [index] = result;
 
-            for (var i = 0; i < composite.Elements.Length; i+=2) {
+            var length = composite.Elements.Length;
+            if (version > 4)
+            {
+                length -= 2;
+            }
+            for (var i = 0; i < length; i+=2) {
                 var key = RebuildShovelValue (reader (composite.Elements [i]));
                 var value = RebuildShovelValue (reader (composite.Elements [i + 1]));
                 result [key] = value;
+            }
+            if (version > 4)
+            {
+                // The indirect get/set are stored as the last elements of the hash.
+                result.IndirectGet = RebuildShovelValue(reader(composite.Elements[length])).CallableValue;
+                result.IndirectSet = RebuildShovelValue(reader(composite.Elements[length + 1])).CallableValue;
             }
             return result;
         }
@@ -438,11 +462,12 @@ namespace Shovel.Serialization
             return result;
         }
 
-        void RebuildFromComposite (object[] objects, int index, Composite composite, Func<int, object> reader)
+        void RebuildFromComposite (
+            object[] objects, int index, Composite composite, Func<int, object> reader, int version)
         {
             switch (composite.Kind) {
             case ObjectTypes.ShovelValueList:
-                RebuildShovelValueList (objects, index, composite, reader);
+                RebuildShovelValueList (objects, index, composite, reader, version);
                 break;
             case ObjectTypes.StringArray:
                 RebuildStringArray (objects, index, composite, reader);
@@ -451,7 +476,7 @@ namespace Shovel.Serialization
                 RebuildShovelValueArray (objects, index, composite, reader);
                 break;
             case ObjectTypes.Hash:
-                RebuildHash (objects, index, composite, reader);
+                RebuildHash (objects, index, composite, reader, version);
                 break;
             case ObjectTypes.Callable:
                 RebuildCallable (objects, index, composite, reader);
@@ -548,11 +573,11 @@ namespace Shovel.Serialization
             return result;
         }
 
-        int SerializeHash (Dictionary<Value, Value> dict, object obj)
+        int SerializeHash (HashInstance dict, object obj)
         {
             var composite = new Composite { 
                 Kind = ObjectTypes.Hash, 
-                Elements = new int[dict.Count * 2] 
+                Elements = new int[dict.Count * 2 + 2] 
             };
             var result = SerializeOneHashed (composite, obj);
             var cursor = 0;
@@ -561,19 +586,28 @@ namespace Shovel.Serialization
                 composite.Elements [cursor + 1] = Serialize (kv.Value);
                 cursor += 2;
             }
+            composite.Elements[cursor] = Serialize(dict.IndirectGet);
+            cursor++;
+            composite.Elements[cursor] = Serialize(dict.IndirectSet);
+            cursor++;
             return result;
         }
 
-        int SerializeList (List<Value> list, object obj)
+        int SerializeList (ArrayInstance list, object obj)
         {
             var composite = new Composite { 
                 Kind = ObjectTypes.ShovelValueList, 
-                Elements = new int[list.Count] 
+                Elements = new int[list.Count + 2] 
             };
             var result = SerializeOneHashed (composite, obj);
-            for (var i = 0; i < list.Count; i++) {
+            var i = 0;
+            for (i = 0; i < list.Count; i++) {
                 composite.Elements [i] = Serialize (list [i]);
             }
+            composite.Elements[i] = Serialize(list.IndirectGet);
+            i++;
+            composite.Elements[i] = Serialize(list.IndirectSet);
+            i++;
             return result;
         }
 

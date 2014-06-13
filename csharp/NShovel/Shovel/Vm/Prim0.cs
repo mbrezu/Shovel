@@ -115,7 +115,7 @@ namespace Shovel.Vm
             if (args [start].Kind != Value.Kinds.StructInstance) {
                 api.RaiseShovelError ("First argument must be a struct instance.");
             }
-            var result = new Dictionary<Value, Value> ();
+            var result = new HashInstance ();
             var structInstance = args [start].StructInstanceValue;
             var ztruct = structInstance.Struct;
             var sizeIncrease = 1 + 2 * ztruct.Fields.Length;
@@ -217,7 +217,7 @@ namespace Shovel.Vm
                 break;
             case Value.Kinds.Array:
                 if (t2.Kind == Value.Kinds.Array) {
-                    var result = new List<Value> ();
+                    var result = new ArrayInstance ();
                     result.AddRange (t1.ArrayValue);
                     result.AddRange (t2.ArrayValue);
                     t1.Kind = Value.Kinds.Array;
@@ -692,7 +692,7 @@ namespace Shovel.Vm
             }
             var sizeIncrease = 1 + 2 * args.Length;
             api.CellsIncrementHerald (sizeIncrease);
-            var result = new Dictionary<Value, Value> ();
+            var result = new HashInstance ();
             for (var i = start; i < start + length; i += 2) {
                 if (args [i].Kind == Value.Kinds.String) {
                     result [args [i]] = args [i + 1];
@@ -721,7 +721,7 @@ namespace Shovel.Vm
             if (hash.Kind != Value.Kinds.Hash) {
                 api.RaiseShovelError ("First argument must be a hash table.");
             }
-            var result = new List<Value> ();
+            var result = new ArrayInstance ();
             var sizeIncrease = 1 + hash.HashValue.Count;
             api.CellsIncrementHerald (sizeIncrease);
             result.AddRange (hash.HashValue.Keys);
@@ -732,7 +732,7 @@ namespace Shovel.Vm
 
         static Value ArrayConstructor (VmApi api, Value[] args, int start, int length)
         {
-            var result = new List<Value> ();
+            var result = new ArrayInstance ();
             var sizeIncrease = 1 + length;
             api.CellsIncrementHerald (sizeIncrease);
             for (var i = start; i < start+length; i++) {
@@ -747,7 +747,7 @@ namespace Shovel.Vm
             if (size.Kind != Value.Kinds.Integer) {
                 api.RaiseShovelError ("Argument must be an integer.");
             }
-            var result = new List<Value> ();
+            var result = new ArrayInstance ();
             var sizeIncrease = 1 + (int)size.IntegerValue;
             api.CellsIncrementHerald (sizeIncrease);
             for (var i = 0; i < size.IntegerValue; i++) {
@@ -957,7 +957,7 @@ namespace Shovel.Vm
                 AdjustRealStartEnd (api, ref realStart, ref realEnd, length);
                 api.CellsIncrementer (realEnd - realStart);
                 return Value.Make (
-                    arrayOrString.ArrayValue.GetRange (realStart, realEnd - realStart));
+                    arrayOrString.ArrayValue.GetRange2 (realStart, realEnd - realStart));
             } else if (arrayOrString.Kind == Value.Kinds.String) {
                 var length = arrayOrString.StringValue.Length;
                 var realStart = (int)start.IntegerValue;
@@ -1010,7 +1010,7 @@ namespace Shovel.Vm
             }
             var epochTimeSpan = TimeSpan.FromSeconds (timeInSeconds.IntegerValue);
             var date = Prim0.unixEpoch + epochTimeSpan;
-            var result = new Dictionary<Value, Value> ();
+            var result = new HashInstance ();
             result [Value.Make ("year")] = Value.MakeInt (date.Year);
             result [Value.Make ("month")] = Value.MakeInt (date.Month);
             result [Value.Make ("day")] = Value.MakeInt (date.Day);

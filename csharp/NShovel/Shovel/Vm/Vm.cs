@@ -196,14 +196,13 @@ namespace Shovel.Vm
                     // Read the number of used cells.
                     this.usedCells = Serialization.Utils.ReadInt (ms);
                     var ser = new Serialization.VmStateSerializer ();
-                    ser.Deserialize (str, reader => {
+                    ser.Deserialize (str, version, reader => {
                         this.stack = new Stack ((Value[])reader (stackIndex));
                         this.currentEnvironment = (VmEnvironment)reader (envIndex);
                     }
                     );
                     return null;
-                }
-                );
+                });
             }
         }
 
@@ -895,12 +894,12 @@ namespace Shovel.Vm
                     if (callable.Arity.Value <= numArgs)
                     {
                         var extraArgs = numArgs - callable.Arity.Value;
-                        var values = new Value[extraArgs];
-                        Array.Copy(
-                            vm.stack.Storage, vm.stack.Count - extraArgs,
-                            values, 0, extraArgs);
+                        var values = new ArrayInstance();
+                        for (int i = 0; i < extraArgs; i++) {
+                            values.Add(vm.stack.Storage[i + vm.stack.Count - extraArgs]);
+                        }
                         vm.stack.PopMany(extraArgs);
-                        vm.stack.Push(Value.Make(values.ToList()));
+                        vm.stack.Push(Value.Make(values));
                     }
                     else
                     {
@@ -1274,7 +1273,7 @@ namespace Shovel.Vm
             var currentEnvironmentSb = new StringBuilder ();
             vm.WriteCurrentEnvironment (currentEnvironmentSb);
             var currentEnvironment = currentEnvironmentSb.ToString ();
-            var result = new Dictionary<Value, Value> ();
+            var result = new HashInstance ();
             result.Add (Value.Make ("stack"), Value.Make (stackTrace));
             result.Add (Value.Make ("environment"), Value.Make (currentEnvironment));
             vm.IncrementCells (6 + stackTrace.Length + currentEnvironment.Length);

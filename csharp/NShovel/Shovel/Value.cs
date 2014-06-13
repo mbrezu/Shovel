@@ -26,6 +26,42 @@ using Shovel.Vm.Types;
 
 namespace Shovel
 {
+
+    public class ArrayInstance : List<Value>
+    {
+        public Callable IndirectGet { get; set; }
+        public Callable IndirectSet { get; set; }
+
+        public ArrayInstance() : base()
+        {            
+        }
+
+        public ArrayInstance(List<Value> init) : base(init)
+        {
+        }
+
+        public ArrayInstance GetRange2(int start, int length)
+        {
+            var result = new ArrayInstance();
+            result.AddRange(GetRange(start, length));
+            return result;
+        }
+    }
+
+    public class HashInstance : Dictionary<Value, Value>
+    {
+        public Callable IndirectGet { get; set; }
+        public Callable IndirectSet { get; set; }
+
+        public HashInstance() : base()
+        {
+        }
+
+        public HashInstance(Dictionary<Value, Value> init) : base(init)
+        {
+        }
+    }
+
     [StructLayout(LayoutKind.Explicit)]
     public struct Value
     {
@@ -43,49 +79,36 @@ namespace Shovel
             NamedBlock,
             Struct,
             StructInstance,
-        }
-        ;
+        };
 
         // Mono and .NET 32 bit seem to be OK with the offset below set at 12.
         // Mono on 64 bit wants it to be set to 20. No idea why (it looks like it should be 16).
         // Need to check what .NET 64 bit requires.
         // The lower the better, performance wise.
         [FieldOffset(20)]
-        public Kinds
-            Kind;
+        public Kinds Kind;
         [FieldOffset(0)]
-        public long
-            IntegerValue;
+        public long IntegerValue;
         [FieldOffset(0)]
-        public double
-            DoubleValue;
+        public double DoubleValue;
         [FieldOffset(0)]
-        public bool
-            BoolValue;
+        public bool BoolValue;
         [FieldOffset(8)]
-        public string
-            StringValue;
+        public string StringValue;
         [FieldOffset(8)]
-        public List<Value>
-            ArrayValue;
+        public ArrayInstance ArrayValue;
         [FieldOffset(8)]
-        public Dictionary<Value, Value>
-            HashValue;
+        public HashInstance HashValue;
         [FieldOffset(8)]
-        internal Callable
-            CallableValue;
+        internal Callable CallableValue;
         [FieldOffset(8)]
-        internal ReturnAddress
-            ReturnAddressValue;
+        internal ReturnAddress ReturnAddressValue;
         [FieldOffset(8)]
-        internal NamedBlock
-            NamedBlockValue;
+        internal NamedBlock NamedBlockValue;
         [FieldOffset(8)]
-        internal Struct
-            StructValue;
+        internal Struct StructValue;
         [FieldOffset(8)]
-        public StructInstance
-            StructInstanceValue;
+        public StructInstance StructInstanceValue;
 
         static Value value;
 
@@ -145,7 +168,7 @@ namespace Shovel
             return result;
         }
 
-        public static Value Make (List<Value> a)
+        public static Value Make (ArrayInstance a)
         {
             if (a == null) {
                 return value;
@@ -156,7 +179,7 @@ namespace Shovel
             return result;
         }
 
-        public static Value Make (Dictionary<Value, Value> d)
+        public static Value Make (HashInstance d)
         {
             if (d == null) {
                 return value;
