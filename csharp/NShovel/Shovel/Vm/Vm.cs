@@ -230,7 +230,9 @@ namespace Shovel.Vm
                     || (op == Instruction.Opcodes.Args)
                     || (op == Instruction.Opcodes.Return)
                     || (op == Instruction.Opcodes.CallJ)
-                    || (op == Instruction.Opcodes.BlockReturn)) {
+                    || (op == Instruction.Opcodes.Apply)
+                    || (op == Instruction.Opcodes.BlockReturn))
+                {
                     break;
                 }
                 if ((op == Instruction.Opcodes.NewFrame) 
