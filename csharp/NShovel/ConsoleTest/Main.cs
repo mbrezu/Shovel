@@ -35,25 +35,25 @@ namespace ConsoleTest
             //SimpleTest ();
             //PostfixTest();
             //IndirectTest();
-            ApplyTest();
+            CurryTest();
             //AnotherSimpleTest ();
             //SerializerTest ();
             //UdpTest();
         }
 
-        static void ApplyTest()
+        static void CurryTest()
         {
             var sources = Shovel.Api.MakeSources("test.sho", @"
-var fun2 = fn (x, y, z, ...rest) rest
-var fun = fn (x, y, z, t) x + y + z + t
-var x = 2
-//fun(1, x, 3, 4)
-var args = array(1, 2, 3, 4)
-apply(fun, args)
-//apply(args, fun)
-//args[2] = 3
-//length(args, 2)
-stringRepresentation(array(1, 2, 3) + array(4, 5, 6))
+var curry = fn (f, ...args) fn ...extras apply(f, args + extras)
+var readableCurry = fn (f, ...args) {
+    fn (...extras) {
+        apply(f, args + extras)
+    }
+}
+var add = fn (x, y) x + y
+var add3 = curry(add, 3)
+var add31 = readableCurry(add, 3)
+add3(4) + add31(3)
             ");
             try
             {

@@ -468,11 +468,16 @@ namespace Shovel.Compiler
                 var body = ast.Children.ElementAt (1);
                 this.CompileFnBody (args, body, env);
                 this.Gen (Instruction.Opcodes.Label, l);
+                var arity = args.Children.Count();
+                var hasCollectParams = args.Children.Any(pt => pt.Label == ParseTree.Labels.CollectName);
+                if (hasCollectParams) { 
+                    arity --;
+                    arity += Callable.CollectParamsArityModifier;
+                }
                 this.Gen (Instruction.Opcodes.Fn, new object[] {
                     fn,
-                    args.Children.Count ()
-                }
-                );
+                    arity
+                });
                 if (!more) {
                     this.Gen (Instruction.Opcodes.Return);
                 }

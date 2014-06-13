@@ -26,6 +26,8 @@ namespace Shovel
 {
     public class Callable
     {
+        public static readonly int CollectParamsArityModifier = 1 << 20;
+
         internal string UdpName { get; set; }
 
         internal string Prim0Name { get; set; }

@@ -887,16 +887,37 @@ namespace Shovel.Vm
 
         static void CallFunction (Callable callable, Vm vm, int numArgs, bool saveReturnAddress)
         {
-            if (saveReturnAddress) {
+            if (callable.Arity != null)
+            {
+                // FIXME: Find out why/when the arity can be null.
+                if (callable.HasCollectParams)
+                {
+                    if (callable.Arity.Value <= numArgs)
+                    {
+                        var extraArgs = numArgs - callable.Arity.Value;
+                        var values = new Value[extraArgs];
+                        Array.Copy(
+                            vm.stack.Storage, vm.stack.Count - extraArgs,
+                            values, 0, extraArgs);
+                        vm.stack.PopMany(extraArgs);
+                        vm.stack.Push(Value.Make(values.ToList()));
+                    }
+                    else
+                    {
+                        ArityError(vm, callable.Arity.Value, numArgs);
+                    }
+                }
+                else if (callable.Arity.Value != numArgs)
+                {
+                    ArityError(vm, callable.Arity.Value, numArgs);
+                }
+            }
+            if (saveReturnAddress)
+            {
                 vm.stack.Push (Value.Make (new ReturnAddress () {
                     ProgramCounter = vm.programCounter + 1,
                     Environment = vm.currentEnvironment
-                }
-                )
-                );
-            }
-            if (callable.Arity != null && callable.Arity.Value != numArgs) {
-                ArityError (vm, callable.Arity.Value, numArgs);
+                }));
             }
             vm.currentEnvironment = callable.Environment;
             vm.programCounter = callable.ProgramCounter.Value;
@@ -976,8 +997,7 @@ namespace Shovel.Vm
         {
             vm.RaiseShovelError (String.Format (
                 "Function of {0} arguments called with {1} arguments.",
-                expectedArity, actualArity)
-            );
+                expectedArity, actualArity));
         }
 
         static void HandleCallj (Vm vm)
@@ -1066,9 +1086,16 @@ namespace Shovel.Vm
         {
             var instruction = vm.CurrentInstruction ();
             var args = (int[])instruction.Arguments;
+            var arity = args[1];
+            var hasCollectParameters = arity >= Callable.CollectParamsArityModifier;
+            if (hasCollectParameters)
+            {
+                arity -= Callable.CollectParamsArityModifier;
+            }
             var callable = new Callable () {
                 ProgramCounter = args[0],
-                Arity = args[1],
+                Arity = arity,
+                HasCollectParams = hasCollectParameters,
                 Environment = vm.currentEnvironment
             };
             vm.stack.Push (Value.Make (callable));
