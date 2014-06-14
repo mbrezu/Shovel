@@ -690,10 +690,10 @@ namespace Shovel.Vm
 
         static Value HashConstructor (VmApi api, Value[] args, int start, int length)
         {
-            if (args.Length % 2 != 0) {
+            if (length % 2 != 0) {
                 api.RaiseShovelError ("Must provide an even number of arguments.");
             }
-            var sizeIncrease = 1 + 2 * args.Length;
+            var sizeIncrease = 1 + 2 * length;
             api.CellsIncrementHerald (sizeIncrease);
             var result = new HashInstance ();
             for (var i = start; i < start + length; i += 2) {

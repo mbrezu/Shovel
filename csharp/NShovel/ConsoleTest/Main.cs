@@ -37,12 +37,40 @@ namespace ConsoleTest
             //IndirectTest();
             //CurryTest();
             //ApplyTestTails();
+            ApplyPrimitiveTest();
             //CollectTestTails();
             //IndirectHashTest();
-            IndirectArrayTest();
+            //IndirectArrayTest();
             //AnotherSimpleTest ();
             //SerializerTest ();
             //UdpTest();
+        }
+
+        static void ApplyPrimitiveTest()
+        {
+            var sources = Shovel.Api.MakeSources("test.sho", @"
+var h = apply(hash, array('a', 1, 'b', 2, 'c', array(1, 2)))
+stringRepresentation(h)
+//var a = apply(array, array(1, 2, 3))
+//stringRepresentation(a)
+            ");
+            try
+            {
+                //var bytecode = Shovel.Api.GetBytecode (sources);
+                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                Console.WriteLine(Shovel.Api.TestRunVm(sources));
+                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                var tokenizer = new Shovel.Compiler.Tokenizer(sources[0]);
+                var parser = new Shovel.Compiler.Parser(tokenizer.Tokens, sources);
+                foreach (var pt in parser.ParseTrees)
+                {
+                    //Console.WriteLine(pt);
+                }
+            }
+            catch (Shovel.Exceptions.ShovelException shex)
+            {
+                Console.WriteLine(shex.Message);
+            }
         }
 
         static void IndirectArrayTest()
