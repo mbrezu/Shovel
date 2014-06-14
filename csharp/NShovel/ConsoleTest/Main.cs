@@ -38,13 +38,41 @@ namespace ConsoleTest
             //CurryTest();
             //ApplyTestTails();
             //CollectTestTails();
-            Indirect2Test();
+            IndirectHashTest();
+            //IndirectArrayTest();
             //AnotherSimpleTest ();
             //SerializerTest ();
             //UdpTest();
         }
 
-        static void Indirect2Test()
+        static void IndirectArrayTest()
+        {
+            var sources = Shovel.Api.MakeSources("test.sho", @"
+var x = array(1, 2, 3)
+//length(x)
+x[0] = 'm'
+stringRepresentation(x)
+            ");
+            try
+            {
+                //var bytecode = Shovel.Api.GetBytecode (sources);
+                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                //Console.WriteLine(Shovel.Api.TestRunVm(sources));
+                Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                var tokenizer = new Shovel.Compiler.Tokenizer(sources[0]);
+                var parser = new Shovel.Compiler.Parser(tokenizer.Tokens, sources);
+                foreach (var pt in parser.ParseTrees)
+                {
+                    //Console.WriteLine(pt);
+                }
+            }
+            catch (Shovel.Exceptions.ShovelException shex)
+            {
+                Console.WriteLine(shex.Message);
+            }
+        }
+
+        static void IndirectHashTest()
         {
             var sources = Shovel.Api.MakeSources("test.sho", @"
 var x = hash('a', 1)
@@ -52,17 +80,19 @@ var getter = fn (obj, propertyName) propertyName + propertyName
 var y = hash()
 var setter = fn (obj, propertyName, value) y[propertyName] = value
 setHandlers(x, getter, setter)
-x['whatever'] = 10
+var key = 'whatever'
+//x['whatever'] = 10
+x[key] = 10
+//x[key]
 //x.whatever = 10
-x.a = 2
+//x.a = 2
 stringRepresentation(x) + ' ' + stringRepresentation(y)
             ");
             try
             {
                 //var bytecode = Shovel.Api.GetBytecode (sources);
-                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
                 Console.WriteLine(Shovel.Api.TestRunVm(sources));
-                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
                 var tokenizer = new Shovel.Compiler.Tokenizer(sources[0]);
                 var parser = new Shovel.Compiler.Parser(tokenizer.Tokens, sources);
                 foreach (var pt in parser.ParseTrees)

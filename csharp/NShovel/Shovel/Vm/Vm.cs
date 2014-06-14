@@ -750,12 +750,21 @@ namespace Shovel.Vm
         static void HandleSetIndexed (Vm vm)
         {
             var start = vm.stack.Count - 3;
-            Prim0.ArrayOrHashSet (vm.api, 
+            var callSetter = !Prim0.ArrayOrHashSet (vm.api, 
                                   ref vm.stack.Storage [start], 
                                   ref vm.stack.Storage [start + 1],
                                   ref vm.stack.Storage [start + 2]);
-            vm.stack.PopMany (2);
-            vm.programCounter++;
+
+            if (!callSetter)
+            {
+                vm.stack.PopMany(2);
+                vm.programCounter++;
+            }
+            else
+            {
+                vm.stack.Push(vm.stack.Storage[start].HashValue.IndirectSet);
+                HandleCallImpl(vm, 3, true);
+            }
         }
 
         static void HandleNeg (Vm vm)

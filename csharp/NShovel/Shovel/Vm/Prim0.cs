@@ -791,7 +791,12 @@ namespace Shovel.Vm
         {
             if (arrayOrHashOrString.Kind == Value.Kinds.Array) {
                 if (index.Kind == Value.Kinds.Integer) {
-                    arrayOrHashOrString = arrayOrHashOrString.ArrayValue [(int)index.IntegerValue];
+                    var idx = (int)index.IntegerValue;
+                    if (idx < 0 || idx >= arrayOrHashOrString.ArrayValue.Count)
+                    {
+                        api.RaiseShovelError("Index out of range.");
+                    }
+                    arrayOrHashOrString = arrayOrHashOrString.ArrayValue [idx];
                 } else {
                     api.RaiseShovelError ("Getting an array element requires an integer index.");
                 }
@@ -806,8 +811,13 @@ namespace Shovel.Vm
                 }
             } else if (arrayOrHashOrString.Kind == Value.Kinds.String) {
                 if (index.Kind == Value.Kinds.Integer) {
+                    var idx = (int)index.IntegerValue;
+                    if (idx < 0 || idx >= arrayOrHashOrString.StringValue.Length)
+                    {
+                        api.RaiseShovelError("Index out of range.");
+                    }
                     arrayOrHashOrString = Value.Make (
-                        arrayOrHashOrString.StringValue [(int)index.IntegerValue].ToString ());
+                        arrayOrHashOrString.StringValue [idx].ToString ());
                 } else {
                     api.RaiseShovelError ("Getting an string element requires an integer index.");
                 }
@@ -876,7 +886,19 @@ namespace Shovel.Vm
                 structInstance.Values [location] = value;
                 vm.SetCurrentCache (Tuple.Create (ztruct, location));
             } else if (obj.Kind == Value.Kinds.Hash) {
-                if (!obj.HashValue.ContainsKey(index)) {
+                return HashSet(api, ref obj, ref index, ref value);
+            } else {
+                api.RaiseShovelError ("First argument must be a hash or a struct instance.");
+            }
+            return true;
+        }
+
+        private static bool HashSet(VmApi api, ref Value obj, ref Value index, ref Value value)
+        {
+            if (index.Kind == Value.Kinds.String)
+            {
+                if (!obj.HashValue.ContainsKey(index))
+                {
                     var hasSetter = obj.HashValue.IndirectSet.Kind == Value.Kinds.Callable;
                     if (hasSetter)
                     {
@@ -886,13 +908,15 @@ namespace Shovel.Vm
                 obj.HashValue[index] = value;
                 obj = value;
                 return true;
-            } else {
-                api.RaiseShovelError ("First argument must be a hash or a struct instance.");
             }
-            return true;
+            else
+            {
+                api.RaiseShovelError("Setting a hash table value requires a key that is a string.");
+                throw new Exception();
+            }            
         }
 
-        internal static void ArrayOrHashSet (
+        internal static bool ArrayOrHashSet (
             VmApi api, ref Value obj, ref Value index, ref Value value)
         {
             if (obj.Kind == Value.Kinds.Array) {
@@ -902,16 +926,14 @@ namespace Shovel.Vm
                 } else {
                     api.RaiseShovelError ("Setting an array element requires an integer index.");
                 }
-            } else if (obj.Kind == Value.Kinds.Hash) {
-                if (index.Kind == Value.Kinds.String) {
-                    obj.HashValue [index] = value;
-                    obj = value;
-                } else {
-                    api.RaiseShovelError ("Setting a hash table value requires a key that is a string.");
-                }
-            } else {
-                api.RaiseShovelError ("First argument must be an array, a string or a struct instance.");
             }
+            else if (obj.Kind == Value.Kinds.Hash)
+            {
+                return HashSet(api, ref obj, ref index, ref value);
+            } else {
+                api.RaiseShovelError ("First argument must be an array or a hash.");
+            }
+            return true;
         }
 
         internal static void GetLength (VmApi api, ref Value arrayOrString)
