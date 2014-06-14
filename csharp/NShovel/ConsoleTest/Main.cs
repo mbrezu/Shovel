@@ -37,10 +37,43 @@ namespace ConsoleTest
             //IndirectTest();
             //CurryTest();
             //ApplyTestTails();
-            CollectTestTails();
+            //CollectTestTails();
+            Indirect2Test();
             //AnotherSimpleTest ();
             //SerializerTest ();
             //UdpTest();
+        }
+
+        static void Indirect2Test()
+        {
+            var sources = Shovel.Api.MakeSources("test.sho", @"
+var x = hash('a', 1)
+var getter = fn (obj, propertyName) propertyName + propertyName
+var y = hash()
+var setter = fn (obj, propertyName, value) y[propertyName] = value
+setHandlers(x, getter, setter)
+x['whatever'] = 10
+//x.whatever = 10
+x.a = 2
+stringRepresentation(x) + ' ' + stringRepresentation(y)
+            ");
+            try
+            {
+                //var bytecode = Shovel.Api.GetBytecode (sources);
+                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                Console.WriteLine(Shovel.Api.TestRunVm(sources));
+                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                var tokenizer = new Shovel.Compiler.Tokenizer(sources[0]);
+                var parser = new Shovel.Compiler.Parser(tokenizer.Tokens, sources);
+                foreach (var pt in parser.ParseTrees)
+                {
+                    //Console.WriteLine(pt);
+                }
+            }
+            catch (Shovel.Exceptions.ShovelException shex)
+            {
+                Console.WriteLine(shex.Message);
+            }
         }
 
         static void CollectTestTails()

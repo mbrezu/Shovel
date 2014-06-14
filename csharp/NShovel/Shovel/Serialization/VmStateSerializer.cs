@@ -320,8 +320,8 @@ namespace Shovel.Serialization
             if (version > 4)
             {
                 // The indirect get/set are stored as the last elements of the array.
-                result.IndirectGet = RebuildShovelValue(reader(composite.Elements[length])).CallableValue;
-                result.IndirectSet = RebuildShovelValue(reader(composite.Elements[length + 1])).CallableValue;
+                result.IndirectGet = RebuildShovelValue(reader(composite.Elements[length]));
+                result.IndirectSet = RebuildShovelValue(reader(composite.Elements[length + 1]));
             }
             return result;
         }
@@ -369,8 +369,8 @@ namespace Shovel.Serialization
             if (version > 4)
             {
                 // The indirect get/set are stored as the last elements of the hash.
-                result.IndirectGet = RebuildShovelValue(reader(composite.Elements[length])).CallableValue;
-                result.IndirectSet = RebuildShovelValue(reader(composite.Elements[length + 1])).CallableValue;
+                result.IndirectGet = RebuildShovelValue(reader(composite.Elements[length]));
+                result.IndirectSet = RebuildShovelValue(reader(composite.Elements[length + 1]));
             }
             return result;
         }

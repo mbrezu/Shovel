@@ -595,9 +595,32 @@ namespace Shovel.Vm
         static void HandleGref (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            Prim0.ArrayOrHashGet (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
-            vm.stack.Pop ();
-            vm.programCounter++;
+            var keyFound = Prim0.ArrayOrHashGet (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
+            if (!keyFound)
+            {
+                var obj = vm.stack.Storage[start];
+                var hasGetter = false;
+                if (obj.Kind == Value.Kinds.Hash)
+                {
+                    var hash = obj.HashValue;
+                    if (hash.IndirectGet.Kind == Value.Kinds.Callable)
+                    {
+                        vm.stack.Push(hash.IndirectGet);
+                        HandleCallImpl(vm, 2, true);
+                        hasGetter = true;
+                    }
+                }
+                if (!hasGetter)
+                {
+                    var index = vm.stack.Storage [start + 1];
+                    vm.RaiseShovelError(String.Format("Key '{0}' not found.", index.StringValue));
+                }
+            }
+            else
+            {
+                vm.stack.Pop();
+                vm.programCounter++;
+            }
         }
 
         static void HandleEq (Vm vm)
@@ -651,20 +674,45 @@ namespace Shovel.Vm
         static void HandleGrefDot (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            Prim0.HashOrStructGetDot (vm, vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
-            vm.stack.Pop ();
-            vm.programCounter++;
+            var keyFound = Prim0.HashOrStructGetDot (vm, vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
+            if (!keyFound)
+            {
+                var obj = vm.stack.Storage[start];
+                var hasGetter = false;
+                if (obj.Kind == Value.Kinds.Hash) {
+                    var hash = obj.HashValue;
+                    if (hash.IndirectGet.Kind == Value.Kinds.Callable)
+                    {
+                        vm.stack.Push(hash.IndirectGet);
+                        HandleCallImpl(vm, 2, true);
+                        hasGetter = true;
+                    }
+                }
+                if (!hasGetter) {
+                    vm.RaiseShovelError("Key not found in hash table.");
+                }
+            } else { 
+                vm.stack.Pop ();
+                vm.programCounter++;
+            }
         }
 
         static void HandleSetDotIndexed (Vm vm)
         {
             var start = vm.stack.Count - 3;
-            Prim0.HashOrStructDotSet (vm, vm.api,
-                                  ref vm.stack.Storage [start], 
-                                  ref vm.stack.Storage [start + 1],
-                                  ref vm.stack.Storage [start + 2]);
-            vm.stack.PopMany (2);
-            vm.programCounter++;
+            var callSetter = !Prim0.HashOrStructDotSet(vm, vm.api,
+                                          ref vm.stack.Storage[start],
+                                          ref vm.stack.Storage[start + 1],
+                                          ref vm.stack.Storage[start + 2]);
+            if (!callSetter) { 
+                vm.stack.PopMany(2);
+                vm.programCounter++;
+            }
+            else
+            {
+                vm.stack.Push(vm.stack.Storage[start].HashValue.IndirectSet);
+                HandleCallImpl(vm, 3, true);
+            }
         }
 
         static void HandleSub (Vm vm)

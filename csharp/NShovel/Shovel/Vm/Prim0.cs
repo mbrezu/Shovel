@@ -46,6 +46,9 @@ namespace Shovel.Vm
             AddPrim0 (result, Callable.MakePrim0 ("array", ArrayConstructor, null));
             AddPrim0 (result, Callable.MakePrim0 ("arrayN", Callable.MakeHostCallable (SizedArrayConstructor), 1));
 
+            // Key-not-found and index-out-of-range handlers.
+            AddPrim0 (result, Callable.MakePrim0 ("setHandlers", Callable.MakeHostCallable(SetHandlers), 3));
+
             // String or array slice.
             AddPrim0 (result, Callable.MakePrim0 ("slice", Callable.MakeHostCallable (GetSlice), 3));
 
@@ -783,7 +786,7 @@ namespace Shovel.Vm
             vector.RemoveAt (vector.Count - 1);
         }
 
-        internal static void ArrayOrHashGet 
+        internal static bool ArrayOrHashGet 
             (VmApi api, ref Value arrayOrHashOrString, ref Value index)
         {
             if (arrayOrHashOrString.Kind == Value.Kinds.Array) {
@@ -795,7 +798,7 @@ namespace Shovel.Vm
             } else if (arrayOrHashOrString.Kind == Value.Kinds.Hash) {
                 if (index.Kind == Value.Kinds.String) {
                     if (!arrayOrHashOrString.HashValue.ContainsKey (index)) {
-                        api.RaiseShovelError (String.Format ("Key '{0}' not found.", index.StringValue));
+                        return false;
                     } 
                     arrayOrHashOrString = arrayOrHashOrString.HashValue [index];
                 } else {
@@ -811,6 +814,7 @@ namespace Shovel.Vm
             } else {
                 api.RaiseShovelError ("First argument must be a hash or an array or a string.");
             }
+            return true;
         }
 
         static int FindLocationInStruct (VmApi api, Struct ztruct, string key)
@@ -824,7 +828,7 @@ namespace Shovel.Vm
             return -1;
         }
 
-        internal static void HashOrStructGetDot (Vm vm, VmApi api, ref Value obj, ref Value index)
+        internal static bool HashOrStructGetDot (Vm vm, VmApi api, ref Value obj, ref Value index)
         {
             if (index.Kind != Value.Kinds.String) {
                 api.RaiseShovelError ("Second argument must be a string.");
@@ -837,7 +841,7 @@ namespace Shovel.Vm
                     var info = (Tuple<Struct, int>)cache;
                     if (info.Item1 == ztruct) {
                         obj = structInstance.Values [info.Item2];
-                        return;
+                        return true;
                     }
                 }
                 int location = FindLocationInStruct (api, ztruct, index.StringValue);
@@ -845,15 +849,16 @@ namespace Shovel.Vm
                 vm.SetCurrentCache (Tuple.Create (ztruct, location));
             } else if (obj.Kind == Value.Kinds.Hash) {
                 if (!obj.HashValue.ContainsKey (index)) {
-                    api.RaiseShovelError ("Key not found in hash table.");
+                    return false;
                 }
                 obj = obj.HashValue [index];
             } else {
                 api.RaiseShovelError ("First argument must be a struct instance or a hash table.");
             }
+            return true;
         }
 
-        internal static void HashOrStructDotSet (
+        internal static bool HashOrStructDotSet (
             Vm vm, VmApi api, ref Value obj, ref Value index, ref Value value)
         {
             if (obj.Kind == Value.Kinds.StructInstance) {
@@ -864,18 +869,27 @@ namespace Shovel.Vm
                     var info = (Tuple<Struct, int>)cache;
                     if (info.Item1 == ztruct) {
                         structInstance.Values [info.Item2] = value;
-                        return;
+                        return true;
                     }
                 }
                 int location = FindLocationInStruct (api, ztruct, index.StringValue);
                 structInstance.Values [location] = value;
                 vm.SetCurrentCache (Tuple.Create (ztruct, location));
             } else if (obj.Kind == Value.Kinds.Hash) {
-                obj.HashValue [index] = value;
+                if (!obj.HashValue.ContainsKey(index)) {
+                    var hasSetter = obj.HashValue.IndirectSet.Kind == Value.Kinds.Callable;
+                    if (hasSetter)
+                    {
+                        return false;
+                    }
+                }
+                obj.HashValue[index] = value;
                 obj = value;
+                return true;
             } else {
                 api.RaiseShovelError ("First argument must be a hash or a struct instance.");
             }
+            return true;
         }
 
         internal static void ArrayOrHashSet (
@@ -938,6 +952,38 @@ namespace Shovel.Vm
                         realEnd, length)
                 );
             }
+        }
+
+        static Value SetHandlers(VmApi api, Value arrayOrHash, Value getter, Value setter)
+        {
+            if (getter.Kind != Value.Kinds.Callable || getter.CallableValue.Arity != 2)
+            {
+                api.RaiseShovelError("The second parameter should be a callable with 2 parameters.");
+                throw new InvalidOperationException();
+            }
+            if (setter.Kind != Value.Kinds.Callable || setter.CallableValue.Arity != 3)
+            {
+                api.RaiseShovelError("The second parameter should be a callable with 3 parameters.");
+                throw new InvalidOperationException();
+            }
+            if (arrayOrHash.Kind == Value.Kinds.Array)
+            {
+                var array = arrayOrHash.ArrayValue;
+                array.IndirectGet = getter;
+                array.IndirectSet = setter;
+            }
+            else if (arrayOrHash.Kind == Value.Kinds.Hash)
+            {
+                var hash = arrayOrHash.HashValue;
+                hash.IndirectGet = getter;
+                hash.IndirectSet = setter;
+            }
+            else
+            {
+                api.RaiseShovelError("The first parameter should be an array or hash.");
+                throw new InvalidOperationException();
+            }
+            return Value.Make();
         }
 
         static Value GetSlice (VmApi api, Value arrayOrString, Value start, Value end)

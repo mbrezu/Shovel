@@ -29,8 +29,8 @@ namespace Shovel
 
     public class ArrayInstance : List<Value>
     {
-        public Callable IndirectGet { get; set; }
-        public Callable IndirectSet { get; set; }
+        public Value IndirectGet { get; set; }
+        public Value IndirectSet { get; set; }
 
         public ArrayInstance() : base()
         {            
@@ -50,8 +50,8 @@ namespace Shovel
 
     public class HashInstance : Dictionary<Value, Value>
     {
-        public Callable IndirectGet { get; set; }
-        public Callable IndirectSet { get; set; }
+        public Value IndirectGet { get; set; }
+        public Value IndirectSet { get; set; }
 
         public HashInstance() : base()
         {
