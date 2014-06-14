@@ -794,7 +794,13 @@ namespace Shovel.Vm
                     var idx = (int)index.IntegerValue;
                     if (idx < 0 || idx >= arrayOrHashOrString.ArrayValue.Count)
                     {
-                        api.RaiseShovelError("Index out of range.");
+                        if (arrayOrHashOrString.ArrayValue.IndirectGet.Kind == Value.Kinds.Callable)
+                        {
+                            return false;
+                        }
+                        else { 
+                            api.RaiseShovelError("Index out of range.");
+                        }
                     }
                     arrayOrHashOrString = arrayOrHashOrString.ArrayValue [idx];
                 } else {
@@ -803,7 +809,13 @@ namespace Shovel.Vm
             } else if (arrayOrHashOrString.Kind == Value.Kinds.Hash) {
                 if (index.Kind == Value.Kinds.String) {
                     if (!arrayOrHashOrString.HashValue.ContainsKey (index)) {
-                        return false;
+                        if (arrayOrHashOrString.HashValue.IndirectGet.Kind == Value.Kinds.Callable) { 
+                            return false;
+                        }
+                        else
+                        {
+                            api.RaiseShovelError(String.Format("Key '{0}' not found.", index.StringValue));
+                        }
                     } 
                     arrayOrHashOrString = arrayOrHashOrString.HashValue [index];
                 } else {
@@ -859,7 +871,12 @@ namespace Shovel.Vm
                 vm.SetCurrentCache (Tuple.Create (ztruct, location));
             } else if (obj.Kind == Value.Kinds.Hash) {
                 if (!obj.HashValue.ContainsKey (index)) {
-                    return false;
+                    if (obj.HashValue.IndirectGet.Kind == Value.Kinds.Callable) { 
+                        return false;
+                    }
+                    else {
+                        api.RaiseShovelError("Key not found in hash table.");
+                    }
                 }
                 obj = obj.HashValue [index];
             } else {
@@ -921,7 +938,18 @@ namespace Shovel.Vm
         {
             if (obj.Kind == Value.Kinds.Array) {
                 if (index.Kind == Value.Kinds.Integer) {
-                    obj.ArrayValue [(int)index.IntegerValue] = value;
+                    var idx = (int)index.IntegerValue;
+                    if (idx < 0 || idx >= obj.ArrayValue.Count)
+                    {
+                        if (obj.ArrayValue.IndirectSet.Kind == Value.Kinds.Callable)
+                        {
+                            return false;
+                        }
+                        else { 
+                            api.RaiseShovelError("Index out of range.");
+                        }
+                    }
+                    obj.ArrayValue [idx] = value;
                     obj = value;
                 } else {
                     api.RaiseShovelError ("Setting an array element requires an integer index.");

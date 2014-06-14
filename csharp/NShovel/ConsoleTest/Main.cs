@@ -38,8 +38,8 @@ namespace ConsoleTest
             //CurryTest();
             //ApplyTestTails();
             //CollectTestTails();
-            IndirectHashTest();
-            //IndirectArrayTest();
+            //IndirectHashTest();
+            IndirectArrayTest();
             //AnotherSimpleTest ();
             //SerializerTest ();
             //UdpTest();
@@ -49,16 +49,23 @@ namespace ConsoleTest
         {
             var sources = Shovel.Api.MakeSources("test.sho", @"
 var x = array(1, 2, 3)
+var getter = fn (obj, index) index * index
+var y = hash()
+var setter = fn (obj, index, value) y[string(index)] = value
+setHandlers(x, getter, setter)
+
 //length(x)
-x[0] = 'm'
-stringRepresentation(x)
+//x[-1] = 'm'
+//stringRepresentation(x)
+x[11] = 'yo'
+stringRepresentation(x) + ' ' + stringRepresentation(y)
             ");
             try
             {
                 //var bytecode = Shovel.Api.GetBytecode (sources);
                 //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
-                //Console.WriteLine(Shovel.Api.TestRunVm(sources));
-                Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                Console.WriteLine(Shovel.Api.TestRunVm(sources));
+                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
                 var tokenizer = new Shovel.Compiler.Tokenizer(sources[0]);
                 var parser = new Shovel.Compiler.Parser(tokenizer.Tokens, sources);
                 foreach (var pt in parser.ParseTrees)

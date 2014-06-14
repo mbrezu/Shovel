@@ -26,7 +26,6 @@ using Shovel.Vm.Types;
 
 namespace Shovel
 {
-
     public class ArrayInstance : List<Value>
     {
         public Value IndirectGet { get; set; }

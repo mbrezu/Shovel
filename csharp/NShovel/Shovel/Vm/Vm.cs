@@ -595,26 +595,19 @@ namespace Shovel.Vm
         static void HandleGref (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var keyFound = Prim0.ArrayOrHashGet (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
-            if (!keyFound)
+            var callGetter = !Prim0.ArrayOrHashGet (vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
+            if (callGetter)
             {
                 var obj = vm.stack.Storage[start];
-                var hasGetter = false;
                 if (obj.Kind == Value.Kinds.Hash)
                 {
-                    var hash = obj.HashValue;
-                    if (hash.IndirectGet.Kind == Value.Kinds.Callable)
-                    {
-                        vm.stack.Push(hash.IndirectGet);
-                        HandleCallImpl(vm, 2, true);
-                        hasGetter = true;
-                    }
+                    vm.stack.Push(obj.HashValue.IndirectGet);
                 }
-                if (!hasGetter)
+                else if (obj.Kind == Value.Kinds.Array)
                 {
-                    var index = vm.stack.Storage [start + 1];
-                    vm.RaiseShovelError(String.Format("Key '{0}' not found.", index.StringValue));
+                    vm.stack.Push(obj.ArrayValue.IndirectGet);
                 }
+                HandleCallImpl(vm, 2, true);
             }
             else
             {
@@ -674,22 +667,13 @@ namespace Shovel.Vm
         static void HandleGrefDot (Vm vm)
         {
             var start = vm.stack.Count - 2;
-            var keyFound = Prim0.HashOrStructGetDot (vm, vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
-            if (!keyFound)
+            var callGetter = !Prim0.HashOrStructGetDot (vm, vm.api, ref vm.stack.Storage [start], ref vm.stack.Storage [start + 1]);
+            if (callGetter)
             {
                 var obj = vm.stack.Storage[start];
-                var hasGetter = false;
                 if (obj.Kind == Value.Kinds.Hash) {
-                    var hash = obj.HashValue;
-                    if (hash.IndirectGet.Kind == Value.Kinds.Callable)
-                    {
-                        vm.stack.Push(hash.IndirectGet);
-                        HandleCallImpl(vm, 2, true);
-                        hasGetter = true;
-                    }
-                }
-                if (!hasGetter) {
-                    vm.RaiseShovelError("Key not found in hash table.");
+                    vm.stack.Push(obj.HashValue.IndirectGet);
+                    HandleCallImpl(vm, 2, true);
                 }
             } else { 
                 vm.stack.Pop ();
@@ -762,7 +746,15 @@ namespace Shovel.Vm
             }
             else
             {
-                vm.stack.Push(vm.stack.Storage[start].HashValue.IndirectSet);
+                var obj = vm.stack.Storage[start];
+                if (obj.Kind == Value.Kinds.Hash) 
+                { 
+                    vm.stack.Push(obj.HashValue.IndirectSet);
+                }
+                else if (obj.Kind == Value.Kinds.Array)
+                {
+                    vm.stack.Push(obj.ArrayValue.IndirectSet);
+                }
                 HandleCallImpl(vm, 3, true);
             }
         }
