@@ -101,8 +101,12 @@ or
 
 or
 
-    fn (<arg-1>, <arg-2>, ... <arg-n>) <statement>
+    fn (<arg-1>, <arg-2> --- <arg-n>) <statement>
+    
+or
 
+    fn (<arg-1>, <arg-2>, ...<arg-n>) <statement>
+    
 Where `<argument-name>`, `<arg-1>` etc. are identifiers and
 `<statement>` is a statement that is used to calculate the return
 value for a function invocation (the value of the statement is the
@@ -110,6 +114,17 @@ returned value).
 
 `<statement>` can get or set any of the variables that are accessible
 where the closure is defined (lexical scoping, indefinite extent).
+
+Adding `...` before the last parameter in a function definition makes
+that parameter a 'collect parameter', similar to `params` parameters
+in C# or `&rest` in Common Lisp.
+
+Example:
+
+    var fun = fn (x, ...rest) x + length(rest)
+    fun(1) // returns 1
+    fun(1, 2) // return 2
+    fun(1, 2, 3) // returns 3
 
 ### Alternative Expressions
 
@@ -229,14 +244,33 @@ with two keys, `stack` and `environment`, containing string
 representation of the stack trace and current environment at the
 moment the `context` expression is evaluated.
 
+Function calls can also be expressed in a 'postfixish' way using `->`
+and `$` as follows:
+
+ * `x -> f(3, $)` is equivalent to `f(3, x)`;
+ * `x -> f($, 3) -> g(5, $)` is equivalent to `g(5, f(x, 3))`.
+ * `x -> f($, 1 -> (2 + $)) -> g(5, $)` is equivalent to `g(5, f(x,
+   3))` (postfix applications can be nested).
+
 ## Comments
-ShovelScript supports single-line comments, indicated by double slash `//`
+
+### Single Line
+ShovelScript supports single-line comments, indicated by double slash `//`:
 
 ```
    @f(5) // Call f()
 ```
 
-Multi-line comments are not supported.
+### Multiple Line
+
+Multiline comments use `/*` and `*/` as begin/end markers. The
+multiline comments cannot be nested (i.e. the first `*/` finishes the
+comment).
+
+Example:
+
+    var fun = fn(x, y, z)
+    fun(/* x */ 1, /* y */ 2, /* z */ 3)
 
 ## Types
 
@@ -451,6 +485,70 @@ Description: Returns the largest integer smaller than
 Arguments: `message`
 
 Description: Finishes program execution with message `message`.
+
+### `apply`
+
+The `apply` primitive has two arguments: a function and an array. It
+calls the function passing the elements of the array as the call
+parameters. Usage examples:
+
+ * `apply(f, array(1, 2, 3))` calls `f` with arguments `1`, `2` and
+   `3`;
+ * `apply(hash, array('a', 1, 'b', 2))` creates a hash by calling
+   `hash` with the given arguments.
+   
+### `setHandlers`
+
+Configures 'key not found' handlers for hashes and 'index out of
+range' handlers for arrays. It takes three arguments:
+
+ * an object (hash or array) to add handlers for;
+ * a getter function to be called if the index is 'invalid' (key not
+   found or index out of range); the getter is a function of two
+   arguments, the hash or array object and the index;
+ * a setter function to be called if the index is 'invalid' when
+   assigning a value; the setter is a function of three arguments:
+   object, index, value.
+
+#### Hashes
+
+When deciding what to do when setting a value in a hash, the following
+rules are followed:
+
+ * if the key is present in the hash, its associated value is set
+   directly (no setter call);
+ * if the key is not present and there is no setter, the associated
+   value is also set directly (no setter call);
+ * if the key is not present and there is a setter, the setter is
+   called but the associated value is not set.
+
+Example:
+
+    var h = hash('a', 1, 'b', 2)
+    var h2 = hash()
+    var getter = fn (obj, index) index + index
+    var setter = fn (obj, index, value) h2[index] = value
+    setHandlers(h, getter, setter)
+    h['yo'] // doesn't fail anymore, calls getter and returns 'yoyo'.
+    h['yo'] = 5 // because there is a setter handler present and the key is missing,
+                // the setter is called and the h hash is not modified.
+    h2['yo'] // returns 5, because of the setter call before.
+
+#### Arrays
+
+Things are more straightforward for arrays: the getter or setter is
+called if the index is out of range (less than zero or greater than or
+equal to the length of the array).
+
+Example:
+
+    var a = array(1, 2, 3)
+    var h = hash()
+    var getter = fn (obj, index) index * index
+    var setter = fn (obj, index, value) h[string(index)] = value
+    a[-1] // returns 1 because of the getter
+    a[9] // returns 81 because of the getter
+    a[-1] = 20 // stores 20 under key '-1' in the hash h.
 
 ## User-Defined Primitives
 
