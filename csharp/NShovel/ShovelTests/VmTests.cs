@@ -765,5 +765,96 @@ stringRepresentation(h) + ' ' + stringRepresentation(h2)
 ";
             Utils.TestValue(program, Shovel.Value.Kinds.String, "hash(\"a\", 1, \"b\", 2) hash(\"yo\", 20)");
         }
+
+        [Test]
+        public void IndirectHashGetSetAndSerialization()
+        {
+            List<string> log = new List<string>();
+            var sources = Shovel.Api.MakeSources("test.sho", @"
+var h = hash('a', 1)
+var h2 = hash()
+var getter = fn (obj, index) index + index
+var setter = fn (obj, index, value) {
+    @stop()
+    h2[index] = value
+}
+setHandlers(h, getter, setter)
+h.b = 'test'
+@print(h2.b)
+@print(h.b)
+");
+            var bytecode = Shovel.Api.GetBytecode(sources);
+            var userPrimitives = Utils.GetPrintAndStopUdps(log, true);
+            var vm = Shovel.Api.RunVm(bytecode, sources, userPrimitives);
+            var state = Shovel.Api.SerializeVmState(vm);
+            Shovel.Api.RunVm(bytecode, sources, userPrimitives, state);
+            Assert.AreEqual(2, log.Count);
+            Assert.AreEqual("test", log[0]);
+            Assert.AreEqual("bb", log[1]);
+        }
+
+        [Test]
+        public void IndirectArrayGetSetAndSerialization()
+        {
+            List<string> log = new List<string>();
+            var sources = Shovel.Api.MakeSources("test.sho", @"
+var ar = array(1, 2, 3)
+var h2 = hash()
+var getter = fn (obj, index) index * index
+var setter = fn (obj, index, value) {
+    @stop()
+    h2[string(index)] = value
+}
+setHandlers(ar, getter, setter)
+ar[-1] = 'hello'
+@print(h2['-1'])
+@print(string(ar[-1]))
+@print(string(ar[8]))
+");
+            var bytecode = Shovel.Api.GetBytecode(sources);
+            var userPrimitives = Utils.GetPrintAndStopUdps(log, true);
+            var vm = Shovel.Api.RunVm(bytecode, sources, userPrimitives);
+            var state = Shovel.Api.SerializeVmState(vm);
+            Shovel.Api.RunVm(bytecode, sources, userPrimitives, state);
+            Assert.AreEqual(3, log.Count);
+            Assert.AreEqual("hello", log[0]);
+            Assert.AreEqual("1", log[1]);
+            Assert.AreEqual("64", log[2]);
+        }
+
+        [Test]
+        public void ApplyAndSerialization()
+        {
+            List<string> log = new List<string>();
+            var sources = Shovel.Api.MakeSources("test.sho", @"
+var fun = fn (x, y, z) {
+    @stop()
+    x + y + z
+}
+var result = string(apply(fun, array(1, 2, 3)))
+@print(result)
+");
+            var bytecode = Shovel.Api.GetBytecode(sources);
+            var userPrimitives = Utils.GetPrintAndStopUdps(log, true);
+            var vm = Shovel.Api.RunVm(bytecode, sources, userPrimitives);
+            var state = Shovel.Api.SerializeVmState(vm);
+            Shovel.Api.RunVm(bytecode, sources, userPrimitives, state);
+            Assert.AreEqual(1, log.Count);
+            Assert.AreEqual("6", log[0]);
+        }
+
+        [Test]
+        public void ApplyUdp()
+        {
+            List<string> log = new List<string>();
+            var sources = Shovel.Api.MakeSources("test.sho", @"
+apply(@print, array('hello'))
+");
+            var bytecode = Shovel.Api.GetBytecode(sources);
+            var userPrimitives = Utils.GetPrintAndStopUdps(log, true);
+            var vm = Shovel.Api.RunVm(bytecode, sources, userPrimitives);
+            Assert.AreEqual(1, log.Count);
+            Assert.AreEqual("hello", log[0]);
+        }
     }
 }
