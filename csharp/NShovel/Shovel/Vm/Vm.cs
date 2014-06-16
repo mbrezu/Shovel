@@ -97,7 +97,8 @@ namespace Shovel.Vm
             Vm vm = null,
             int? cellsQuota = null,
             long? totalTicksQuota = null,
-            long? untilNextNapTicksQuota = null)
+            long? untilNextNapTicksQuota = null,
+            bool safe = false)
         {
             if (vm == null) {
                 vm = new Vm ();
@@ -132,7 +133,7 @@ namespace Shovel.Vm
                     cellsIncrementer: vm.IncrementCells,
                     cellsIncrementHerald: vm.IncrementCellsHerald);
             do {
-            } while (vm.StepVm());
+            } while (vm.StepVm(safe));
             return vm;
         }
 
@@ -373,14 +374,14 @@ namespace Shovel.Vm
             }
         }
 
-        bool StepVm ()
+        bool StepVm (bool safe = false)
         {
             if (this.IsLive ()) {
                 this.CheckVmWithoutError ();
                 this.CheckQuotas ();
                 try {
                     if (this.runs [this.programCounter] == null) {
-                        if (this.executionCount [this.programCounter] > 10) {
+                        if (this.executionCount [this.programCounter] > 10 && !safe) {
                             this.runs [this.programCounter] = this.GenRun ();
                             this.runs [this.programCounter] (this);
                         } else {
