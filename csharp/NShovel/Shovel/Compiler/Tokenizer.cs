@@ -211,8 +211,6 @@ namespace Shovel.Compiler
                 return result;
             } else if (ch == '$') {
                 return this.MakePunctuationToken(1);
-            } else if (ch == ':') {
-                return this.MakePunctuationToken(1);
             } else {
                 RaiseTokenizerError(String.Format("Unexpected character '{0}'.", ch));
                 throw new Exception(); // Just to keep the compiler happy.

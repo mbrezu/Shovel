@@ -67,71 +67,9 @@ namespace Shovel.Compiler
             while (!this.Finished()) {
                 var pt = this.ParseStatement();
                 pt = RunWeaveMacro(pt);
-                pt = RunIndirectMacro(pt);
                 result.Add (pt);
             }
             return result;
-        }
-
-        private static bool IsIndirectDot(ParseTree source)
-        {
-            return source.Label == ParseTree.Labels.Call && source.Children.First().Content == "svm_gref_dot_indirect";
-        }
-
-        private static ParseTree ConvertIndirect(ParseTree source, ParseTree rValue)
-        {
-            var fnName = rValue != null ? "\"indirectSet\"" : "\"indirectGet\"";
-            var result = new ParseTree()
-            {
-                StartPos = source.StartPos,
-                EndPos = source.EndPos,
-                Label = ParseTree.Labels.Call,
-                Children = new List<ParseTree>() {
-                        new ParseTree() {
-                            StartPos = source.StartPos,
-                            EndPos = source.EndPos,
-                            Label = ParseTree.Labels.Call,
-                            Children = new ParseTree[] {
-                                new ParseTree() {
-                                    StartPos = source.Children.First().StartPos,
-                                    EndPos = source.Children.First().EndPos,
-                                    Label = ParseTree.Labels.Prim0,
-                                    Content = "svm_gref_dot"
-                                },
-                                RunIndirectMacro(source.Children.ElementAt(1)),
-                                new ParseTree() {
-                                    StartPos = source.Children.First().StartPos,
-                                    EndPos = source.Children.First().EndPos,
-                                    Label = ParseTree.Labels.String,
-                                    Content = fnName
-                                }
-                            }
-                        },
-                        RunIndirectMacro(source.Children.ElementAt(2))
-                    }
-            };
-            if (rValue != null) 
-            {
-                ((List<ParseTree>)result.Children).Add(RunIndirectMacro(rValue));
-            }
-            return result;
-        }
-
-        private static ParseTree RunIndirectMacro(ParseTree source)
-        {
-            if (source.Label == ParseTree.Labels.Assignment && IsIndirectDot(source.Children.First()))
-            {
-                return ConvertIndirect(source.Children.First(), source.Children.ElementAt(2));
-            } 
-            else if (IsIndirectDot(source))
-            {
-                return ConvertIndirect(source, null);
-            }
-            else
-            {
-                source.RunOnChildren(RunIndirectMacro);
-                return source;
-            }
         }
 
         private static ParseTree RunWeaveMacro(ParseTree source)
@@ -437,11 +375,10 @@ namespace Shovel.Compiler
             if (start == null) {
                 start = this.ParseParenthesizedOrName ();
             }
-            if (this.TokenIs (Token.Types.Punctuation, ".") || this.TokenIs(Token.Types.Punctuation, ":")) {
-                var isIndirect = this.TokenIs(Token.Types.Punctuation, ":");
+            if (this.TokenIs (Token.Types.Punctuation, ".")) {
                 var first = this.WithAnchoredParseTree (start.StartPos, ParseTree.Labels.Call, pt => {
                     pt.Children = new ParseTree[] {
-                        this.MakePrim0ParseTree (isIndirect ? "svm_gref_dot_indirect" : "svm_gref_dot"),
+                        this.MakePrim0ParseTree ("svm_gref_dot"),
                         start,
                         this.ParseNameAsString ()
                     };

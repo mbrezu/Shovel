@@ -34,12 +34,11 @@ namespace ConsoleTest
             //MasterMindBenchmark();
             //SimpleTest ();
             //PostfixTest();
-            //IndirectTest();
             //CurryTest();
             //ApplyTestTails();
-            ApplyPrimitiveTest();
+            //ApplyPrimitiveTest();
             //CollectTestTails();
-            //IndirectHashTest();
+            IndirectHashTest();
             //IndirectArrayTest();
             //AnotherSimpleTest ();
             //SerializerTest ();
@@ -213,40 +212,6 @@ add3(4) + add31(3)
                 //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
                 Console.WriteLine(Shovel.Api.TestRunVm(sources));
                 Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
-                var tokenizer = new Shovel.Compiler.Tokenizer(sources[0]);
-                var parser = new Shovel.Compiler.Parser(tokenizer.Tokens, sources);
-                foreach (var pt in parser.ParseTrees)
-                {
-                    //Console.WriteLine(pt);
-                }
-            }
-            catch (Shovel.Exceptions.ShovelException shex)
-            {
-                Console.WriteLine(shex.Message);
-            }
-        }
-
-        static void IndirectTest()
-        {
-            var sources = Shovel.Api.MakeSources("test.sho", @"
-var slothFactory = fn () {
-    var realHash = hash()
-    hash('indirectGet', fn name realHash[name],
-         'indirectSet', fn (name, value) realHash[name] = value)
-}
-var a = slothFactory()
-a:b = slothFactory()
-a:b:c = 10
-a:b:d = a:b:c + 1
-a:x = a:b
-a:x:d + a:x:c
-            ");
-            try
-            {
-                //var bytecode = Shovel.Api.GetBytecode (sources);
-                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
-                Console.WriteLine(Shovel.Api.TestRunVm(sources));
-                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
                 var tokenizer = new Shovel.Compiler.Tokenizer(sources[0]);
                 var parser = new Shovel.Compiler.Parser(tokenizer.Tokens, sources);
                 foreach (var pt in parser.ParseTrees)
