@@ -101,11 +101,14 @@ or
 
 or
 
-    fn (<arg-1>, <arg-2> --- <arg-n>) <statement>
+    fn (<arg-1>, <arg-2>, --- <arg-n>) <statement>
     
 or
 
-    fn (<arg-1>, <arg-2>, ...<arg-n>) <statement>
+    fn (<arg-1>, <arg-2>, --- ...<arg-n>) <statement>
+    
+(`---` is a placeholder for the missing arguments, `...` is actual
+syntax)
     
 Where `<argument-name>`, `<arg-1>` etc. are identifiers and
 `<statement>` is a statement that is used to calculate the return
