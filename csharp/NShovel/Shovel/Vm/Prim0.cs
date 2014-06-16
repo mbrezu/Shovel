@@ -1006,14 +1006,14 @@ namespace Shovel.Vm
 
         static Value SetHandlers(VmApi api, Value arrayOrHash, Value getter, Value setter)
         {
-            if (getter.Kind != Value.Kinds.Callable || getter.CallableValue.Arity != 2)
+            if (getter.Kind != Value.Kinds.Null && (getter.Kind != Value.Kinds.Callable || getter.CallableValue.Arity != 2))
             {
-                api.RaiseShovelError("The second parameter should be a callable with 2 parameters.");
+                api.RaiseShovelError("The second parameter (getter) should be a callable with 2 parameters.");
                 throw new InvalidOperationException();
             }
-            if (setter.Kind != Value.Kinds.Callable || setter.CallableValue.Arity != 3)
+            if (setter.Kind != Value.Kinds.Null && (setter.Kind != Value.Kinds.Callable || setter.CallableValue.Arity != 3))
             {
-                api.RaiseShovelError("The second parameter should be a callable with 3 parameters.");
+                api.RaiseShovelError("The third parameter (setter) should be a callable with 3 parameters.");
                 throw new InvalidOperationException();
             }
             if (arrayOrHash.Kind == Value.Kinds.Array)

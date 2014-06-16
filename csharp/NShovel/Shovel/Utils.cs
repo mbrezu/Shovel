@@ -32,6 +32,21 @@ namespace Shovel
 {
     internal static class Utils
     {
+        internal class Wrapper<T> where T : struct
+        {
+            public T Item { get; set; }
+
+            public Wrapper()
+            {
+                Item = default(T);
+            }
+
+            public Wrapper(T item)
+            {
+                Item = item;
+            }
+        }   
+
         internal static byte[] ComputeSourcesMd5(List<SourceFile> sources)
         {
             using (MemoryStream ms = new MemoryStream())
@@ -543,6 +558,8 @@ var stdlib = {
      })
    }
 
+   var curry = fn (f, ...args) fn ...extras apply(f, args + extras)
+
    var hashLib = hash('min', min,
         'max', max,
         'while', while,
@@ -559,7 +576,8 @@ var stdlib = {
         'getBlockName', getBlockName,
         'try', try,
         'throw' , throw,
-        'repeat', repeat
+        'repeat', repeat,
+        'curry', curry
        )
     var hashStruct = defstruct(keys(hashLib))
     hashToStruct(hashStruct, hashLib)

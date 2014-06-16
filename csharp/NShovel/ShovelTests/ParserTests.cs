@@ -137,6 +137,83 @@ Var (1 -- 48)
             Number (47 -- 47) '1'
 ", sb.ToString());
         }
+
+        [Test]
+        public void WeaveAtMostOneReplacement()
+        {
+            var source = @"
+var f = fn (x, y) x + y
+3 -> f($, $)
+";
+            var sources = Shovel.Api.MakeSources("test.sho", source);
+            var tokenizer = new Shovel.Compiler.Tokenizer(sources[0]);
+            var parser = new Shovel.Compiler.Parser(tokenizer.Tokens, sources);
+            Utils.ExpectException<ShovelException>(() => { var x = parser.ParseTrees; }, (ex) => {
+                Assert.IsNotNull(ex);
+                Assert.AreEqual(@"More than one replacement in postfix call (->, $).
+file 'test.sho' line 3: 3 -> f($, $)
+file 'test.sho' line 3:           ^".TrimCarriageReturn(), ex.Message.TrimCarriageReturn());
+                Assert.AreEqual("test.sho", ex.FileName);
+            });            
+        }
+
+        [Test]
+        public void WeaveAtLeastOneReplacement()
+        {
+            var source = @"
+var f = fn (x, y) x + y
+3 -> f(4, 5)
+";
+            var sources = Shovel.Api.MakeSources("test.sho", source);
+            var tokenizer = new Shovel.Compiler.Tokenizer(sources[0]);
+            var parser = new Shovel.Compiler.Parser(tokenizer.Tokens, sources);
+            Utils.ExpectException<ShovelException>(() => { var x = parser.ParseTrees; }, (ex) =>
+            {
+                Assert.IsNotNull(ex);
+                Assert.AreEqual(@"No replacement in postfix call (->, $).
+file 'test.sho' line 3: 3 -> f(4, 5)
+file 'test.sho' line 3: ^^^^^^^^^^^^".TrimCarriageReturn(), ex.Message.TrimCarriageReturn());
+                Assert.AreEqual("test.sho", ex.FileName);
+            });                        
+        }
+
+        [Test]
+        public void CollectArgumentNotLast()
+        {
+            var source = @"
+var f = fn (...x, y) x + y
+";
+            var sources = Shovel.Api.MakeSources("test.sho", source);
+            var tokenizer = new Shovel.Compiler.Tokenizer(sources[0]);
+            var parser = new Shovel.Compiler.Parser(tokenizer.Tokens, sources);
+            Utils.ExpectException<ShovelException>(() => { var x = parser.ParseTrees; }, (ex) =>
+            {
+                Assert.IsNotNull(ex);
+                Assert.AreEqual(@"Collect arguments (e.g. ""...rest"") allowed only at the end of the argument list.
+file 'test.sho' line 2: var f = fn (...x, y) x + y
+file 'test.sho' line 2:                ^".TrimCarriageReturn(), ex.Message.TrimCarriageReturn());
+                Assert.AreEqual("test.sho", ex.FileName);
+            });                        
+        }
+
+        [Test]
+        public void CollectArgumentMultiple()
+        {
+            var source = @"
+var f = fn (...x, ...y) x + y
+";
+            var sources = Shovel.Api.MakeSources("test.sho", source);
+            var tokenizer = new Shovel.Compiler.Tokenizer(sources[0]);
+            var parser = new Shovel.Compiler.Parser(tokenizer.Tokens, sources);
+            Utils.ExpectException<ShovelException>(() => { var x = parser.ParseTrees; }, (ex) =>
+            {
+                Assert.IsNotNull(ex);
+                Assert.AreEqual(@"Only one collect argument (e.g. ""...rest"") allowed.
+file 'test.sho' line 2: var f = fn (...x, ...y) x + y
+file 'test.sho' line 2:                      ^".TrimCarriageReturn(), ex.Message.TrimCarriageReturn());
+                Assert.AreEqual("test.sho", ex.FileName);
+            });
+        }
     }
 }
 

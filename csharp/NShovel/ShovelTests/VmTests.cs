@@ -22,6 +22,7 @@
 using System;
 using NUnit.Framework;
 using System.Collections.Generic;
+using Shovel.Exceptions;
 
 namespace ShovelTests
 {
@@ -585,6 +586,184 @@ c1()
         public void MultipleGrefs ()
         {
             Utils.TestValue ("var a = array(array(array(3))) a[0][0][0]", Shovel.Value.Kinds.Integer, (long)3);
+        }
+
+        [Test]
+        public void MultilineComments()
+        {
+            var program = @"
+var fun = fn (x, y, z) x + y + z
+fun(/* x */ 1, /* y */ 2, /* z */ 3)
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.Integer, (long)6);
+        }
+
+        [Test]
+        public void WeaveChain()
+        {
+            var program = @"
+var f = fn (x, y) x + y
+var g = fn (t, u) t * u
+3 -> f($, 2) -> g(3, $)
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.Integer, (long)15);
+        }
+
+        [Test]
+        public void WeaveChainNest()
+        {
+            var program = @"
+var f = fn (x, y) x + y
+var g = fn (t, u) t * u
+3 -> f($, 2) -> g(2 -> (1 + $), $)
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.Integer, (long)15);
+        }
+
+        [Test]
+        public void Apply()
+        {
+            var program = @"
+var f = fn (x, y) x + y
+var args = array(1, 2)
+apply(f, args)
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.Integer, (long)3);
+        }
+
+        [Test]
+        public void ApplyPrimitive()
+        {
+            var program = @"
+var f = fn (x, y, z) x + y + z
+var args = apply(array, array(1, 2, 3))
+apply(f, args)
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.Integer, (long)6);
+        }
+
+        [Test]
+        public void ApplyArity()
+        {
+            var program = @"
+var f = fn (x, y, z) x + y + z
+var args = array(1, 2)
+apply(f, args)
+";
+            Utils.ExpectException<ShovelException>(() => { 
+                Utils.TestValue(program, Shovel.Value.Kinds.Integer, (long)6);
+            }, (ex) => {
+                Assert.IsNotNull(ex);
+                Assert.AreEqual(@"The first argument of 'apply', a function of 3 arguments, was called with 2 arguments.
+
+Current stack trace:
+file 'test.sho' line 4: apply(f, args)
+file 'test.sho' line 4: ^^^^^
+
+Current environment:
+
+Frame starts at:
+file 'test.sho' line 2: var f = fn (x, y, z) x + y + z
+file 'test.sho' line 2: ^
+Frame variables are:
+f = [...callable...]
+args = array(1, 2)
+
+".TrimCarriageReturn(), ex.Message.TrimCarriageReturn());
+                Assert.AreEqual("test.sho", ex.FileName);
+            });            
+        }
+
+        [Test]
+        public void ApplyCurry()
+        {
+            var program = @"
+var curry = fn (f, ...args) fn ...extras apply(f, args + extras)
+var add = fn (x, y) x + y
+var add3 = curry(add, 3)
+add3(5)
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.Integer, (long)8);
+        }
+
+        [Test]
+        public void ApplyTailCall()
+        {
+            var program = @"
+var g = fn(x, y) x + y
+var f = fn (x, y) g(x, y)
+apply(f, array(1, 2))
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.Integer, (long)3);
+        }
+
+        [Test]
+        public void CollectArguments()
+        {
+            var program = @"
+var f = fn(x, ...y) x + length(y)
+f(3) + f(3, 4, 5)
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.Integer, (long)8);
+        }
+
+        [Test]
+        public void CollectArgumentsTailCall()
+        {
+            var program = @"
+var f = fn(x, ...y) x + length(y)
+var g = fn(x, y) f(x, y, 3)
+g(1, 2)
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.Integer, (long)3);
+        }
+
+        [Test]
+        public void IndirectGetArray()
+        {
+            var program = @"
+var ar = array(1, 2, 3)
+setHandlers(ar, fn (obj, idx) idx - 100, null)
+ar[-1]
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.Integer, (long)-101);
+        }
+
+        [Test]
+        public void IndirectSetArray()
+        {
+            var program = @"
+var ar = array(1, 2, 3)
+var h = hash()
+setHandlers(ar, null, fn (obj, idx, value) h[string(idx)] = value)
+ar[-1] = 1001
+h['-1']
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.Integer, (long)1001);
+        }
+
+        [Test]
+        public void IndirectGetHash()
+        {
+            var program = @"
+var h = hash('a', 1, 'b', 2)
+setHandlers(h, fn (obj, index) index + index, null)
+h['yo']
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.String, "yoyo");
+        }
+
+        [Test]
+        public void IndirectSetHash()
+        {
+            var program = @"
+var h = hash('a', 1, 'b', 2)
+var h2 = hash()
+setHandlers(h, null, fn (hsh, index, value) h2[index] = value)
+h['yo'] = 20
+stringRepresentation(h) + ' ' + stringRepresentation(h2)
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.String, "hash(\"a\", 1, \"b\", 2) hash(\"yo\", 20)");
         }
     }
 }

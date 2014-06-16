@@ -80,6 +80,29 @@ namespace ShovelTests
         }
 
         [Test]
+        public void TestUnfinishedMultilineComment()
+        {
+            var text = "var a = 10 /* this is a comment";
+            var source = new Shovel.SourceFile()
+            {
+                FileName = "test.sho",
+                Content = text
+            };
+            Utils.ExpectException<ShovelException>(() =>
+            {
+                Assert.IsNotNull(new Shovel.Compiler.Tokenizer(source).Tokens);
+            },
+            (ex) =>
+            {
+                Assert.IsNotNull(ex);
+                Assert.AreEqual("Reached the end of the file while parsing a multiline comment.", ex.Message);
+                Assert.AreEqual("test.sho", ex.FileName);
+                Assert.AreEqual(true, ex.AtEof);
+            }
+            );
+        }
+
+        [Test]
         public void TestUnknownCharacter ()
         {
             var text = "var a = `";

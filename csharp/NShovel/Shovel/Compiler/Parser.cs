@@ -72,13 +72,25 @@ namespace Shovel.Compiler
             return result;
         }
 
-        private static ParseTree RunWeaveMacro(ParseTree source)
+        private static bool IsWeave(ParseTree source)
         {
-            if (source.Label == ParseTree.Labels.Call && source.Children.First().Content == "->")
+            return source.Label == ParseTree.Labels.Call && source.Children.First().Content == "->";
+        }
+
+        private ParseTree RunWeaveMacro(ParseTree source)
+        {
+            if (IsWeave(source))
             {
                 var leftSide = source.Children.ElementAt(1);
                 var rightSide = source.Children.ElementAt(2);
-                ReplacePlaceholder(rightSide, leftSide);
+                var count = new Utils.Wrapper<Int32>(0);
+                ReplacePlaceholder(rightSide, leftSide, count);
+                if (count.Item == 0)
+                {
+                    RaiseErrorAt(
+                        "No replacement in postfix call (->, $).",
+                        source.StartPos, source.EndPos);                    
+                }
                 return RunWeaveMacro(rightSide);
             }
             else
@@ -88,15 +100,26 @@ namespace Shovel.Compiler
             }
         }
 
-        private static ParseTree ReplacePlaceholder(ParseTree source, ParseTree replacement)
+        private ParseTree ReplacePlaceholder(ParseTree source, ParseTree replacement, Utils.Wrapper<Int32> count)
         {
             if (source.Content == "$" && source.Label == ParseTree.Labels.Placeholder)
             {
+                if (count.Item > 0)
+                {
+                    RaiseErrorAt(
+                        "More than one replacement in postfix call (->, $).", 
+                        source.StartPos, source.EndPos);
+                }
+                count.Item ++;
                 return replacement;
+            }
+            else if (IsWeave(source))
+            {
+                return source;
             }
             else
             {
-                source.RunOnChildren(pt => ReplacePlaceholder(pt, replacement));
+                source.RunOnChildren(pt => ReplacePlaceholder(pt, replacement, count));
                 return source;
             }
         }

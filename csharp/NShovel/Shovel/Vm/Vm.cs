@@ -911,10 +911,10 @@ namespace Shovel.Vm
                 vm.IncrementCells(1);
             }
             vm.stack.Push(maybeCallable);
-            Vm.HandleCallImpl(vm, numArgs, true);
+            Vm.HandleCallImpl(vm, numArgs, true, true);
         }
 
-        static void HandleCallImpl (Vm vm, int numArgs, bool saveReturnAddress)
+        static void HandleCallImpl (Vm vm, int numArgs, bool saveReturnAddress, bool inApply = false)
         {
             var maybeCallable = vm.stack.Top ();
             if (maybeCallable.Kind != Value.Kinds.Callable) {
@@ -925,16 +925,16 @@ namespace Shovel.Vm
             var callable = maybeCallable.CallableValue;
             if (callable.ProgramCounter.HasValue) {
                 vm.stack.Pop ();
-                CallFunction (callable, vm, numArgs, saveReturnAddress);
+                CallFunction (callable, vm, numArgs, saveReturnAddress, inApply);
                 if (saveReturnAddress) {
                     vm.IncrementCells (1);
                 }
             } else {
-                CallPrimitive (callable, vm, numArgs, saveReturnAddress);
+                CallPrimitive (callable, vm, numArgs, saveReturnAddress, inApply);
             }
         }
 
-        static void CallFunction (Callable callable, Vm vm, int numArgs, bool saveReturnAddress)
+        static void CallFunction (Callable callable, Vm vm, int numArgs, bool saveReturnAddress, bool inApply)
         {
             if (callable.Arity != null)
             {
@@ -953,12 +953,12 @@ namespace Shovel.Vm
                     }
                     else
                     {
-                        ArityError(vm, callable.Arity.Value, numArgs);
+                        ArityError(vm, callable.Arity.Value, numArgs, inApply);
                     }
                 }
                 else if (callable.Arity.Value != numArgs)
                 {
-                    ArityError(vm, callable.Arity.Value, numArgs);
+                    ArityError(vm, callable.Arity.Value, numArgs, inApply);
                 }
             }
             if (saveReturnAddress)
@@ -990,7 +990,7 @@ namespace Shovel.Vm
             vm.IncrementCells (1);
         }
 
-        static void CallPrimitive (Callable callable, Vm vm, int numArgs, bool saveReturnAddress)
+        static void CallPrimitive (Callable callable, Vm vm, int numArgs, bool saveReturnAddress, bool inApply)
         {
             bool isRequiredPrimitive = false;
             if (callable.Prim0Name != null) {
@@ -1003,7 +1003,7 @@ namespace Shovel.Vm
             }
 
             if (callable.Arity != null && callable.Arity.Value != numArgs) {
-                ArityError (vm, callable.Arity.Value, numArgs);
+                ArityError (vm, callable.Arity.Value, numArgs, inApply);
             }
 
             Value[] array;
@@ -1042,10 +1042,15 @@ namespace Shovel.Vm
             }
         }
 
-        static void ArityError (Vm vm, int expectedArity, int actualArity)
+        static void ArityError (Vm vm, int expectedArity, int actualArity, bool inApply)
         {
+            var message = "Function of {0} arguments called with {1} arguments.";
+            if (inApply)
+            {
+                message = "The first argument of 'apply', a function of {0} arguments, was called with {1} arguments.";
+            }
             vm.RaiseShovelError (String.Format (
-                "Function of {0} arguments called with {1} arguments.",
+                message,
                 expectedArity, actualArity));
         }
 
