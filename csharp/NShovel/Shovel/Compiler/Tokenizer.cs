@@ -65,6 +65,8 @@ namespace Shovel.Compiler
                     result.Add (this.TokenizeStringLiteral (ch));
                 } else if (ch == '/' && this.LookAhead () == '/') {
                     this.TokenizeComment ();
+                } else if (ch == '/' && this.LookAhead() == '*') {
+                    this.TokenizeMultilineComment();
                 } else {
                     result.Add (this.TokenizePunctuation ());
                 }
@@ -230,6 +232,31 @@ namespace Shovel.Compiler
                 FileName = pos.FileName,
                 Line = pos.Line,
                 Column = pos.Column
+            };
+        }
+
+        void TokenizeMultilineComment()
+        {
+            this.NextChar();
+            this.NextChar();
+            while (!Finished())
+            {
+                if (this.CurrentChar() == '*' && this.LookAhead() == '/')
+                {
+                    this.NextChar();
+                    this.NextChar();
+                    return;
+                }
+                else
+                {
+                    this.NextChar();
+                }
+            }
+            throw new ShovelException()
+            {
+                ShovelMessage = "Reached the end of the file while parsing a multiline comment.",
+                FileName = this.source.FileName,
+                AtEof = true
             };
         }
         

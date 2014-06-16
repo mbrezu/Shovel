@@ -38,11 +38,39 @@ namespace ConsoleTest
             //ApplyTestTails();
             //ApplyPrimitiveTest();
             //CollectTestTails();
-            IndirectHashTest();
+            //IndirectHashTest();
+            MultilineComments();
             //IndirectArrayTest();
             //AnotherSimpleTest ();
             //SerializerTest ();
             //UdpTest();
+        }
+
+        static void MultilineComments()
+        {
+            var sources = Shovel.Api.MakeSources("test.sho", @"
+            /* comments
+            aaa */
+            var fun = fn (x, y, z) x + y + z
+            fun(/* x */ 1, /* y */ 2, /* z */ 3)
+            ");
+            try
+            {
+                //var bytecode = Shovel.Api.GetBytecode (sources);
+                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                Console.WriteLine(Shovel.Api.TestRunVm(sources));
+                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                var tokenizer = new Shovel.Compiler.Tokenizer(sources[0]);
+                var parser = new Shovel.Compiler.Parser(tokenizer.Tokens, sources);
+                foreach (var pt in parser.ParseTrees)
+                {
+                    //Console.WriteLine(pt);
+                }
+            }
+            catch (Shovel.Exceptions.ShovelException shex)
+            {
+                Console.WriteLine(shex.Message);
+            }
         }
 
         static void ApplyPrimitiveTest()
