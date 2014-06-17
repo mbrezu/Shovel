@@ -572,6 +572,10 @@ namespace Shovel.Compiler
             }
             parser.StringInterpolation = true;
             var intStop = content.IndexOf("}", tokenizer.Tokens.Last().EndPos - startPos) + 1;
+            if (intStop == 0)
+            {
+                RaiseErrorAt("Missing '}' for '${}' block.", startPos + intStart, endPos);
+            }
             var colonPos = content.IndexOf(":", tokenizer.Tokens.Last().EndPos - startPos);
             var formatSpecifier = "{0}";
             if (colonPos < intStop && colonPos != -1)

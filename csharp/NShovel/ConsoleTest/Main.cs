@@ -78,7 +78,7 @@ format('The {0} is {1:C2}.', product.name, product.price)
             var sources = Shovel.Api.MakeSources("test.sho", @"
 var product = hash('name', 'paperweight', 'price', 19.90)
 var names = array('John', 'Smith')
-'Mr. ${upper(names[1])}, the ${product.name} is ${product.price:C2} ${""${names[0]}""}.'
+'${names'
             ");
             try
             {

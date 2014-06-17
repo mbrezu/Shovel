@@ -1021,5 +1021,26 @@ var names = array('John', 'Smith')
             Utils.TestValue(program, Shovel.Value.Kinds.String, "Mr. John SMITH, the paperweight is $19.90.");
         }
 
+        [Test]
+        public void StringInterpolationMissingBracket()
+        {
+            var program = @"
+var product = hash('name', 'paperweight', 'price', 19.90)
+var names = array('John', 'Smith')
+'${names'
+";
+            Utils.ExpectException<ShovelException>(() =>
+            {
+                Utils.TestValue(program, Shovel.Value.Kinds.String, "John is wise.");
+            }, (ex) =>
+            {
+                Assert.IsNotNull(ex);
+                Assert.AreEqual(@"Missing '}' for '${}' block.
+file 'test.sho' line 4: '${names'
+file 'test.sho' line 4:  ^^^^^^^^".TrimCarriageReturn(), ex.Message.TrimCarriageReturn());
+                Assert.AreEqual("test.sho", ex.FileName);
+            });
+        }
+
     }
 }
