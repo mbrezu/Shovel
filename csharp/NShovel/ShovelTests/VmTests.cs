@@ -621,6 +621,24 @@ var g = fn (t, u) t * u
         }
 
         [Test]
+        public void ReplacementWithoutWeave()
+        {
+            var program = @"
+$";
+            Utils.ExpectException<ShovelException>(() =>
+            {
+                Utils.TestValue(program, Shovel.Value.Kinds.Integer, (long)6);
+            }, (ex) =>
+            {
+                Assert.IsNotNull(ex);
+                Assert.AreEqual(@"'$' without '->'.
+file 'test.sho' line 2: $
+file 'test.sho' line 2: ^".TrimCarriageReturn(), ex.Message.TrimCarriageReturn());
+                Assert.AreEqual("test.sho", ex.FileName);
+            });                        
+        }
+
+        [Test]
         public void Apply()
         {
             var program = @"
@@ -855,6 +873,107 @@ apply(@print, array('hello'))
             var vm = Shovel.Api.RunVm(bytecode, sources, userPrimitives);
             Assert.AreEqual(1, log.Count);
             Assert.AreEqual("hello", log[0]);
+        }
+
+        [Test]
+        public void Format()
+        {
+            var program = @"
+var product = hash('name', 'paperweight', 'price', 20)
+format('The {0} is {1:C2}.', product.name, product.price)
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.String, "The paperweight is $20.00.");
+        }
+
+        [Test]
+        public void StringInterpolation()
+        {
+            var program = @"
+var name = 'John'
+var quality = 'wise'
+'${name} is ${quality}.'
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.String, "John is wise.");
+        }
+
+        [Test]
+        public void StringInterpolationEscape()
+        {
+            var program = @"
+var name = 'John'
+var quality = 'wise'
+'\${name} is ${quality}.'
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.String, "${name} is wise.");
+        }
+
+        [Test]
+        public void StringInterpolationError1()
+        {
+            var program = @"
+var name = 'John'
+var quality = 'wise'
+'${name is ${quality}.'
+";
+            Utils.ExpectException<ShovelException>(() =>
+            {
+                Utils.TestValue(program, Shovel.Value.Kinds.String, "John is wise.");
+            }, (ex) =>
+            {
+                Assert.IsNotNull(ex);
+                Assert.AreEqual(@"While interpolating a string value:
+Expected a identifier, but reached the end of input.
+file 'test.sho' line 4: '${name is ${quality}.'
+file 'test.sho' line 4: ^^^^^^^^^^^^^^^^^^^^^^^".TrimCarriageReturn(), ex.Message.TrimCarriageReturn());
+                Assert.AreEqual("test.sho", ex.FileName);
+            });
+
+        }
+
+        [Test]
+        public void StringInterpolationError2()
+        {
+            var program = @"
+var product = hash('name', 'paperweight', 'price', 19.90)
+var names = array('John', 'Smith')
+'Mr. ${upper(names[1)}, the ${product.name} is ${product.price:C2}.'
+";
+            Utils.ExpectException<ShovelException>(() =>
+            {
+                Utils.TestValue(program, Shovel.Value.Kinds.String, "John is wise.");
+            }, (ex) =>
+            {
+                Assert.IsNotNull(ex);
+                Assert.AreEqual(@"While interpolating a string value:
+Expected ']', but got ')'.
+file 'test.sho' line 4: 'Mr. ${upper(names[1)}, the ${product.name} is ${product.price:C2}.'
+file 'test.sho' line 4:                     ^
+file 'test.sho' line 4: 'Mr. ${upper(names[1)}, the ${product.name} is ${product.price:C2}.'
+file 'test.sho' line 4: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^".TrimCarriageReturn(), ex.Message.TrimCarriageReturn());
+                Assert.AreEqual("test.sho", ex.FileName);
+            });
+        }
+
+        [Test]
+        public void StringInterpolationComplex()
+        {
+            var program = @"
+var product = hash('name', 'paperweight', 'price', 19.90)
+var names = array('John', 'Smith')
+'Mr. ${upper(names[1])}, the ${product.name} is ${product.price:C2}.'
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.String, "Mr. SMITH, the paperweight is $19.90.");
+        }
+
+        [Test]
+        public void StringInterpolationMany()
+        {
+            var program = @"
+var product = hash('name', 'paperweight', 'price', 19.90, 'category', 'stuff')
+var names = array('John', 'Smith')
+'Mr. ${upper(names[1])}, the ${product.name} is ${product.price:C2} (category ""${product.category}"").'
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.String, "Mr. SMITH, the paperweight is $19.90 (category \"stuff\").");
         }
     }
 }
