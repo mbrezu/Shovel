@@ -305,9 +305,9 @@ namespace Shovel.Compiler
             {
                 return this.MakePunctuationToken(1);
             }
-            else if (ch == ':')
+            else if (ch == ':' && StringInterpolation)
             {
-                return this.MakePunctuationToken(1);
+                return null;
             }
             else
             {

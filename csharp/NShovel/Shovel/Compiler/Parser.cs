@@ -559,16 +559,51 @@ namespace Shovel.Compiler
             var source = this.sources.FirstOrDefault(src => src.FileName == fileName);
             var tokenizer = new Tokenizer(source, startPos + intStart + 2, endPos);
             tokenizer.StringInterpolation = true;
-            var parser = new Parser(tokenizer.Tokens, sources);
-            parser.StringInterpolation = true;
-            var block = new ParseTree()
+            Parser parser = null;
+            try { 
+                parser = new Parser(tokenizer.Tokens, sources);
+                var parseTree = parser.ParseTrees;
+            }
+            catch (ShovelException ex)
             {
-                Label = ParseTree.Labels.Begin,
+                RaiseErrorAt(
+                    String.Format("While interpolating a string value:\n{0}", ex.Message),
+                    startPos, endPos);
+            }
+            parser.StringInterpolation = true;
+            var intStop = content.IndexOf("}", tokenizer.Tokens.Last().EndPos - startPos) + 1;
+            var colonPos = content.IndexOf(":", tokenizer.Tokens.Last().EndPos - startPos);
+            var formatSpecifier = "{0}";
+            if (colonPos < intStop && colonPos != -1)
+            {
+                formatSpecifier = "{0" + content.Substring(colonPos, intStop - colonPos);
+            }
+            var formatCall = new ParseTree() {
+                Label = ParseTree.Labels.Call,
                 StartPos = parser.ParseTrees.First().StartPos,
                 EndPos = parser.ParseTrees.Last().EndPos,
-                Children = parser.ParseTrees
+                Children = new ParseTree[] { 
+                    new ParseTree() {
+                        Label = ParseTree.Labels.Prim0,
+                        Content = "format",
+                        StartPos = intStart + startPos,
+                        EndPos = intStop + startPos
+                    },
+                    new ParseTree() {
+                        Label = ParseTree.Labels.String,
+                        Content = "'" + formatSpecifier + "'",
+                        StartPos = intStart + startPos,
+                        EndPos = intStop + startPos
+                    },
+                    new ParseTree()
+                    {
+                        Label = ParseTree.Labels.Begin,
+                        StartPos = parser.ParseTrees.First().StartPos,
+                        EndPos = parser.ParseTrees.Last().EndPos,
+                        Children = parser.ParseTrees
+                    }
+                }
             };
-            var intStop = content.IndexOf("}", tokenizer.Tokens.Last().EndPos - startPos) + 1;
             return new ParseTree()
             {
                 Label = ParseTree.Labels.Call,
@@ -596,7 +631,7 @@ namespace Shovel.Compiler
                                     content.Substring(0, intStart) + content.Substring(0, 1),
                                     startPos,
                                     intStart - 1),
-                                block
+                                formatCall
                             }
                         },
                         ParseLiteralString(
