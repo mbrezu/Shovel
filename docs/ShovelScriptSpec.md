@@ -216,6 +216,18 @@ point), a literal string (enclosed in single or double quotes, with
 inside quotes escaped with a backspace), a literal boolean (`true` or
 `false`), or `null`.
 
+Literal strings can contain `${code}` blocks, which will trigger
+string interpolation. It's also possible to use
+`${code:format-specifier}`, which will call `format` with
+`format-specifier` to 'stringify' the value of `code`. `code` can be
+any code, including a list of statements (treated as a block, so the
+value of `code` is the value of its last statement). To enter a `${`
+sequence in a string, use `\${`. The effects of nesting string
+interpolations are undefined and errors in `code` may generate
+lower quality error messages. String interpolation is done by
+replacing the string literal with string concatenation and calls to
+`format` using `code` for the second argument of `format`.
+
 An expression can also be an unnamed block, which is a sequence of
 statements enclosed by `{` and `}`. The value of the unnamed block is
 the value of the last statement inside the block. An unnamed block
@@ -552,6 +564,13 @@ Example:
     a[-1] // returns 1 because of the getter
     a[9] // returns 81 because of the getter
     a[-1] = 20 // stores 20 under key '-1' in the hash h.
+    
+### `format`
+
+Arguments: `format-string`, `obj-1`, `obj-2` et.c
+
+Calls `String.Format` with the provided `format-string` and `obj-...`
+parameters.
 
 ## User-Defined Primitives
 
