@@ -115,6 +115,9 @@ namespace Shovel.Compiler
             case ParseTree.Labels.Context:
                 this.CompileContext (ast, useVal, more);
                 break;
+            case ParseTree.Labels.Placeholder:
+                RaiseError(ast.StartPos, ast.EndPos, "'$' without '->'.");
+                break;
             default:
                 Utils.Panic ();
                 break;

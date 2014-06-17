@@ -179,7 +179,7 @@ namespace Shovel
 
         internal static void Panic()
         {
-            throw new InvalidOperationException("Shovel internal WTF.");
+            throw new InvalidOperationException("Shovel internal error.");
         }
 
         internal static void DecorateByteCode(IEnumerable<Instruction> bytecode, List<SourceFile> sources)

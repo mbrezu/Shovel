@@ -39,8 +39,8 @@ namespace ConsoleTest
             //ApplyPrimitiveTest();
             //CollectTestTails();
             //IndirectHashTest();
-            //StringInterpolationTest();
-            FormatTest();
+            StringInterpolationTest();
+            //FormatTest();
             //MultilineComments();
             //IndirectArrayTest();
             //AnotherSimpleTest ();
@@ -76,9 +76,8 @@ format('The {0} is {1:C2}.', product.name, product.price)
         static void StringInterpolationTest()
         {
             var sources = Shovel.Api.MakeSources("test.sho", @"
-var person = hash('name', 'John', 'quality', 'wise')
-//'Shovel thinks ' + { person.name } + ' is ' + { person.quality } + '.'
-'Shovel thinks ${person.name} is ${person.quality}.'
+var product = hash('name', 'paperweight', 'price', 20)
+'${product.name} is ${product.price:C2}.'
             ");
             try
             {
