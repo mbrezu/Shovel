@@ -955,6 +955,40 @@ file 'test.sho' line 4: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         }
 
         [Test]
+        public void StringInterpolationRuntimeError()
+        {
+            var program = @"
+var product = hash('name', 'paperweight', 'price', 19.90)
+var names = array('John', 'Smith')
+'Mr. ${upper(names[1])}, the ${product.nam} is ${product.price:C2}.'
+";
+            Utils.ExpectException<ShovelException>(() =>
+            {
+                Utils.TestValue(program, Shovel.Value.Kinds.String, "John is wise.");
+            }, (ex) =>
+            {
+                Assert.IsNotNull(ex);
+                Assert.AreEqual(@"Key not found in hash table.
+
+Current stack trace:
+file 'test.sho' line 4: 'Mr. ${upper(names[1])}, the ${product.nam} is ${product.price:C2}.'
+file 'test.sho' line 4:                                       ^
+
+Current environment:
+
+Frame starts at:
+file 'test.sho' line 2: var product = hash('name', 'paperweight', 'price', 19.90)
+file 'test.sho' line 2: ^
+Frame variables are:
+product = hash(""name"", ""paperweight"", ""price"", 19.9)
+names = array(""John"", ""Smith"")
+
+".TrimCarriageReturn(), ex.Message.TrimCarriageReturn());
+                Assert.AreEqual("test.sho", ex.FileName);
+            });
+        }
+
+        [Test]
         public void StringInterpolationComplex()
         {
             var program = @"
@@ -975,5 +1009,17 @@ var names = array('John', 'Smith')
 ";
             Utils.TestValue(program, Shovel.Value.Kinds.String, "Mr. SMITH, the paperweight is $19.90 (category \"stuff\").");
         }
+
+        [Test]
+        public void StringInterpolationNested()
+        {
+            var program = @"
+var product = hash('name', 'paperweight', 'price', 19.90)
+var names = array('John', 'Smith')
+'Mr. ${""${names[0]}""} ${upper(names[1])}, the ${product.name} is ${product.price:C2}.'
+";
+            Utils.TestValue(program, Shovel.Value.Kinds.String, "Mr. John SMITH, the paperweight is $19.90.");
+        }
+
     }
 }
