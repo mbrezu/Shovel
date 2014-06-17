@@ -46,6 +46,9 @@ namespace Shovel.Vm
             AddPrim0 (result, Callable.MakePrim0 ("array", ArrayConstructor, null));
             AddPrim0 (result, Callable.MakePrim0 ("arrayN", Callable.MakeHostCallable (SizedArrayConstructor), 1));
 
+            // Format
+            AddPrim0 (result, Callable.MakePrim0 ("format", Format, null));
+
             // Key-not-found and index-out-of-range handlers.
             AddPrim0 (result, Callable.MakePrim0 ("setHandlers", Callable.MakeHostCallable(SetHandlers), 3));
 
@@ -731,6 +734,59 @@ namespace Shovel.Vm
             hash.ArrayValue = result;
             hash.Kind = Value.Kinds.Array;
             api.CellsIncrementer (sizeIncrease);
+        }
+
+        static Value Format(VmApi api, Value[] args, int start, int length)
+        {
+            CheckString(api, args[start]);
+            var formatArgs = new List<object>();
+            for (int i = 1; i < length; i++) {
+                var arg = args[i + start];
+                switch(arg.Kind) {
+                    case Value.Kinds.Array:
+                        formatArgs.Add(ShovelStringRepresentation(api, arg));
+                        break;
+                    case Value.Kinds.Bool: 
+                        formatArgs.Add(arg.BoolValue); 
+                        break;
+                    case Value.Kinds.Callable:
+                        api.RaiseShovelError("Cannot call 'format' on callables.");
+                        break;
+                    case Value.Kinds.Double:
+                        formatArgs.Add(arg.DoubleValue); 
+                        break;
+                    case Value.Kinds.Hash:
+                        formatArgs.Add(ShovelStringRepresentation(api, arg));
+                        break;
+                    case Value.Kinds.Integer:
+                        formatArgs.Add(arg.IntegerValue); 
+                        break;
+                    case Value.Kinds.NamedBlock:
+                        api.RaiseShovelError("Cannot call 'format' on named blocks.");
+                        break;
+                    case Value.Kinds.Null:
+                        formatArgs.Add(ShovelStringRepresentation(api, arg));
+                        break;
+                    case Value.Kinds.ReturnAddress:
+                        api.RaiseShovelError("Cannot call 'format' on return addresses.");
+                        break;
+                    case Value.Kinds.String:
+                        formatArgs.Add(arg.StringValue);
+                        break;
+                    case Value.Kinds.Struct:
+                        formatArgs.Add(ShovelStringRepresentation(api, arg));
+                        break;
+                    case Value.Kinds.StructInstance:
+                        formatArgs.Add(ShovelStringRepresentation(api, arg));
+                        break;
+                    default:
+                        api.RaiseShovelError(String.Format(
+                            "'format' called with unknown value ('{0}').", arg.Kind.ToString()));
+                        break;
+                }
+            }
+            api.CellsIncrementer(1);
+            return Value.Make(String.Format(args[start].StringValue, formatArgs.ToArray()));
         }
 
         static Value ArrayConstructor (VmApi api, Value[] args, int start, int length)

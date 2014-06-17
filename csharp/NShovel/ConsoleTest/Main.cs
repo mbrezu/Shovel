@@ -39,7 +39,8 @@ namespace ConsoleTest
             //ApplyPrimitiveTest();
             //CollectTestTails();
             //IndirectHashTest();
-            StringInterpolation();
+            //StringInterpolationTest();
+            FormatTest();
             //MultilineComments();
             //IndirectArrayTest();
             //AnotherSimpleTest ();
@@ -47,11 +48,34 @@ namespace ConsoleTest
             //UdpTest();
         }
 
-        static void StringInterpolation()
+        static void FormatTest()
         {
             var sources = Shovel.Api.MakeSources("test.sho", @"
-var name = 'John'
-var quality = 20
+var product = hash('name', 'paperweight', 'price', 20)
+format('The {0} is {1:C2}.', product.name, product.price)
+            ");
+            try
+            {
+                //var bytecode = Shovel.Api.GetBytecode (sources);
+                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                Console.WriteLine(Shovel.Api.TestRunVm(sources));
+                //Console.WriteLine(Shovel.Api.PrintRawBytecode(sources, true));
+                var tokenizer = new Shovel.Compiler.Tokenizer(sources[0]);
+                var parser = new Shovel.Compiler.Parser(tokenizer.Tokens, sources);
+                foreach (var pt in parser.ParseTrees)
+                {
+                    //Console.WriteLine(pt);
+                }
+            }
+            catch (Shovel.Exceptions.ShovelException shex)
+            {
+                Console.WriteLine(shex.Message);
+            }
+        }
+
+        static void StringInterpolationTest()
+        {
+            var sources = Shovel.Api.MakeSources("test.sho", @"
 var person = hash('name', 'John', 'quality', 'wise')
 //'Shovel thinks ' + { person.name } + ' is ' + { person.quality } + '.'
 'Shovel thinks ${person.name} is ${person.quality}.'
