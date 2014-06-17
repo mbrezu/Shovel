@@ -1027,7 +1027,7 @@ var names = array('John', 'Smith')
             var program = @"
 var product = hash('name', 'paperweight', 'price', 19.90)
 var names = array('John', 'Smith')
-'${names'
+'The names are: ${names'
 ";
             Utils.ExpectException<ShovelException>(() =>
             {
@@ -1036,8 +1036,8 @@ var names = array('John', 'Smith')
             {
                 Assert.IsNotNull(ex);
                 Assert.AreEqual(@"Missing '}' for '${}' block.
-file 'test.sho' line 4: '${names'
-file 'test.sho' line 4:  ^^^^^^^^".TrimCarriageReturn(), ex.Message.TrimCarriageReturn());
+file 'test.sho' line 4: 'The names are: ${names'
+file 'test.sho' line 4:                 ^^^^^^^^".TrimCarriageReturn(), ex.Message.TrimCarriageReturn());
                 Assert.AreEqual("test.sho", ex.FileName);
             });
         }
