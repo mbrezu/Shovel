@@ -34,6 +34,7 @@ namespace Shovel.Compiler
         int tokenIndex;
         string fileName;
         Token lastToken;
+        public bool StringInterpolation { get; set; }
 
         public Parser (List<Token> tokens, List<SourceFile> sources)
         {
@@ -56,13 +57,14 @@ namespace Shovel.Compiler
         {
             var result = new List<ParseTree> ();
             this.fileName = this.tokens [0].Content;
-            result.Add (new ParseTree () {
-                Label = ParseTree.Labels.FileName,
-                StartPos = 0,
-                EndPos = 0,
-                Content = this.fileName
+            if (!StringInterpolation) { 
+                result.Add (new ParseTree () {
+                    Label = ParseTree.Labels.FileName,
+                    StartPos = 0,
+                    EndPos = 0,
+                    Content = this.fileName
+                });
             }
-            );
             this.tokenIndex = 1;
             while (!this.Finished()) {
                 var pt = this.ParseStatement();
@@ -173,8 +175,7 @@ namespace Shovel.Compiler
             return this.WithNewParseTree (prim0, pt => {
                 pt.Content = this.CurrentToken ().Content;
                 this.NextToken ();
-            }
-            );
+            });
         }
 
         bool TokenIs (Token.Types type, string content = null)
@@ -376,7 +377,9 @@ namespace Shovel.Compiler
             if (this.TokenIs (Token.Types.Number)) {
                 return this.ParseNumber ();
             } else if (this.TokenIs (Token.Types.LiteralString)) {
-                return this.ParseLiteralString ();
+                NextToken();
+                return this.ParseLiteralString (
+                    lastToken.Content, lastToken.StartPos, lastToken.EndPos);
             } else if (this.TokenIs (Token.Types.Keyword, "true")
                 || this.TokenIs (Token.Types.Keyword, "false")) {
                 return this.ParseBool ();
@@ -532,8 +535,7 @@ namespace Shovel.Compiler
                 }
                 this.ConsumeToken (Token.Types.Punctuation, "}");
                 pt.Children = statements;
-            }
-            );
+            });
         }
 
         ParseTree ParseContext ()
@@ -552,9 +554,78 @@ namespace Shovel.Compiler
             return this.TokenAsParseTree (ParseTree.Labels.Bool);
         }
 
-        ParseTree ParseLiteralString ()
+        ParseTree ParseInterpolate(String content, int startPos, int endPos, int intStart)
         {
-            return this.TokenAsParseTree (ParseTree.Labels.String);
+            var source = this.sources.FirstOrDefault(src => src.FileName == fileName);
+            var tokenizer = new Tokenizer(source, startPos + intStart + 2, endPos);
+            tokenizer.StringInterpolation = true;
+            var parser = new Parser(tokenizer.Tokens, sources);
+            parser.StringInterpolation = true;
+            var block = new ParseTree()
+            {
+                Label = ParseTree.Labels.Begin,
+                StartPos = parser.ParseTrees.First().StartPos,
+                EndPos = parser.ParseTrees.Last().EndPos,
+                Children = parser.ParseTrees
+            };
+            var intStop = content.IndexOf("}", tokenizer.Tokens.Last().EndPos - startPos) + 1;
+            return new ParseTree()
+            {
+                Label = ParseTree.Labels.Call,
+                StartPos = startPos,
+                EndPos = endPos,
+                Children = new ParseTree[] {
+                        new ParseTree() {
+                            Label = ParseTree.Labels.Prim0,
+                            Content = "+",
+                            StartPos = intStop + startPos,
+                            EndPos = intStop + startPos
+                        },
+                        new ParseTree() {
+                            Label = ParseTree.Labels.Call,
+                            StartPos = startPos,
+                            EndPos = endPos,
+                            Children = new ParseTree[] {
+                                new ParseTree() {
+                                    Label = ParseTree.Labels.Prim0,
+                                    Content = "+",
+                                    StartPos = intStart + startPos,
+                                    EndPos = intStart + startPos
+                                },
+                                ParseLiteralString(
+                                    content.Substring(0, intStart) + content.Substring(0, 1),
+                                    startPos,
+                                    intStart - 1),
+                                block
+                            }
+                        },
+                        ParseLiteralString(
+                            content.Substring(content.Length - 1, 1) + content.Substring(intStop, content.Length - intStop),
+                            startPos + intStop - 1,
+                            endPos)
+                    }
+            };
+        }
+
+        ParseTree ParseLiteralString (String content, int startPos, int endPos)
+        {
+            var intStart = content.IndexOf("${", 1);
+            while (intStart != -1)
+            {
+                if (intStart == 0 || content[intStart - 1] != '\\') { 
+                    return ParseInterpolate(content, startPos, endPos, intStart);
+                } else {
+                    intStart = content.IndexOf("${", intStart + 2);
+                }
+            }
+            var result = new ParseTree() {
+                Label = ParseTree.Labels.String,
+                StartPos = startPos,
+                EndPos = endPos,
+                Content = content
+            };
+            result.Content = result.Content.Replace ("\\\"", "\"").Replace ("\\\'", "\'").Replace("\\$", "$");
+            return result;
         }
 
         ParseTree ParseNumber ()

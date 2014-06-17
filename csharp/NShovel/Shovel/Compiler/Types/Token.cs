@@ -42,9 +42,9 @@ namespace Shovel.Compiler.Types
         public int EndPos { get; set; }
 
         public string Content { get; set; }
-		
+        
         public bool IsRequiredPrimitive { get; set; }
-		
+        
         public bool IsRelational { get; set; }
 
         public bool IsAdderOp { get; set; }

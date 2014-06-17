@@ -28,118 +28,178 @@ namespace Shovel.Compiler
 {
     public class Tokenizer
     {
-        public Tokenizer (SourceFile source)
+        public Tokenizer(SourceFile source, int initialPos = 0, int limit = -1)
         {
             this.source = source;
+            this.initialPos = initialPos;
+            this.limit = limit;
         }
 
         List<Token> tokens;
         SourceFile source;
         int pos;
+        int initialPos;
+        int limit;
+        public bool StringInterpolation { get; set; }
+        int bracketCounter = 0;
 
-        public List<Token> Tokens {
-            get {
-                if (this.tokens == null) {
-                    this.tokens = this.Tokenize ();
+        public List<Token> Tokens
+        {
+            get
+            {
+                if (this.tokens == null)
+                {
+                    this.tokens = this.Tokenize();
                 }
                 return this.tokens;
             }
         }
 
-        List<Token> Tokenize ()
+        List<Token> Tokenize()
         {
-            List<Token> result = new List<Token> ();
-            result.Add (new Token () {
-                Type = Token.Types.FileName, 
-                Content = this.source.FileName }
-            );
-            this.pos = 0;
-            this.EatWhiteSpace ();
-            while (!this.Finished()) {
-                var ch = this.CurrentChar ();
-                if (Char.IsLetter (ch) || ch == '_' || ch == '@') {
-                    result.Add (this.TokenizeIdentifier ());
-                } else if (Char.IsDigit (ch)) {
-                    result.Add (this.TokenizeNumber ());
-                } else if (ch == '"' || ch == '\'') {
-                    result.Add (this.TokenizeStringLiteral (ch));
-                } else if (ch == '/' && this.LookAhead () == '/') {
-                    this.TokenizeComment ();
-                } else if (ch == '/' && this.LookAhead() == '*') {
-                    this.TokenizeMultilineComment();
-                } else {
-                    result.Add (this.TokenizePunctuation ());
+            List<Token> result = new List<Token>();
+            result.Add(new Token()
+            {
+                Type = Token.Types.FileName,
+                Content = this.source.FileName
+            });
+            this.pos = initialPos;
+            this.EatWhiteSpace();
+            while (!this.Finished())
+            {
+                var ch = this.CurrentChar();
+                if (Char.IsLetter(ch) || ch == '_' || ch == '@')
+                {
+                    result.Add(this.TokenizeIdentifier());
                 }
-                this.EatWhiteSpace ();
+                else if (Char.IsDigit(ch))
+                {
+                    result.Add(this.TokenizeNumber());
+                }
+                else if (ch == '"' || ch == '\'')
+                {
+                    result.Add(this.TokenizeStringLiteral(ch));
+                }
+                else if (ch == '/' && this.LookAhead() == '/')
+                {
+                    this.TokenizeComment();
+                }
+                else if (ch == '/' && this.LookAhead() == '*')
+                {
+                    this.TokenizeMultilineComment();
+                }
+                else
+                {
+                    var punct = this.TokenizePunctuation();
+                    if (punct != null) { 
+                        result.Add(punct);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                this.EatWhiteSpace();
             }
             return result;
         }
-        
-        char? LookAhead (int howFar = 1)
+
+        char? LookAhead(int howFar = 1)
         {
             var laPos = this.pos + howFar;
-            if (laPos < this.source.Content.Length) {
-                return this.source.Content [laPos];
-            } else {
+            if (laPos < this.source.Content.Length)
+            {
+                return this.source.Content[laPos];
+            }
+            else
+            {
                 return null;
             }
         }
-        
-        Token MakePunctuationToken (int length)
+
+        Token MakePunctuationToken(int length)
         {
             int startPos = this.pos;
-            for (int i = 0; i < length; i++) {
-                this.NextChar ();
+            for (int i = 0; i < length; i++)
+            {
+                this.NextChar();
             }
-            return new Token () {
+            return new Token()
+            {
                 Type = Token.Types.Punctuation,
                 StartPos = startPos,
                 EndPos = this.pos - 1,
-                Content = this.source.Content.Substring (startPos, length)
+                Content = this.source.Content.Substring(startPos, length)
             };
         }
-        
-        Token TokenizePunctuation ()
+
+        Token TokenizePunctuation()
         {
-            var ch = this.CurrentChar ();
+            var ch = this.CurrentChar();
             if (ch == '.')
             {
                 var la = this.LookAhead();
-                if (la != '.') { 
+                if (la != '.')
+                {
                     return this.MakePunctuationToken(1);
                 }
                 else
                 {
                     var la2 = this.LookAhead(2);
-                    if (la2 == '.') {
+                    if (la2 == '.')
+                    {
                         return this.MakePunctuationToken(3);
-                    } else {
+                    }
+                    else
+                    {
                         RaiseTokenizerError("Unknown token '..'. Did you mean '...'?");
                         throw new Exception(); // Just to keep the compiler happy.
                     }
                 }
-            } else if (ch == '(' || ch == ')' 
-                || ch == '[' || ch == ']'
-                || ch == '{' || ch == '}'
-                || ch == ',') 
+            }
+            else if (ch == '(' || ch == ')'
+              || ch == '[' || ch == ']'
+              || ch == '{' || ch == '}'
+              || ch == ',')
             {
-                return this.MakePunctuationToken (1);
-            } else if (ch == '=') {
-                var la = this.LookAhead ();
+                if (ch == '{')
+                {
+                    bracketCounter ++;
+                }
+                else if (ch == '}')
+                {
+                    bracketCounter --;
+                    if (StringInterpolation && bracketCounter < 0)
+                    {
+                        return null;
+                    }
+                }
+                return this.MakePunctuationToken(1);
+            }
+            else if (ch == '=')
+            {
+                var la = this.LookAhead();
                 var isRelational = la == '=';
                 Token result;
-                if (isRelational) {
-                    result = this.MakePunctuationToken (2);
-                } else {
-                    result = this.MakePunctuationToken (1);
+                if (isRelational)
+                {
+                    result = this.MakePunctuationToken(2);
+                }
+                else
+                {
+                    result = this.MakePunctuationToken(1);
                 }
                 result.IsRelational = isRelational;
                 return result;
-            } else if (ch == '+') {
-                var result = this.MakePunctuationToken (1);
+            }
+            else if (ch == '+')
+            {
+                var result = this.MakePunctuationToken(1);
                 result.IsAdderOp = true;
                 return result;
-            } else if (ch == '-') {
+            }
+            else if (ch == '-')
+            {
                 var la = this.LookAhead();
                 if (la == '>')
                 {
@@ -147,73 +207,106 @@ namespace Shovel.Compiler
                     result.IsPostfixOp = true;
                     return result;
                 }
-                else { 
-                    var result = this.MakePunctuationToken (1);
+                else
+                {
+                    var result = this.MakePunctuationToken(1);
                     result.IsAdderOp = true;
                     return result;
                 }
-            } else if (ch == '<' || ch == '>') {
-                var la = this.LookAhead ();
+            }
+            else if (ch == '<' || ch == '>')
+            {
+                var la = this.LookAhead();
                 var isLongRelational = la == '=';
                 var isMultiplier = ch == '<' && la == '<' || ch == '>' && la == '>';
                 var isRelational = isLongRelational || !isMultiplier;
                 Token result;
-                if (isLongRelational || isMultiplier) {
-                    result = this.MakePunctuationToken (2);
-                } else {
-                    result = this.MakePunctuationToken (1);
+                if (isLongRelational || isMultiplier)
+                {
+                    result = this.MakePunctuationToken(2);
+                }
+                else
+                {
+                    result = this.MakePunctuationToken(1);
                 }
                 result.IsRelational = isRelational;
                 result.IsMultiplierOp = isMultiplier;
                 return result;
-            } else if (ch == '*' || ch == '/' || ch == '%' || ch == '^') {
-                var result = this.MakePunctuationToken (1);
+            }
+            else if (ch == '*' || ch == '/' || ch == '%' || ch == '^')
+            {
+                var result = this.MakePunctuationToken(1);
                 result.IsMultiplierOp = true;
                 return result;
-            } else if (ch == '|') {
-                var la = this.LookAhead ();
+            }
+            else if (ch == '|')
+            {
+                var la = this.LookAhead();
                 var isLogical = la == '|';
                 Token result;
-                if (isLogical) {
-                    result = this.MakePunctuationToken (2);
-                } else {
-                    result = this.MakePunctuationToken (1);
+                if (isLogical)
+                {
+                    result = this.MakePunctuationToken(2);
                 }
-                if (isLogical) {
+                else
+                {
+                    result = this.MakePunctuationToken(1);
+                }
+                if (isLogical)
+                {
                     result.IsLogicalOrOp = true;
-                } else {
+                }
+                else
+                {
                     result.IsAdderOp = true;
                 }
                 return result;
-            } else if (ch == '&') {
-                var la = this.LookAhead ();
+            }
+            else if (ch == '&')
+            {
+                var la = this.LookAhead();
                 var isLogical = la == '&';
                 Token result;
-                if (isLogical) {
-                    result = this.MakePunctuationToken (2);
-                } else {
-                    result = this.MakePunctuationToken (1);
+                if (isLogical)
+                {
+                    result = this.MakePunctuationToken(2);
                 }
-                if (isLogical) {
+                else
+                {
+                    result = this.MakePunctuationToken(1);
+                }
+                if (isLogical)
+                {
                     result.IsLogicalAndOp = true;
-                } else {
+                }
+                else
+                {
                     result.IsMultiplierOp = true;
                 }
                 return result;
-            } else if (ch == '!') {
-                var la = this.LookAhead ();
+            }
+            else if (ch == '!')
+            {
+                var la = this.LookAhead();
                 var isRelational = la == '=';
                 Token result;
-                if (isRelational) {
-                    result = this.MakePunctuationToken (2);
-                } else {
-                    result = this.MakePunctuationToken (1);
+                if (isRelational)
+                {
+                    result = this.MakePunctuationToken(2);
+                }
+                else
+                {
+                    result = this.MakePunctuationToken(1);
                 }
                 result.IsRelational = isRelational;
                 return result;
-            } else if (ch == '$') {
+            }
+            else if (ch == '$')
+            {
                 return this.MakePunctuationToken(1);
-            } else {
+            }
+            else
+            {
                 RaiseTokenizerError(String.Format("Unexpected character '{0}'.", ch));
                 throw new Exception(); // Just to keep the compiler happy.
             }
@@ -259,77 +352,92 @@ namespace Shovel.Compiler
                 AtEof = true
             };
         }
-        
-        void TokenizeComment ()
+
+        void TokenizeComment()
         {
-            this.NextChar ();
-            this.NextChar ();
-            this.TokenizePred (Token.Types.FileName, ch => ch != '\n');
-            this.NextChar ();
+            this.NextChar();
+            this.NextChar();
+            this.TokenizePred(Token.Types.FileName, ch => ch != '\n');
+            this.NextChar();
         }
-        
-        Token TokenizeStringLiteral (char quote)
+
+        Token TokenizeStringLiteral(char quote)
         {
             bool escaped = false;
             int quoteCounter = 0;
-            var result = TokenizePred (Token.Types.LiteralString, (ch) => {
+            var result = TokenizePred(Token.Types.LiteralString, (ch) =>
+            {
                 var goOn = quoteCounter < 2;
-                if (ch == quote && !escaped) {
-                    quoteCounter ++;
+                if (ch == quote && !escaped)
+                {
+                    quoteCounter++;
                 }
                 escaped = ch == '\\';
                 return goOn;
             }
-            );  
-            if (quoteCounter < 2) {
-                throw new ShovelException () {
+            );
+            if (quoteCounter < 2)
+            {
+                throw new ShovelException()
+                {
                     ShovelMessage = "Expected an end quote, but reached the end of file.",
                     FileName = this.source.FileName,
                     AtEof = true
                 };
             }
-            result.Content = result.Content.Replace ("\\\"", "\"").Replace ("\\\'", "\'");
             return result;
         }
-        
-        Token TokenizeNumber ()
+
+        Token TokenizeNumber()
         {
             bool afterDecimalDot = false;
-            return TokenizePred (Token.Types.Number, (ch) => {
-                if (afterDecimalDot) {
-                    return Char.IsDigit (ch);
-                } else {                    
-                    if (ch == '.') {
+            return TokenizePred(Token.Types.Number, (ch) =>
+            {
+                if (afterDecimalDot)
+                {
+                    return Char.IsDigit(ch);
+                }
+                else
+                {
+                    if (ch == '.')
+                    {
                         afterDecimalDot = true;
                         return true;
-                    } else {
-                        return Char.IsDigit (ch);
                     }
-                }                   
+                    else
+                    {
+                        return Char.IsDigit(ch);
+                    }
+                }
             }
             );
         }
-        
-        Token TokenizeIdentifier ()
+
+        Token TokenizeIdentifier()
         {
-            var result = TokenizePred (Token.Types.Identifier, (ch) => 
-                 Char.IsLetterOrDigit (ch) || ch == '@' || ch == '_'
+            var result = TokenizePred(Token.Types.Identifier, (ch) =>
+                 Char.IsLetterOrDigit(ch) || ch == '@' || ch == '_'
             );
-            if (result.Content [0] == '@') {
+            if (result.Content[0] == '@')
+            {
                 result.Type = Token.Types.UserDefinedPrimitive;
-            } else if (Tokenizer.keywords.Contains (result.Content)) {
+            }
+            else if (Tokenizer.keywords.Contains(result.Content))
+            {
                 result.Type = Token.Types.Keyword;
-            } else if (Tokenizer.requiredPrimitives.Contains (result.Content)) {
+            }
+            else if (Tokenizer.requiredPrimitives.Contains(result.Content))
+            {
                 result.IsRequiredPrimitive = true;
             }
             return result;
         }
-        
-        static HashSet<String> keywords = new HashSet<String> (
+
+        static HashSet<String> keywords = new HashSet<String>(
             new string[] { "var", "if", "else", "fn", "return", 
             "true", "false", "null", "block", "context" }
             );
-        static HashSet<String> requiredPrimitives = new HashSet<String> (
+        static HashSet<String> requiredPrimitives = new HashSet<String>(
             new string[] { "pow",
           "array", "arrayN", "length", "slice", "push", "pop",
           "lower", "upper",
@@ -341,14 +449,16 @@ namespace Shovel.Compiler
           "panic", "delete",
           "defstruct", "make", "hashToStruct", "structToHash", "isStruct", "isStructInstance", "apply",
           "setHandlers" });
-        
-        Token TokenizePred (Token.Types type, Func<char, bool> pred)
+
+        Token TokenizePred(Token.Types type, Func<char, bool> pred)
         {
             int startPos = this.pos;
-            while (!this.Finished() && pred(this.CurrentChar())) {
-                this.NextChar ();
+            while (!this.Finished() && pred(this.CurrentChar()))
+            {
+                this.NextChar();
             }
-            return new Token () {
+            return new Token()
+            {
                 StartPos = startPos,
                 EndPos = this.pos - 1,
                 Type = type,
@@ -356,25 +466,26 @@ namespace Shovel.Compiler
             };
         }
 
-        bool Finished ()
+        bool Finished()
         {
-            return this.pos >= this.source.Content.Length;
+            return this.pos >= this.source.Content.Length || (limit != -1 && this.pos >= limit);
         }
 
-        char CurrentChar ()
+        char CurrentChar()
         {
-            return this.source.Content [this.pos];
+            return this.source.Content[this.pos];
         }
 
-        void NextChar ()
+        void NextChar()
         {
-            this.pos ++;
+            this.pos++;
         }
 
-        void EatWhiteSpace ()
+        void EatWhiteSpace()
         {
-            while (!this.Finished () && Char.IsWhiteSpace(this.CurrentChar ())) {
-                this.NextChar ();
+            while (!this.Finished() && Char.IsWhiteSpace(this.CurrentChar()))
+            {
+                this.NextChar();
             }
         }
 
