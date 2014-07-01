@@ -27,6 +27,9 @@ namespace Shovel.Exceptions
 {
     public class ShovelException : Exception
     {
+        public ShovelException() {}
+        public ShovelException( string message, Exception innerException ) : base( message, innerException ) { }
+
         public string FileName { get; set; }
 
         public override string Message { 
