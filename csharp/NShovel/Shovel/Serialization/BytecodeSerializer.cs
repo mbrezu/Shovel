@@ -128,13 +128,13 @@ namespace Shovel.Serialization
         {
             stream.WriteByte ((byte)sv.Kind);
             if (sv.Kind == Value.Kinds.Integer) {
-                Utils.WriteBytes (stream, BitConverter.GetBytes (sv.IntegerValue));
+                Utils.WriteBytes (stream, BitConverter.GetBytes (sv.integerValue));
             } else if (sv.Kind == Value.Kinds.Double) {
-                Utils.WriteBytes (stream, BitConverter.GetBytes (sv.IntegerValue));
+                Utils.WriteBytes (stream, BitConverter.GetBytes (sv.integerValue));
             } else if (sv.Kind == Value.Kinds.String) {
-                WriteString (stream, sv.StringValue);
+                WriteString (stream, sv.stringValue);
             } else if (sv.Kind == Value.Kinds.Bool) {
-                stream.WriteByte (sv.BoolValue ? (byte)1 : (byte)0);
+                stream.WriteByte (sv.boolValue ? (byte)1 : (byte)0);
             } else if (sv.Kind == Value.Kinds.Null) {
                 // Do nothing.
             } else {
@@ -147,17 +147,17 @@ namespace Shovel.Serialization
             var result = Value.Make ();
             result.Kind = (Value.Kinds)stream.ReadByte ();
             if (result.Kind == Value.Kinds.Integer) {
-                result.IntegerValue = Utils.ReadLong (stream);
+                result.integerValue = Utils.ReadLong (stream);
             } else if (result.Kind == Value.Kinds.Double) {
                 // FIXME: these allocate a lot of byte[] objects.
                 // Should find a way to avoid this (have the caller pass the byte[]?).
                 var bytes = new byte[8];
                 stream.Read (bytes, 0, 8);
-                result.DoubleValue = BitConverter.ToDouble (bytes, 0);
+                result.doubleValue = BitConverter.ToDouble (bytes, 0);
             } else if (result.Kind == Value.Kinds.String) {
-                result.StringValue = ReadString(stream);
+                result.stringValue = ReadString(stream);
             } else if (result.Kind == Value.Kinds.Bool) {
-                result.BoolValue = stream.ReadByte() == 1;
+                result.boolValue = stream.ReadByte() == 1;
             } else if (result.Kind == Value.Kinds.Null) {
                 // Do nothing.
             } else {

@@ -23,9 +23,39 @@ using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using Shovel.Vm.Types;
+using Shovel.Exceptions;
 
 namespace Shovel
 {
+    public class Either<T>
+    {
+        private T value;
+        public T Value {
+            get {
+                if (!HasValue) {
+                    throw Error;
+                }
+                return value;
+            }
+            private set {
+                this.value = value;
+            }
+        }
+        public ShovelException Error { get; private set; }
+        public bool HasValue { get; private set; }
+
+        public Either(T value)
+        {
+            this.Value = value;
+            HasValue = true;
+        }
+
+        public Either(ShovelException error)
+        {
+            this.Error = error;
+        }
+    }
+
     public class ArrayInstance : List<Value>
     {
         public Value IndirectGet { get; set; }
@@ -86,18 +116,115 @@ namespace Shovel
         // The lower the better, performance wise.
         [FieldOffset(20)]
         public Kinds Kind;
+        
         [FieldOffset(0)]
-        public long IntegerValue;
+        internal long integerValue;
+
+        public Either<long> IntegerValue
+        {
+            get
+            {
+                if (Kind == Kinds.Integer)
+                {
+                    return new Either<long>(this.integerValue);
+                }
+                else
+                {
+                    return new Either<long>(new ShovelException("Value is not an integer.", null));
+                }
+            }
+        }
+
         [FieldOffset(0)]
-        public double DoubleValue;
+        internal double doubleValue;
+
+        public Either<double> DoubleValue
+        {
+            get
+            {
+                if (Kind == Kinds.Double)
+                {
+                    return new Either<double>(this.doubleValue);
+                }
+                else
+                {
+                    return new Either<double>(new ShovelException("Value is not a double.", null));
+                }
+            }
+        }
+
         [FieldOffset(0)]
-        public bool BoolValue;
+        internal bool boolValue;
+
+        public Either<bool> BoolValue
+        {
+            get
+            {
+                if (Kind == Kinds.Bool)
+                {
+                    return new Either<bool>(this.boolValue);
+                }
+                else
+                {
+                    return new Either<bool>(new ShovelException("Value is not a bool.", null));
+                }
+            }
+        }
+
         [FieldOffset(8)]
-        public string StringValue;
+        internal string stringValue;
+
+        public Either<string> StringValue
+        {
+            get
+            {
+                if (Kind == Kinds.String)
+                {
+                    return new Either<string>(this.stringValue);
+                }
+                else
+                {
+                    return new Either<string>(new ShovelException("Value is not a string.", null));
+                }
+            }
+        }
+
         [FieldOffset(8)]
-        public ArrayInstance ArrayValue;
+        internal ArrayInstance arrayValue;
+
+        public Either<List<Value>> ArrayValue
+        {
+            get
+            {
+                if (Kind == Kinds.Array)
+                {
+                    return new Either<List<Value>>(this.arrayValue);
+                }
+                else
+                {
+                    return new Either<List<Value>>(new ShovelException("Value is not an array.", null));
+                }
+            }
+        }
+
         [FieldOffset(8)]
-        public HashInstance HashValue;
+        internal HashInstance hashValue;
+
+        public Either<Dictionary<Value, Value>> HashValue
+        {
+            get
+            {
+                if (Kind == Kinds.Hash)
+                {
+                    return new Either<Dictionary<Value, Value>>(this.hashValue);
+                }
+                else
+                {
+                    return new Either<Dictionary<Value, Value>>(new ShovelException("Value is not a hash.", null));
+                }
+            }
+        }
+
         [FieldOffset(8)]
         internal Callable CallableValue;
         [FieldOffset(8)]
@@ -136,7 +263,7 @@ namespace Shovel
         {
             Value result = value;
             result.Kind = Kinds.Bool;
-            result.BoolValue = b;
+            result.boolValue = b;
             return result;
         }
 
@@ -144,7 +271,7 @@ namespace Shovel
         {
             Value result = value;
             result.Kind = Kinds.Integer;
-            result.IntegerValue = l;
+            result.integerValue = l;
             return result;
         }
 
@@ -155,7 +282,7 @@ namespace Shovel
             }
             Value result = value;
             result.Kind = Kinds.String;
-            result.StringValue = s;
+            result.stringValue = s;
             return result;
         }
 
@@ -163,7 +290,7 @@ namespace Shovel
         {
             Value result = value;
             result.Kind = Kinds.Double;
-            result.DoubleValue = d;
+            result.doubleValue = d;
             return result;
         }
 
@@ -174,7 +301,7 @@ namespace Shovel
             }
             Value result = value;
             result.Kind = Kinds.Array;
-            result.ArrayValue = a;
+            result.arrayValue = a;
             return result;
         }
 
@@ -185,7 +312,7 @@ namespace Shovel
             }
             Value result = value;
             result.Kind = Kinds.Hash;
-            result.HashValue = d;
+            result.hashValue = d;
             return result;
         }
 
@@ -221,19 +348,19 @@ namespace Shovel
             var sv = (Value)obj;
             switch (this.Kind) {
             case Kinds.String:
-                return sv.Kind == Kinds.String && this.StringValue == sv.StringValue;
+                return sv.Kind == Kinds.String && this.stringValue == sv.stringValue;
             case Kinds.Integer:
-                return sv.Kind == Kinds.Integer && this.IntegerValue == sv.IntegerValue;
+                return sv.Kind == Kinds.Integer && this.integerValue == sv.integerValue;
             case Kinds.Null:
                 return sv.Kind == Kinds.Null;
             case Kinds.Double:
-                return sv.Kind == Kinds.Double && this.DoubleValue == sv.DoubleValue;
+                return sv.Kind == Kinds.Double && this.doubleValue == sv.doubleValue;
             case Kinds.Bool:
-                return sv.Kind == Kinds.Bool && this.BoolValue == sv.BoolValue;
+                return sv.Kind == Kinds.Bool && this.boolValue == sv.boolValue;
             case Kinds.Array:
-                return sv.Kind == Kinds.Array && this.ArrayValue == sv.ArrayValue;
+                return sv.Kind == Kinds.Array && this.arrayValue == sv.arrayValue;
             case Kinds.Hash:
-                return sv.Kind == Kinds.Hash && this.HashValue == sv.HashValue;
+                return sv.Kind == Kinds.Hash && this.hashValue == sv.hashValue;
             case Kinds.Callable:
                 return sv.Kind == Kinds.Callable && this.CallableValue == sv.CallableValue;
             case Kinds.ReturnAddress:
@@ -254,19 +381,19 @@ namespace Shovel
         {
             switch (this.Kind) {
             case Kinds.String:
-                return this.StringValue.GetHashCode ();
+                return this.stringValue.GetHashCode ();
             case Kinds.Integer:
-                return this.IntegerValue.GetHashCode ();
+                return this.integerValue.GetHashCode ();
             case Kinds.Null:
                 return 0;
             case Kinds.Double:
-                return this.DoubleValue.GetHashCode ();
+                return this.doubleValue.GetHashCode ();
             case Kinds.Bool:
-                return this.BoolValue.GetHashCode ();
+                return this.boolValue.GetHashCode ();
             case Kinds.Array:
-                return this.ArrayValue.GetHashCode ();
+                return this.arrayValue.GetHashCode ();
             case Kinds.Hash:
-                return this.HashValue.GetHashCode ();
+                return this.hashValue.GetHashCode ();
             case Kinds.Callable:
                 return this.CallableValue.GetHashCode ();
             case Kinds.ReturnAddress:
@@ -295,7 +422,7 @@ namespace Shovel
                 cellsIncrementHerald: cells => {}
                 );
             }
-            return Vm.Prim0.ShovelString (dummyVmApi, this).StringValue;
+            return Vm.Prim0.ShovelString (dummyVmApi, this).stringValue;
         }
 
     }

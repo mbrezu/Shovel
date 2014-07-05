@@ -348,9 +348,9 @@ namespace ShovelTests
             var sources = Shovel.Api.MakeSources ("test.sho", "hash('a', 1, 'b', 2)");
             var result = Shovel.Api.TestRunVm (sources);
             Assert.IsTrue (result.Kind == Shovel.Value.Kinds.Hash);
-            Assert.AreEqual (2, result.HashValue.Keys.Count);
-            Assert.AreEqual (1, result.HashValue [Shovel.Value.Make ("a")].IntegerValue);
-            Assert.AreEqual (2, result.HashValue [Shovel.Value.Make ("b")].IntegerValue);
+            Assert.AreEqual(2, result.HashValue.Value.Keys.Count);
+            Assert.AreEqual(1, result.HashValue.Value[Shovel.Value.Make("a")].IntegerValue.Value);
+            Assert.AreEqual(2, result.HashValue.Value[Shovel.Value.Make("b")].IntegerValue.Value);
         }
 
         [Test]
@@ -367,10 +367,10 @@ namespace ShovelTests
             var sources = Shovel.Api.MakeSources ("test.sho", "keys(hash('a', 1, 'b', 2))");
             var result = Shovel.Api.TestRunVm (sources);
             Assert.IsTrue (result.Kind == Shovel.Value.Kinds.Array);
-            Assert.AreEqual (2, result.ArrayValue.Count);
-            Assert.IsTrue (result.ArrayValue.Contains (Shovel.Value.Make ("a")));
-            Assert.IsTrue (result.ArrayValue.Contains (Shovel.Value.Make ("b")));
-            Assert.IsFalse (result.ArrayValue.Contains (Shovel.Value.Make ("c")));
+            Assert.AreEqual (2, result.ArrayValue.Value.Count);
+            Assert.IsTrue(result.ArrayValue.Value.Contains(Shovel.Value.Make("a")));
+            Assert.IsTrue(result.ArrayValue.Value.Contains(Shovel.Value.Make("b")));
+            Assert.IsFalse(result.ArrayValue.Value.Contains(Shovel.Value.Make("c")));
         }
 
         [Test]
@@ -384,10 +384,10 @@ namespace ShovelTests
         void Is123 (Shovel.Value result)
         {
             Assert.IsTrue (result.Kind == Shovel.Value.Kinds.Array);
-            Assert.AreEqual (3, result.ArrayValue.Count);
-            Assert.AreEqual (1, result.ArrayValue [0].IntegerValue);
-            Assert.AreEqual (2, result.ArrayValue [1].IntegerValue);
-            Assert.AreEqual (3, result.ArrayValue [2].IntegerValue);
+            Assert.AreEqual(3, result.ArrayValue.Value.Count);
+            Assert.AreEqual(1, result.ArrayValue.Value[0].IntegerValue.Value);
+            Assert.AreEqual(2, result.ArrayValue.Value[1].IntegerValue.Value);
+            Assert.AreEqual(3, result.ArrayValue.Value[2].IntegerValue.Value);
         }
 
         [Test]
@@ -396,10 +396,10 @@ namespace ShovelTests
             var sources = Shovel.Api.MakeSources ("test.sho", "arrayN(3)");
             var result = Shovel.Api.TestRunVm (sources);
             Assert.IsTrue (result.Kind == Shovel.Value.Kinds.Array);
-            Assert.AreEqual (3, result.ArrayValue.Count);
-            Assert.IsTrue (result.ArrayValue [0].Kind == Shovel.Value.Kinds.Null);
-            Assert.IsTrue (result.ArrayValue [1].Kind == Shovel.Value.Kinds.Null);
-            Assert.IsTrue (result.ArrayValue [2].Kind == Shovel.Value.Kinds.Null);
+            Assert.AreEqual(3, result.ArrayValue.Value.Count);
+            Assert.IsTrue(result.ArrayValue.Value[0].Kind == Shovel.Value.Kinds.Null);
+            Assert.IsTrue(result.ArrayValue.Value[1].Kind == Shovel.Value.Kinds.Null);
+            Assert.IsTrue(result.ArrayValue.Value[2].Kind == Shovel.Value.Kinds.Null);
         }
 
         [Test]
@@ -466,9 +466,9 @@ namespace ShovelTests
             var sources = Shovel.Api.MakeSources ("test.sho", "var a = array('a', 1, 'b', 2) slice(a, -1, -1)");
             var result = Shovel.Api.TestRunVm (sources);
             Assert.IsTrue (result.Kind == Shovel.Value.Kinds.Array);
-            Assert.AreEqual (1, result.ArrayValue.Count);
-            Assert.IsTrue (result.ArrayValue [0].Kind == Shovel.Value.Kinds.Integer);
-            Assert.AreEqual (2, result.ArrayValue [0].IntegerValue);
+            Assert.AreEqual(1, result.ArrayValue.Value.Count);
+            Assert.IsTrue(result.ArrayValue.Value[0].Kind == Shovel.Value.Kinds.Integer);
+            Assert.AreEqual(2, result.ArrayValue.Value[0].IntegerValue.Value);
 
             Utils.TestValue (
                 "var a = 'Test' slice(a, 1, -2)", Shovel.Value.Kinds.String, "es");
@@ -476,11 +476,11 @@ namespace ShovelTests
             sources = Shovel.Api.MakeSources ("test.sho", "slice(array(1, 2, 3), 0, 2)");
             result = Shovel.Api.TestRunVm (sources);
             Assert.IsTrue (result.Kind == Shovel.Value.Kinds.Array);
-            Assert.AreEqual (2, result.ArrayValue.Count);
-            Assert.IsTrue (result.ArrayValue [0].Kind == Shovel.Value.Kinds.Integer);
-            Assert.AreEqual (1, result.ArrayValue [0].IntegerValue);
-            Assert.IsTrue (result.ArrayValue [1].Kind == Shovel.Value.Kinds.Integer);
-            Assert.AreEqual (2, result.ArrayValue [1].IntegerValue);
+            Assert.AreEqual(2, result.ArrayValue.Value.Count);
+            Assert.IsTrue(result.ArrayValue.Value[0].Kind == Shovel.Value.Kinds.Integer);
+            Assert.AreEqual(1, result.ArrayValue.Value[0].IntegerValue.Value);
+            Assert.IsTrue(result.ArrayValue.Value[1].Kind == Shovel.Value.Kinds.Integer);
+            Assert.AreEqual(2, result.ArrayValue.Value[1].IntegerValue.Value);
         }
 
         [Test]
@@ -505,26 +505,26 @@ namespace ShovelTests
             var aNow = DateTime.UtcNow;
             Assert.IsTrue (result.Kind == Shovel.Value.Kinds.Hash);
             Assert.IsTrue (
-                result.HashValue [Shovel.Value.Make ("year")].Kind == Shovel.Value.Kinds.Integer);
+                result.HashValue.Value[Shovel.Value.Make("year")].Kind == Shovel.Value.Kinds.Integer);
             Assert.IsTrue (
-                result.HashValue [Shovel.Value.Make ("month")].Kind == Shovel.Value.Kinds.Integer);
+                result.HashValue.Value[Shovel.Value.Make("month")].Kind == Shovel.Value.Kinds.Integer);
             Assert.IsTrue (
-                result.HashValue [Shovel.Value.Make ("day")].Kind == Shovel.Value.Kinds.Integer);
+                result.HashValue.Value[Shovel.Value.Make("day")].Kind == Shovel.Value.Kinds.Integer);
             Assert.IsTrue (
-                result.HashValue [Shovel.Value.Make ("hour")].Kind == Shovel.Value.Kinds.Integer);
+                result.HashValue.Value[Shovel.Value.Make("hour")].Kind == Shovel.Value.Kinds.Integer);
             Assert.IsTrue (
-                result.HashValue [Shovel.Value.Make ("minute")].Kind == Shovel.Value.Kinds.Integer);
+                result.HashValue.Value[Shovel.Value.Make("minute")].Kind == Shovel.Value.Kinds.Integer);
             Assert.IsTrue (
-                result.HashValue [Shovel.Value.Make ("second")].Kind == Shovel.Value.Kinds.Integer);
+                result.HashValue.Value[Shovel.Value.Make("second")].Kind == Shovel.Value.Kinds.Integer);
             Assert.IsTrue (
-                result.HashValue [Shovel.Value.Make ("dayOfWeek")].Kind == Shovel.Value.Kinds.Integer);
+                result.HashValue.Value[Shovel.Value.Make("dayOfWeek")].Kind == Shovel.Value.Kinds.Integer);
             var aDate = new DateTime (
-                (int)result.HashValue [Shovel.Value.Make ("year")].IntegerValue,
-                (int)result.HashValue [Shovel.Value.Make ("month")].IntegerValue,
-                (int)result.HashValue [Shovel.Value.Make ("day")].IntegerValue,
-                (int)result.HashValue [Shovel.Value.Make ("hour")].IntegerValue,
-                (int)result.HashValue [Shovel.Value.Make ("minute")].IntegerValue,
-                (int)result.HashValue [Shovel.Value.Make ("second")].IntegerValue);
+                (int)result.HashValue.Value[Shovel.Value.Make("year")].IntegerValue.Value,
+                (int)result.HashValue.Value[Shovel.Value.Make("month")].IntegerValue.Value,
+                (int)result.HashValue.Value[Shovel.Value.Make("day")].IntegerValue.Value,
+                (int)result.HashValue.Value[Shovel.Value.Make("hour")].IntegerValue.Value,
+                (int)result.HashValue.Value[Shovel.Value.Make("minute")].IntegerValue.Value,
+                (int)result.HashValue.Value[Shovel.Value.Make("second")].IntegerValue.Value);
             var diff = aNow - aDate;
             Assert.IsTrue (diff.TotalSeconds < 1);
         }
@@ -539,7 +539,7 @@ encodeTime(time)"
             );
             var result = Shovel.Api.TestRunVm (sources);
             Assert.IsTrue (result.Kind == Shovel.Value.Kinds.Integer);
-            var decodedDate = new DateTime (1970, 1, 1) + TimeSpan.FromSeconds (result.IntegerValue);
+            var decodedDate = new DateTime (1970, 1, 1) + TimeSpan.FromSeconds (result.IntegerValue.Value);
             Assert.AreEqual (decodedDate, new DateTime (2012, 11, 15, 12, 18, 37));
         }
 

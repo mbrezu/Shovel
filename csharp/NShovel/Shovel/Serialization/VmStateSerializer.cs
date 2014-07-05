@@ -705,17 +705,17 @@ namespace Shovel.Serialization
             case Value.Kinds.Null:
                 return SerializeNull ();
             case Value.Kinds.Bool:
-                return SerializeBool (sv.BoolValue);
+                return SerializeBool (sv.boolValue);
             case Value.Kinds.String:
-                return SerializeOne (sv.StringValue);
+                return SerializeOne (sv.stringValue);
             case Value.Kinds.Integer:
-                return SerializeOne (sv.IntegerValue);
+                return SerializeOne (sv.integerValue);
             case Value.Kinds.Double:
-                return SerializeOne (sv.DoubleValue);
+                return SerializeOne (sv.doubleValue);
             case Value.Kinds.Array:
-                return SerializeList (sv.ArrayValue, obj);
+                return SerializeList (sv.arrayValue, obj);
             case Value.Kinds.Hash:
-                return SerializeHash (sv.HashValue, obj);
+                return SerializeHash (sv.hashValue, obj);
             case Value.Kinds.Callable:
                 return SerializeCallable (sv.CallableValue, obj);
             case Value.Kinds.ReturnAddress:

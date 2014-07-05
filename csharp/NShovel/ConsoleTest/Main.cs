@@ -488,9 +488,10 @@ pt2.y
             for (var i = 0; i < 20; i++) {
                 result = MasterMindRun (bytecode, sources);
             }
-            foreach (var k in result.ArrayValue) {
+            foreach (var k in result.ArrayValue.Value) {
                 if (k.Kind == Shovel.Value.Kinds.Array) {
-                    foreach (var kk in k.ArrayValue) {
+                    foreach (var kk in k.ArrayValue.Value)
+                    {
                         Console.Write (kk.IntegerValue);
                         Console.Write (" ");
                     }

@@ -206,21 +206,21 @@ namespace Shovel.Vm
         static string DumpShovelValue (VmApi api, Value obj)
         {
             if (obj.Kind == Value.Kinds.String) {
-                return Prim0.ShovelStringRepresentation (api, obj).StringValue;
+                return Prim0.ShovelStringRepresentation (api, obj).stringValue;
             } else if (obj.Kind == Value.Kinds.Array) {
-                return Prim0.ShovelStringRepresentation (api, obj).StringValue;
+                return Prim0.ShovelStringRepresentation (api, obj).stringValue;
             } else if (obj.Kind == Value.Kinds.Integer) {
-                return Prim0.ShovelStringRepresentation (api, obj).StringValue;
+                return Prim0.ShovelStringRepresentation (api, obj).stringValue;
             } else if (obj.Kind == Value.Kinds.Double) {
-                return Prim0.ShovelStringRepresentation (api, obj).StringValue;
+                return Prim0.ShovelStringRepresentation (api, obj).stringValue;
             } else if (obj.Kind == Value.Kinds.Hash) {
-                return Prim0.ShovelStringRepresentation (api, obj).StringValue;
+                return Prim0.ShovelStringRepresentation (api, obj).stringValue;
             } else if (obj.Kind == Value.Kinds.Callable) {
-                return Prim0.ShovelStringRepresentation (api, obj).StringValue;
+                return Prim0.ShovelStringRepresentation (api, obj).stringValue;
             } else if (obj.Kind == Value.Kinds.Bool) {
-                return Prim0.ShovelStringRepresentation (api, obj).StringValue;
+                return Prim0.ShovelStringRepresentation (api, obj).stringValue;
             } else if (obj.Kind == Value.Kinds.Null) {
-                return Prim0.ShovelStringRepresentation (api, obj).StringValue;
+                return Prim0.ShovelStringRepresentation (api, obj).stringValue;
             } else if (obj.Kind == Value.Kinds.ReturnAddress) {
                 return String.Format ("Return to {0}", obj.ReturnAddressValue.ProgramCounter);
             } else if (obj.Kind == Value.Kinds.NamedBlock) {
@@ -460,11 +460,11 @@ namespace Shovel.Vm
                 var obj = vm.stack.Storage[start];
                 if (obj.Kind == Value.Kinds.Hash)
                 {
-                    vm.stack.Push(obj.HashValue.IndirectGet);
+                    vm.stack.Push(obj.hashValue.IndirectGet);
                 }
                 else if (obj.Kind == Value.Kinds.Array)
                 {
-                    vm.stack.Push(obj.ArrayValue.IndirectGet);
+                    vm.stack.Push(obj.arrayValue.IndirectGet);
                 }
                 HandleCallImpl(vm, 2, true);
             }
@@ -531,7 +531,7 @@ namespace Shovel.Vm
             {
                 var obj = vm.stack.Storage[start];
                 if (obj.Kind == Value.Kinds.Hash) {
-                    vm.stack.Push(obj.HashValue.IndirectGet);
+                    vm.stack.Push(obj.hashValue.IndirectGet);
                     HandleCallImpl(vm, 2, true);
                 }
             } else { 
@@ -553,7 +553,7 @@ namespace Shovel.Vm
             }
             else
             {
-                vm.stack.Push(vm.stack.Storage[start].HashValue.IndirectSet);
+                vm.stack.Push(vm.stack.Storage[start].hashValue.IndirectSet);
                 HandleCallImpl(vm, 3, true);
             }
         }
@@ -608,11 +608,11 @@ namespace Shovel.Vm
                 var obj = vm.stack.Storage[start];
                 if (obj.Kind == Value.Kinds.Hash) 
                 { 
-                    vm.stack.Push(obj.HashValue.IndirectSet);
+                    vm.stack.Push(obj.hashValue.IndirectSet);
                 }
                 else if (obj.Kind == Value.Kinds.Array)
                 {
-                    vm.stack.Push(obj.ArrayValue.IndirectSet);
+                    vm.stack.Push(obj.arrayValue.IndirectSet);
                 }
                 HandleCallImpl(vm, 3, true);
             }
@@ -762,8 +762,8 @@ namespace Shovel.Vm
                     "Object [{0}] is not an array.", Prim0.ShovelStringRepresentation(vm.api, maybeArray))
                 );
             }
-            var numArgs = maybeArray.ArrayValue.Count;
-            foreach (var value in maybeArray.ArrayValue)
+            var numArgs = maybeArray.arrayValue.Count;
+            foreach (var value in maybeArray.arrayValue)
             {
                 vm.stack.Push((Value)value);
                 vm.IncrementCells(1);
@@ -930,7 +930,7 @@ namespace Shovel.Vm
         {
             var args = (int)vm.CurrentInstruction ().Arguments;
 //            vm.CheckBool ();
-            if (!vm.stack.PopTop ().BoolValue) {
+            if (!vm.stack.PopTop ().boolValue) {
                 vm.programCounter = args;
             } else {
                 vm.programCounter ++;
@@ -941,7 +941,7 @@ namespace Shovel.Vm
         {
             var args = (int)vm.CurrentInstruction ().Arguments;
 //            vm.CheckBool ();
-            if (vm.stack.PopTop ().BoolValue) {
+            if (vm.stack.PopTop ().boolValue) {
                 vm.programCounter = args;
             } else {
                 vm.programCounter ++;
@@ -1127,7 +1127,7 @@ namespace Shovel.Vm
                 vm.RaiseShovelError ("The name of a block must be a string.");
             }
             vm.stack.Push (Value.Make (new NamedBlock () {
-                Name = name.StringValue,
+                Name = name.stringValue,
                 BlockEnd = blockEnd,
                 Environment = vm.currentEnvironment
             }
@@ -1155,7 +1155,7 @@ namespace Shovel.Vm
             if (name.Kind != Value.Kinds.String) {
                 vm.RaiseShovelError ("The name of a block must be a string.");
             }
-            var namedBlockIndex = vm.FindNamedBlock (name.StringValue);
+            var namedBlockIndex = vm.FindNamedBlock (name.stringValue);
             if (vm.stack.Count > namedBlockIndex + 1) {
                 vm.stack.RemoveRange (namedBlockIndex + 1, vm.stack.Count - namedBlockIndex - 1);
             }
@@ -1335,15 +1335,15 @@ namespace Shovel.Vm
                 case Value.Kinds.Integer:
                     return 1;
                 case Value.Kinds.String:
-                    return sv.StringValue.Length + 1;
+                    return sv.stringValue.Length + 1;
                 case Value.Kinds.Double:
                     return 1;
                 case Value.Kinds.Bool:
                     return 1;
                 case Value.Kinds.Array:
-                    return 1 + CountCellsSvList (sv.ArrayValue, visited);
+                    return 1 + CountCellsSvList (sv.arrayValue, visited);
                 case Value.Kinds.Hash:
-                    return 1 + CountCellsHash (sv.HashValue, visited);
+                    return 1 + CountCellsHash (sv.hashValue, visited);
                 case Value.Kinds.Callable:
                     return 1 + CountCellsCallable (sv.CallableValue, visited);
                 case Value.Kinds.ReturnAddress:
@@ -1491,7 +1491,7 @@ namespace Shovel.Vm
                     sb.AppendLine (String.Format (
                         "{0} = {1}",
                         env.Frame.VarNames [i],
-                        Prim0.ShovelStringRepresentation (this.api, env.Frame.Values [i]).StringValue)
+                        Prim0.ShovelStringRepresentation (this.api, env.Frame.Values [i]).stringValue)
                     );
                 }
                 sb.AppendLine ();

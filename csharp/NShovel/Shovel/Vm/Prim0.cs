@@ -103,7 +103,7 @@ namespace Shovel.Vm
             var result = new StructInstance ();
             result.Struct = ztruct;
             result.Values = new Value[ztruct.Fields.Length];
-            var hash = args [start + 1].HashValue;
+            var hash = args [start + 1].hashValue;
             var sizeIncrease = 1 + ztruct.Fields.Length;
             api.CellsIncrementHerald (sizeIncrease);
             for (int i = 0; i < ztruct.Fields.Length; i++) {
@@ -159,7 +159,7 @@ namespace Shovel.Vm
             if (args [start].Kind != Value.Kinds.Array) {
                 api.RaiseShovelError ("Argument must be an array of strings.");
             }
-            var fieldNames = args [start].ArrayValue;
+            var fieldNames = args [start].arrayValue;
             var sizeIncrease = 1 + length;
             api.CellsIncrementHerald (sizeIncrease);
             Struct newStruct = new Struct ();
@@ -168,7 +168,7 @@ namespace Shovel.Vm
                 if (fieldNames [i].Kind != Value.Kinds.String) {
                     api.RaiseShovelError ("Argument must be an array of strings.");
                 }
-                newStruct.Fields [i] = fieldNames [i].StringValue;
+                newStruct.Fields [i] = fieldNames [i].stringValue;
             }
             api.CellsIncrementer (sizeIncrease);
             return Value.Make (newStruct);
@@ -187,11 +187,11 @@ namespace Shovel.Vm
                 switch (t2.Kind) {
                 case Value.Kinds.Integer:
                     t1.Kind = Value.Kinds.Integer;
-                    t1.IntegerValue = t1.IntegerValue + t2.IntegerValue;
+                    t1.integerValue = t1.integerValue + t2.integerValue;
                     break;
                 case Value.Kinds.Double:
                     t1.Kind = Value.Kinds.Double;
-                    t1.DoubleValue = t1.IntegerValue + t2.DoubleValue;
+                    t1.doubleValue = t1.integerValue + t2.doubleValue;
                     break;
                 default:
                     AddError (api);
@@ -202,11 +202,11 @@ namespace Shovel.Vm
                 switch (t2.Kind) {
                 case Value.Kinds.Integer:
                     t1.Kind = Value.Kinds.Double;
-                    t1.DoubleValue = t1.DoubleValue + t2.IntegerValue;
+                    t1.doubleValue = t1.doubleValue + t2.integerValue;
                     break;
                 case Value.Kinds.Double:
                     t1.Kind = Value.Kinds.Double;
-                    t1.DoubleValue = t1.DoubleValue + t2.DoubleValue;
+                    t1.doubleValue = t1.doubleValue + t2.doubleValue;
                     break;
                 default:
                     AddError (api);
@@ -216,7 +216,7 @@ namespace Shovel.Vm
             case Value.Kinds.String:
                 if (t2.Kind == Value.Kinds.String) {
                     t1.Kind = Value.Kinds.String;
-                    t1.StringValue = t1.StringValue + t2.StringValue;
+                    t1.stringValue = t1.stringValue + t2.stringValue;
                 } else {
                     AddError (api);
                 }
@@ -224,10 +224,10 @@ namespace Shovel.Vm
             case Value.Kinds.Array:
                 if (t2.Kind == Value.Kinds.Array) {
                     var result = new ArrayInstance ();
-                    result.AddRange (t1.ArrayValue);
-                    result.AddRange (t2.ArrayValue);
+                    result.AddRange (t1.arrayValue);
+                    result.AddRange (t2.arrayValue);
                     t1.Kind = Value.Kinds.Array;
-                    t1.ArrayValue = result;
+                    t1.arrayValue = result;
                 } else {
                     AddError (api);
                 }
@@ -248,20 +248,20 @@ namespace Shovel.Vm
             if (t1.Kind == Value.Kinds.Integer) {
                 if (t2.Kind == Value.Kinds.Integer) {
                     t1.Kind = Value.Kinds.Integer;
-                    t1.IntegerValue = t1.IntegerValue - t2.IntegerValue;
+                    t1.integerValue = t1.integerValue - t2.integerValue;
                 } else if (t2.Kind == Value.Kinds.Double) {
                     t1.Kind = Value.Kinds.Double;
-                    t1.DoubleValue = t1.IntegerValue - t2.DoubleValue;
+                    t1.doubleValue = t1.integerValue - t2.doubleValue;
                 } else {
                     BothNumbersError (api);
                 }
             } else if (t1.Kind == Value.Kinds.Double) {
                 if (t2.Kind == Value.Kinds.Double) {
                     t1.Kind = Value.Kinds.Double;
-                    t1.DoubleValue = t1.DoubleValue - t2.DoubleValue;
+                    t1.doubleValue = t1.doubleValue - t2.doubleValue;
                 } else if (t2.Kind == Value.Kinds.Integer) {
                     t1.Kind = Value.Kinds.Double;
-                    t1.DoubleValue = t1.DoubleValue - t2.IntegerValue;
+                    t1.doubleValue = t1.doubleValue - t2.integerValue;
                 } else {
                     BothNumbersError (api);
                 }
@@ -273,9 +273,9 @@ namespace Shovel.Vm
         internal static void UnaryMinus (VmApi api, ref Value t1)
         {
             if (t1.Kind == Value.Kinds.Integer) {
-                t1.IntegerValue = -t1.IntegerValue;
+                t1.integerValue = -t1.integerValue;
             } else if (t1.Kind == Value.Kinds.Double) {
-                t1.DoubleValue = -t1.DoubleValue;
+                t1.doubleValue = -t1.doubleValue;
             } else {
                 api.RaiseShovelError ("Argument must be number.");
             }
@@ -286,20 +286,20 @@ namespace Shovel.Vm
             if (t1.Kind == Value.Kinds.Integer) {
                 if (t2.Kind == Value.Kinds.Integer) {
                     t1.Kind = Value.Kinds.Integer;
-                    t1.IntegerValue = t1.IntegerValue * t2.IntegerValue;
+                    t1.integerValue = t1.integerValue * t2.integerValue;
                 } else if (t2.Kind == Value.Kinds.Double) {
                     t1.Kind = Value.Kinds.Double;
-                    t1.DoubleValue = t1.IntegerValue * t2.DoubleValue;
+                    t1.doubleValue = t1.integerValue * t2.doubleValue;
                 } else {
                     BothNumbersError (api);
                 }
             } else if (t1.Kind == Value.Kinds.Double) {
                 if (t2.Kind == Value.Kinds.Double) {
                     t1.Kind = Value.Kinds.Double;
-                    t1.DoubleValue = t1.DoubleValue * t2.DoubleValue;
+                    t1.doubleValue = t1.doubleValue * t2.doubleValue;
                 } else if (t2.Kind == Value.Kinds.Integer) {
                     t1.Kind = Value.Kinds.Double;
-                    t1.DoubleValue = t1.DoubleValue * t2.IntegerValue;
+                    t1.doubleValue = t1.doubleValue * t2.integerValue;
                 } else {
                     BothNumbersError (api);
                 }
@@ -313,20 +313,20 @@ namespace Shovel.Vm
             if (t1.Kind == Value.Kinds.Integer) {
                 if (t2.Kind == Value.Kinds.Integer) {
                     t1.Kind = Value.Kinds.Integer;
-                    t1.IntegerValue = t1.IntegerValue / t2.IntegerValue;
+                    t1.integerValue = t1.integerValue / t2.integerValue;
                 } else if (t2.Kind == Value.Kinds.Double) {
                     t1.Kind = Value.Kinds.Double;
-                    t1.DoubleValue = t1.IntegerValue / t2.DoubleValue;
+                    t1.doubleValue = t1.integerValue / t2.doubleValue;
                 } else {
                     BothNumbersError (api);
                 }
             } else if (t1.Kind == Value.Kinds.Double) {
                 if (t2.Kind == Value.Kinds.Double) {
                     t1.Kind = Value.Kinds.Double;
-                    t1.DoubleValue = t1.DoubleValue / t2.DoubleValue;
+                    t1.doubleValue = t1.doubleValue / t2.doubleValue;
                 } else if (t2.Kind == Value.Kinds.Integer) {
                     t1.Kind = Value.Kinds.Double;
-                    t1.DoubleValue = t1.DoubleValue / t2.IntegerValue;
+                    t1.doubleValue = t1.doubleValue / t2.integerValue;
                 } else {
                     BothNumbersError (api);
                 }
@@ -338,7 +338,7 @@ namespace Shovel.Vm
         internal static void ShiftLeft (VmApi api, ref Value t1, ref Value t2)
         {
             if (t1.Kind == Value.Kinds.Integer && t2.Kind == Value.Kinds.Integer) {
-                t1.IntegerValue = t1.IntegerValue << (int)t2.IntegerValue;
+                t1.integerValue = t1.integerValue << (int)t2.integerValue;
             } else {
                 api.RaiseShovelError ("Both arguments must be integers.");
             }
@@ -347,7 +347,7 @@ namespace Shovel.Vm
         internal static void ShiftRight (VmApi api, ref Value t1, ref Value t2)
         {
             if (t1.Kind == Value.Kinds.Integer && t2.Kind == Value.Kinds.Integer) {
-                t1.IntegerValue = t1.IntegerValue >> (int)t2.IntegerValue;
+                t1.integerValue = t1.integerValue >> (int)t2.integerValue;
             } else {
                 api.RaiseShovelError ("Both arguments must be integers.");
             }
@@ -356,7 +356,7 @@ namespace Shovel.Vm
         internal static void Modulo (VmApi api, ref Value t1, ref Value t2)
         {
             if (t1.Kind == Value.Kinds.Integer && t2.Kind == Value.Kinds.Integer) {
-                t1.IntegerValue = t1.IntegerValue % t2.IntegerValue;
+                t1.integerValue = t1.integerValue % t2.integerValue;
             } else {
                 api.RaiseShovelError ("Both arguments must be integers.");
             }
@@ -382,20 +382,20 @@ namespace Shovel.Vm
             if (t1.Kind == Value.Kinds.Integer) {
                 if (t2.Kind == Value.Kinds.Integer) {
                     t1.Kind = Value.Kinds.Integer;
-                    t1.IntegerValue = Expt (t1.IntegerValue, t2.IntegerValue);
+                    t1.integerValue = Expt (t1.integerValue, t2.integerValue);
                 } else if (t2.Kind == Value.Kinds.Double) {
                     t1.Kind = Value.Kinds.Double;
-                    t1.DoubleValue = Math.Pow (t1.IntegerValue, t2.DoubleValue);
+                    t1.doubleValue = Math.Pow (t1.integerValue, t2.doubleValue);
                 } else {
                     BothNumbersError (api);
                 }
             } else if (t1.Kind == Value.Kinds.Double) {
                 if (t2.Kind == Value.Kinds.Double) {
                     t1.Kind = Value.Kinds.Double;
-                    t1.DoubleValue = Math.Pow (t1.DoubleValue, t2.DoubleValue);
+                    t1.doubleValue = Math.Pow (t1.doubleValue, t2.doubleValue);
                 } else if (t2.Kind == Value.Kinds.Integer) {
                     t1.Kind = Value.Kinds.Double;
-                    t1.DoubleValue = Math.Pow (t1.DoubleValue, t2.IntegerValue);
+                    t1.doubleValue = Math.Pow (t1.doubleValue, t2.integerValue);
                 } else {
                     BothNumbersError (api);
                 }
@@ -408,7 +408,7 @@ namespace Shovel.Vm
         {
             if (t1.Kind == Value.Kinds.Double) {
                 t1.Kind = Value.Kinds.Integer;
-                t1.IntegerValue = (long)Math.Floor (t1.DoubleValue);
+                t1.integerValue = (long)Math.Floor (t1.doubleValue);
             } else if (t1.Kind == Value.Kinds.Integer) {
             } else {
                 api.RaiseShovelError ("Argument must be number.");
@@ -443,7 +443,7 @@ namespace Shovel.Vm
             } else if (t2.Kind != Value.Kinds.String) {
                 api.RaiseShovelError ("Second argument must be a string.");
             } else {
-                t1.HashValue.Remove (t2);
+                t1.hashValue.Remove (t2);
             }
         }
 
@@ -452,25 +452,25 @@ namespace Shovel.Vm
             switch (t1.Kind) {
             case Value.Kinds.Integer:
                 if (t2.Kind == Value.Kinds.Integer) {
-                    t1.BoolValue = t1.IntegerValue < t2.IntegerValue;
+                    t1.boolValue = t1.integerValue < t2.integerValue;
                 } else if (t2.Kind == Value.Kinds.Double) {
-                    t1.BoolValue = t1.IntegerValue < t2.DoubleValue;
+                    t1.boolValue = t1.integerValue < t2.doubleValue;
                 } else {
                     RelationalError (api);
                 }
                 break;
             case Value.Kinds.String:
                 if (t2.Kind == Value.Kinds.String) {
-                    t1.BoolValue = CompareStrings (t1.StringValue, t2.StringValue) == -1;
+                    t1.boolValue = CompareStrings (t1.stringValue, t2.stringValue) == -1;
                 } else {
                     RelationalError (api);
                 }
                 break;
             case Value.Kinds.Double:
                 if (t2.Kind == Value.Kinds.Double) {
-                    t1.BoolValue = t1.DoubleValue < t2.DoubleValue;
+                    t1.boolValue = t1.doubleValue < t2.doubleValue;
                 } else if (t2.Kind == Value.Kinds.Integer) {
-                    t1.BoolValue = t1.DoubleValue < t2.IntegerValue;
+                    t1.boolValue = t1.doubleValue < t2.integerValue;
                 } else {
                     RelationalError (api);
                 }
@@ -487,26 +487,26 @@ namespace Shovel.Vm
             switch (t1.Kind) {
             case Value.Kinds.Integer:
                 if (t2.Kind == Value.Kinds.Integer) {
-                    t1.BoolValue = t1.IntegerValue <= t2.IntegerValue;
+                    t1.boolValue = t1.integerValue <= t2.integerValue;
                 } else if (t2.Kind == Value.Kinds.Double) {
-                    t1.BoolValue = t1.IntegerValue <= t2.DoubleValue;
+                    t1.boolValue = t1.integerValue <= t2.doubleValue;
                 } else {
                     RelationalError (api);
                 }
                 break;
             case Value.Kinds.String:
                 if (t2.Kind == Value.Kinds.String) {
-                    var comparison = CompareStrings (t1.StringValue, t2.StringValue);
-                    t1.BoolValue = comparison == -1 || comparison == 0;
+                    var comparison = CompareStrings (t1.stringValue, t2.stringValue);
+                    t1.boolValue = comparison == -1 || comparison == 0;
                 } else {
                     RelationalError (api);
                 }
                 break;
             case Value.Kinds.Double:
                 if (t2.Kind == Value.Kinds.Double) {
-                    t1.BoolValue = t1.DoubleValue <= t2.DoubleValue;
+                    t1.boolValue = t1.doubleValue <= t2.doubleValue;
                 } else if (t2.Kind == Value.Kinds.Integer) {
-                    t1.BoolValue = t1.DoubleValue <= t2.IntegerValue;
+                    t1.boolValue = t1.doubleValue <= t2.integerValue;
                 } else {
                     RelationalError (api);
                 }
@@ -523,26 +523,26 @@ namespace Shovel.Vm
             switch (t1.Kind) {
             case Value.Kinds.Integer:
                 if (t2.Kind == Value.Kinds.Integer) {
-                    t1.BoolValue = t1.IntegerValue > t2.IntegerValue;
+                    t1.boolValue = t1.integerValue > t2.integerValue;
                 } else if (t2.Kind == Value.Kinds.Double) {
-                    t1.BoolValue = t1.IntegerValue > t2.DoubleValue;
+                    t1.boolValue = t1.integerValue > t2.doubleValue;
                 } else {
                     RelationalError (api);
                 }
                 break;
             case Value.Kinds.String:
                 if (t2.Kind == Value.Kinds.String) {
-                    var comparison = CompareStrings (t1.StringValue, t2.StringValue);
-                    t1.BoolValue = comparison == 1;
+                    var comparison = CompareStrings (t1.stringValue, t2.stringValue);
+                    t1.boolValue = comparison == 1;
                 } else {
                     RelationalError (api);
                 }
                 break;
             case Value.Kinds.Double:
                 if (t2.Kind == Value.Kinds.Double) {
-                    t1.BoolValue = t1.DoubleValue > t2.DoubleValue;
+                    t1.boolValue = t1.doubleValue > t2.doubleValue;
                 } else if (t2.Kind == Value.Kinds.Integer) {
-                    t1.BoolValue = t1.DoubleValue > t2.IntegerValue;
+                    t1.boolValue = t1.doubleValue > t2.integerValue;
                 } else {
                     RelationalError (api);
                 }
@@ -559,26 +559,26 @@ namespace Shovel.Vm
             switch (t1.Kind) {
             case Value.Kinds.Integer:
                 if (t2.Kind == Value.Kinds.Integer) {
-                    t1.BoolValue = t1.IntegerValue >= t2.IntegerValue;
+                    t1.boolValue = t1.integerValue >= t2.integerValue;
                 } else if (t2.Kind == Value.Kinds.Double) {
-                    t1.BoolValue = t1.IntegerValue >= t2.DoubleValue;
+                    t1.boolValue = t1.integerValue >= t2.doubleValue;
                 } else {
                     RelationalError (api);
                 }
                 break;
             case Value.Kinds.String:
                 if (t2.Kind == Value.Kinds.String) {
-                    var comparison = CompareStrings (t1.StringValue, t2.StringValue);
-                    t1.BoolValue = comparison == 1 || comparison == 0;
+                    var comparison = CompareStrings (t1.stringValue, t2.stringValue);
+                    t1.boolValue = comparison == 1 || comparison == 0;
                 } else {
                     RelationalError (api);
                 }
                 break;
             case Value.Kinds.Double:
                 if (t2.Kind == Value.Kinds.Double) {
-                    t1.BoolValue = t1.DoubleValue >= t2.DoubleValue;
+                    t1.boolValue = t1.doubleValue >= t2.doubleValue;
                 } else if (t2.Kind == Value.Kinds.Integer) {
-                    t1.BoolValue = t1.DoubleValue >= t2.IntegerValue;
+                    t1.boolValue = t1.doubleValue >= t2.integerValue;
                 } else {
                     RelationalError (api);
                 }
@@ -601,46 +601,46 @@ namespace Shovel.Vm
             switch (t1.Kind) {
             case Value.Kinds.Integer:
                 if (t2.Kind == Value.Kinds.Integer) {
-                    t1.BoolValue = t1.IntegerValue == t2.IntegerValue;
+                    t1.boolValue = t1.integerValue == t2.integerValue;
                 } else if (t2.Kind == Value.Kinds.Null) {
-                    t1.BoolValue = false;
+                    t1.boolValue = false;
                 } else {
                     AreEqualError (api);
                 }
                 break;
             case Value.Kinds.String:
                 if (t2.Kind == Value.Kinds.String) {
-                    int comparison = CompareStrings (t1.StringValue, t2.StringValue);
-                    t1.BoolValue = comparison == 0;
+                    int comparison = CompareStrings (t1.stringValue, t2.stringValue);
+                    t1.boolValue = comparison == 0;
                 } else if (t2.Kind == Value.Kinds.Null) {
-                    t1.BoolValue = false;
+                    t1.boolValue = false;
                 } else {
                     AreEqualError (api);
                 }
                 break;
             case Value.Kinds.Double:
                 if (t2.Kind == Value.Kinds.Double) {
-                    t1.BoolValue = t1.DoubleValue == t2.DoubleValue;
+                    t1.boolValue = t1.doubleValue == t2.doubleValue;
                 } else if (t2.Kind == Value.Kinds.Null) {
-                    t1.BoolValue = false;
+                    t1.boolValue = false;
                 } else {
                     AreEqualError (api);
                 }
                 break;
             case Value.Kinds.Bool:
                 if (t2.Kind == Value.Kinds.Bool) {
-                    t1.BoolValue = t1.BoolValue == t2.BoolValue;
+                    t1.boolValue = t1.boolValue == t2.boolValue;
                 } else if (t2.Kind == Value.Kinds.Null) {
-                    t1.BoolValue = false;
+                    t1.boolValue = false;
                 } else {
                     AreEqualError (api);
                 }
                 break;
             default:
                 if (t1.Kind == Value.Kinds.Null && t2.Kind == Value.Kinds.Null) {
-                    t1.BoolValue = true;
+                    t1.boolValue = true;
                 } else if (t1.Kind == Value.Kinds.Null || t2.Kind == Value.Kinds.Null) {
-                    t2.BoolValue = false;
+                    t2.boolValue = false;
                 } else {
                     AreEqualError (api);
                 }
@@ -652,13 +652,13 @@ namespace Shovel.Vm
         internal static void AreNotEqual (VmApi api, ref Value t1, ref Value t2)
         {
             AreEqual (api, ref t1, ref t2);
-            t1.BoolValue = !t1.BoolValue;
+            t1.boolValue = !t1.boolValue;
         }
 
         internal static void LogicalNot (VmApi api, ref Value argument)
         {
             if (argument.Kind == Value.Kinds.Bool) {
-                argument.BoolValue = !argument.BoolValue;
+                argument.boolValue = !argument.boolValue;
             } else {
                 api.RaiseShovelError ("Argument must be boolean.");
             }
@@ -667,7 +667,7 @@ namespace Shovel.Vm
         internal static void BitwiseAnd (VmApi api, ref Value t1, ref Value t2)
         {
             if (t1.Kind == Value.Kinds.Integer && t2.Kind == Value.Kinds.Integer) {
-                t1.IntegerValue = t1.IntegerValue & t2.IntegerValue;
+                t1.integerValue = t1.integerValue & t2.integerValue;
             } else {
                 api.RaiseShovelError ("Both arguments must be integers.");
             }
@@ -676,7 +676,7 @@ namespace Shovel.Vm
         internal static void BitwiseOr (VmApi api, ref Value t1, ref Value t2)
         {
             if (t1.Kind == Value.Kinds.Integer && t2.Kind == Value.Kinds.Integer) {
-                t1.IntegerValue = t1.IntegerValue | t2.IntegerValue;
+                t1.integerValue = t1.integerValue | t2.integerValue;
             } else {
                 api.RaiseShovelError ("Both arguments must be integers.");
             }
@@ -685,7 +685,7 @@ namespace Shovel.Vm
         internal static void BitwiseXor (VmApi api, ref Value t1, ref Value t2)
         {
             if (t1.Kind == Value.Kinds.Integer && t2.Kind == Value.Kinds.Integer) {
-                t1.IntegerValue = t1.IntegerValue ^ t2.IntegerValue;
+                t1.integerValue = t1.integerValue ^ t2.integerValue;
             } else {
                 api.RaiseShovelError ("Both arguments must be integers.");
             }
@@ -718,7 +718,7 @@ namespace Shovel.Vm
             if (key.Kind != Value.Kinds.String) {
                 api.RaiseShovelError ("Second argument must be a string.");
             }
-            hash.BoolValue = hash.HashValue.ContainsKey (key);
+            hash.boolValue = hash.hashValue.ContainsKey (key);
             hash.Kind = Value.Kinds.Bool;
         }
 
@@ -728,10 +728,10 @@ namespace Shovel.Vm
                 api.RaiseShovelError ("First argument must be a hash table.");
             }
             var result = new ArrayInstance ();
-            var sizeIncrease = 1 + hash.HashValue.Count;
+            var sizeIncrease = 1 + hash.hashValue.Count;
             api.CellsIncrementHerald (sizeIncrease);
-            result.AddRange (hash.HashValue.Keys);
-            hash.ArrayValue = result;
+            result.AddRange (hash.hashValue.Keys);
+            hash.arrayValue = result;
             hash.Kind = Value.Kinds.Array;
             api.CellsIncrementer (sizeIncrease);
         }
@@ -747,19 +747,19 @@ namespace Shovel.Vm
                         formatArgs.Add(ShovelStringRepresentation(api, arg));
                         break;
                     case Value.Kinds.Bool: 
-                        formatArgs.Add(arg.BoolValue); 
+                        formatArgs.Add(arg.boolValue); 
                         break;
                     case Value.Kinds.Callable:
                         api.RaiseShovelError("Cannot call 'format' on callables.");
                         break;
                     case Value.Kinds.Double:
-                        formatArgs.Add(arg.DoubleValue); 
+                        formatArgs.Add(arg.doubleValue); 
                         break;
                     case Value.Kinds.Hash:
                         formatArgs.Add(ShovelStringRepresentation(api, arg));
                         break;
                     case Value.Kinds.Integer:
-                        formatArgs.Add(arg.IntegerValue); 
+                        formatArgs.Add(arg.integerValue); 
                         break;
                     case Value.Kinds.NamedBlock:
                         api.RaiseShovelError("Cannot call 'format' on named blocks.");
@@ -771,7 +771,7 @@ namespace Shovel.Vm
                         api.RaiseShovelError("Cannot call 'format' on return addresses.");
                         break;
                     case Value.Kinds.String:
-                        formatArgs.Add(arg.StringValue);
+                        formatArgs.Add(arg.stringValue);
                         break;
                     case Value.Kinds.Struct:
                         formatArgs.Add(ShovelStringRepresentation(api, arg));
@@ -786,7 +786,7 @@ namespace Shovel.Vm
                 }
             }
             api.CellsIncrementer(1);
-            return Value.Make(String.Format(args[start].StringValue, formatArgs.ToArray()));
+            return Value.Make(String.Format(args[start].stringValue, formatArgs.ToArray()));
         }
 
         static Value ArrayConstructor (VmApi api, Value[] args, int start, int length)
@@ -807,9 +807,9 @@ namespace Shovel.Vm
                 api.RaiseShovelError ("Argument must be an integer.");
             }
             var result = new ArrayInstance ();
-            var sizeIncrease = 1 + (int)size.IntegerValue;
+            var sizeIncrease = 1 + (int)size.integerValue;
             api.CellsIncrementHerald (sizeIncrease);
-            for (var i = 0; i < size.IntegerValue; i++) {
+            for (var i = 0; i < size.integerValue; i++) {
                 result.Add (Value.Make ());
             }
             api.CellsIncrementer (sizeIncrease);
@@ -826,7 +826,7 @@ namespace Shovel.Vm
         internal static void ArrayPush (VmApi api, ref Value array, ref Value value)
         {
             CheckVector (api, ref array);
-            array.ArrayValue.Add (value);
+            array.arrayValue.Add (value);
             array = value;
             api.CellsIncrementer (1);
         }
@@ -834,7 +834,7 @@ namespace Shovel.Vm
         internal static void ArrayPop (VmApi api, ref Value array)
         {
             CheckVector (api, ref array);
-            var vector = array.ArrayValue;
+            var vector = array.arrayValue;
             if (vector.Count == 0) {
                 api.RaiseShovelError ("Can't pop from an empty array.");
             }
@@ -847,10 +847,10 @@ namespace Shovel.Vm
         {
             if (arrayOrHashOrString.Kind == Value.Kinds.Array) {
                 if (index.Kind == Value.Kinds.Integer) {
-                    var idx = (int)index.IntegerValue;
-                    if (idx < 0 || idx >= arrayOrHashOrString.ArrayValue.Count)
+                    var idx = (int)index.integerValue;
+                    if (idx < 0 || idx >= arrayOrHashOrString.arrayValue.Count)
                     {
-                        if (arrayOrHashOrString.ArrayValue.IndirectGet.Kind == Value.Kinds.Callable)
+                        if (arrayOrHashOrString.arrayValue.IndirectGet.Kind == Value.Kinds.Callable)
                         {
                             return false;
                         }
@@ -858,34 +858,34 @@ namespace Shovel.Vm
                             api.RaiseShovelError("Index out of range.");
                         }
                     }
-                    arrayOrHashOrString = arrayOrHashOrString.ArrayValue [idx];
+                    arrayOrHashOrString = arrayOrHashOrString.arrayValue [idx];
                 } else {
                     api.RaiseShovelError ("Getting an array element requires an integer index.");
                 }
             } else if (arrayOrHashOrString.Kind == Value.Kinds.Hash) {
                 if (index.Kind == Value.Kinds.String) {
-                    if (!arrayOrHashOrString.HashValue.ContainsKey (index)) {
-                        if (arrayOrHashOrString.HashValue.IndirectGet.Kind == Value.Kinds.Callable) { 
+                    if (!arrayOrHashOrString.hashValue.ContainsKey (index)) {
+                        if (arrayOrHashOrString.hashValue.IndirectGet.Kind == Value.Kinds.Callable) { 
                             return false;
                         }
                         else
                         {
-                            api.RaiseShovelError(String.Format("Key '{0}' not found.", index.StringValue));
+                            api.RaiseShovelError(String.Format("Key '{0}' not found.", index.stringValue));
                         }
                     } 
-                    arrayOrHashOrString = arrayOrHashOrString.HashValue [index];
+                    arrayOrHashOrString = arrayOrHashOrString.hashValue [index];
                 } else {
                     api.RaiseShovelError ("Getting a hash table value requires a key that is a string.");
                 }
             } else if (arrayOrHashOrString.Kind == Value.Kinds.String) {
                 if (index.Kind == Value.Kinds.Integer) {
-                    var idx = (int)index.IntegerValue;
-                    if (idx < 0 || idx >= arrayOrHashOrString.StringValue.Length)
+                    var idx = (int)index.integerValue;
+                    if (idx < 0 || idx >= arrayOrHashOrString.stringValue.Length)
                     {
                         api.RaiseShovelError("Index out of range.");
                     }
                     arrayOrHashOrString = Value.Make (
-                        arrayOrHashOrString.StringValue [idx].ToString ());
+                        arrayOrHashOrString.stringValue [idx].ToString ());
                 } else {
                     api.RaiseShovelError ("Getting an string element requires an integer index.");
                 }
@@ -922,19 +922,19 @@ namespace Shovel.Vm
                         return true;
                     }
                 }
-                int location = FindLocationInStruct (api, ztruct, index.StringValue);
+                int location = FindLocationInStruct (api, ztruct, index.stringValue);
                 obj = structInstance.Values [location];
                 vm.SetCurrentCache (Tuple.Create (ztruct, location));
             } else if (obj.Kind == Value.Kinds.Hash) {
-                if (!obj.HashValue.ContainsKey (index)) {
-                    if (obj.HashValue.IndirectGet.Kind == Value.Kinds.Callable) { 
+                if (!obj.hashValue.ContainsKey (index)) {
+                    if (obj.hashValue.IndirectGet.Kind == Value.Kinds.Callable) { 
                         return false;
                     }
                     else {
                         api.RaiseShovelError("Key not found in hash table.");
                     }
                 }
-                obj = obj.HashValue [index];
+                obj = obj.hashValue [index];
             } else {
                 api.RaiseShovelError ("First argument must be a struct instance or a hash table.");
             }
@@ -955,7 +955,7 @@ namespace Shovel.Vm
                         return true;
                     }
                 }
-                int location = FindLocationInStruct (api, ztruct, index.StringValue);
+                int location = FindLocationInStruct (api, ztruct, index.stringValue);
                 structInstance.Values [location] = value;
                 vm.SetCurrentCache (Tuple.Create (ztruct, location));
             } else if (obj.Kind == Value.Kinds.Hash) {
@@ -970,15 +970,15 @@ namespace Shovel.Vm
         {
             if (index.Kind == Value.Kinds.String)
             {
-                if (!obj.HashValue.ContainsKey(index))
+                if (!obj.hashValue.ContainsKey(index))
                 {
-                    var hasSetter = obj.HashValue.IndirectSet.Kind == Value.Kinds.Callable;
+                    var hasSetter = obj.hashValue.IndirectSet.Kind == Value.Kinds.Callable;
                     if (hasSetter)
                     {
                         return false;
                     }
                 }
-                obj.HashValue[index] = value;
+                obj.hashValue[index] = value;
                 obj = value;
                 return true;
             }
@@ -994,10 +994,10 @@ namespace Shovel.Vm
         {
             if (obj.Kind == Value.Kinds.Array) {
                 if (index.Kind == Value.Kinds.Integer) {
-                    var idx = (int)index.IntegerValue;
-                    if (idx < 0 || idx >= obj.ArrayValue.Count)
+                    var idx = (int)index.integerValue;
+                    if (idx < 0 || idx >= obj.arrayValue.Count)
                     {
-                        if (obj.ArrayValue.IndirectSet.Kind == Value.Kinds.Callable)
+                        if (obj.arrayValue.IndirectSet.Kind == Value.Kinds.Callable)
                         {
                             return false;
                         }
@@ -1005,7 +1005,7 @@ namespace Shovel.Vm
                             api.RaiseShovelError("Index out of range.");
                         }
                     }
-                    obj.ArrayValue [idx] = value;
+                    obj.arrayValue [idx] = value;
                     obj = value;
                 } else {
                     api.RaiseShovelError ("Setting an array element requires an integer index.");
@@ -1024,10 +1024,10 @@ namespace Shovel.Vm
         {
             if (arrayOrString.Kind == Value.Kinds.Array) {
                 arrayOrString.Kind = Value.Kinds.Integer;
-                arrayOrString.IntegerValue = arrayOrString.ArrayValue.Count;
+                arrayOrString.integerValue = arrayOrString.arrayValue.Count;
             } else if (arrayOrString.Kind == Value.Kinds.String) {
                 arrayOrString.Kind = Value.Kinds.Integer;
-                arrayOrString.IntegerValue = (long)arrayOrString.StringValue.Length;
+                arrayOrString.integerValue = (long)arrayOrString.stringValue.Length;
             } else {
                 api.RaiseShovelError ("Argument must be a string or an array.");
             }
@@ -1074,13 +1074,13 @@ namespace Shovel.Vm
             }
             if (arrayOrHash.Kind == Value.Kinds.Array)
             {
-                var array = arrayOrHash.ArrayValue;
+                var array = arrayOrHash.arrayValue;
                 array.IndirectGet = getter;
                 array.IndirectSet = setter;
             }
             else if (arrayOrHash.Kind == Value.Kinds.Hash)
             {
-                var hash = arrayOrHash.HashValue;
+                var hash = arrayOrHash.hashValue;
                 hash.IndirectGet = getter;
                 hash.IndirectSet = setter;
             }
@@ -1103,21 +1103,21 @@ namespace Shovel.Vm
                 throw new InvalidOperationException ();
             }
             if (arrayOrString.Kind == Value.Kinds.Array) {
-                var length = arrayOrString.ArrayValue.Count;
-                var realStart = (int)start.IntegerValue;
-                var realEnd = (int)end.IntegerValue;
+                var length = arrayOrString.arrayValue.Count;
+                var realStart = (int)start.integerValue;
+                var realEnd = (int)end.integerValue;
                 AdjustRealStartEnd (api, ref realStart, ref realEnd, length);
                 api.CellsIncrementer (realEnd - realStart);
                 return Value.Make (
-                    arrayOrString.ArrayValue.GetRange2 (realStart, realEnd - realStart));
+                    arrayOrString.arrayValue.GetRange2 (realStart, realEnd - realStart));
             } else if (arrayOrString.Kind == Value.Kinds.String) {
-                var length = arrayOrString.StringValue.Length;
-                var realStart = (int)start.IntegerValue;
-                var realEnd = (int)end.IntegerValue;
+                var length = arrayOrString.stringValue.Length;
+                var realStart = (int)start.integerValue;
+                var realEnd = (int)end.integerValue;
                 AdjustRealStartEnd (api, ref realStart, ref realEnd, length);
                 api.CellsIncrementer (realEnd - realStart);
                 return Value.Make (
-                    arrayOrString.StringValue.Substring (realStart, realEnd - realStart));
+                    arrayOrString.stringValue.Substring (realStart, realEnd - realStart));
             } else {
                 api.RaiseShovelError ("Argument must be a string or an array.");
                 throw new InvalidOperationException ();
@@ -1134,17 +1134,17 @@ namespace Shovel.Vm
         static Value StringUpper (VmApi api, Value str)
         {
             CheckString (api, str);
-            api.CellsIncrementer (str.StringValue.Length);
-            api.CellsIncrementer (str.StringValue.Length);
-            return Value.Make (str.StringValue.ToUpper ());
+            api.CellsIncrementer (str.stringValue.Length);
+            api.CellsIncrementer (str.stringValue.Length);
+            return Value.Make (str.stringValue.ToUpper ());
         }
 
         static Value StringLower (VmApi api, Value str)
         {
             CheckString (api, str);
-            api.CellsIncrementer (str.StringValue.Length);
-            api.CellsIncrementer (str.StringValue.Length);
-            return Value.Make (str.StringValue.ToLower ());
+            api.CellsIncrementer (str.stringValue.Length);
+            api.CellsIncrementer (str.stringValue.Length);
+            return Value.Make (str.stringValue.ToLower ());
         }
 
         static DateTime unixEpoch = new DateTime (1970, 1, 1);
@@ -1160,7 +1160,7 @@ namespace Shovel.Vm
             if (timeInSeconds.Kind != Value.Kinds.Integer) {
                 api.RaiseShovelError ("Argument must be an integer.");
             }
-            var epochTimeSpan = TimeSpan.FromSeconds (timeInSeconds.IntegerValue);
+            var epochTimeSpan = TimeSpan.FromSeconds (timeInSeconds.integerValue);
             var date = Prim0.unixEpoch + epochTimeSpan;
             var result = new HashInstance ();
             result [Value.Make ("year")] = Value.MakeInt (date.Year);
@@ -1203,13 +1203,13 @@ namespace Shovel.Vm
             long min, long max, string errorMessageFormat)
         {
             var shKey = Value.Make (key);
-            if (!hash.HashValue.ContainsKey (shKey)) {
+            if (!hash.hashValue.ContainsKey (shKey)) {
                 api.RaiseShovelError (String.Format (errorMessageFormat, "NIL"));
             }
-            var value = hash.HashValue [shKey];
+            var value = hash.hashValue [shKey];
             var isValid = (value.Kind == Value.Kinds.Integer) 
-                && (value.IntegerValue >= min) 
-                && (value.IntegerValue <= max);
+                && (value.integerValue >= min) 
+                && (value.integerValue <= max);
             if (!isValid) {
                 api.RaiseShovelError (String.Format (errorMessageFormat, value));
             }
@@ -1236,61 +1236,61 @@ namespace Shovel.Vm
                 api, hash, "month", 1, 12,
                 "Argument must be a valid time hash (as returned by 'decodeTime') - invalid month '{0}'.");
             var date = new DateTime (
-                (int)hash.HashValue [Value.Make ("year")].IntegerValue, 
-                (int)hash.HashValue [Value.Make ("month")].IntegerValue, 
-                (int)hash.HashValue [Value.Make ("day")].IntegerValue, 
-                (int)hash.HashValue [Value.Make ("hour")].IntegerValue, 
-                (int)hash.HashValue [Value.Make ("minute")].IntegerValue, 
-                (int)hash.HashValue [Value.Make ("second")].IntegerValue);
+                (int)hash.hashValue [Value.Make ("year")].integerValue, 
+                (int)hash.hashValue [Value.Make ("month")].integerValue, 
+                (int)hash.hashValue [Value.Make ("day")].integerValue, 
+                (int)hash.hashValue [Value.Make ("hour")].integerValue, 
+                (int)hash.hashValue [Value.Make ("minute")].integerValue, 
+                (int)hash.hashValue [Value.Make ("second")].integerValue);
             return Value.MakeInt ((long)(date - unixEpoch).TotalSeconds);
         }
 
         internal static void IsString (VmApi api, ref Value obj)
         {
-            obj.BoolValue = obj.Kind == Value.Kinds.String;
+            obj.boolValue = obj.Kind == Value.Kinds.String;
             obj.Kind = Value.Kinds.Bool;
         }
 
         internal static void IsHash (VmApi api, ref Value obj)
         {
-            obj.BoolValue = obj.Kind == Value.Kinds.Hash;
+            obj.boolValue = obj.Kind == Value.Kinds.Hash;
             obj.Kind = Value.Kinds.Bool;
         }
 
         internal static void IsBool (VmApi api, ref Value obj)
         {
-            obj.BoolValue = obj.Kind == Value.Kinds.Bool;
+            obj.boolValue = obj.Kind == Value.Kinds.Bool;
             obj.Kind = Value.Kinds.Bool;
         }
 
         internal static void IsArray (VmApi api, ref Value obj)
         {
-            obj.BoolValue = obj.Kind == Value.Kinds.Array;
+            obj.boolValue = obj.Kind == Value.Kinds.Array;
             obj.Kind = Value.Kinds.Bool;
         }
 
         internal static void IsNumber (VmApi api, ref Value obj)
         {
-            obj.BoolValue = 
+            obj.boolValue = 
                 obj.Kind == Value.Kinds.Integer || obj.Kind == Value.Kinds.Double;
             obj.Kind = Value.Kinds.Bool;
         }
 
         internal static void IsInteger (VmApi api, ref Value obj)
         {
-            obj.BoolValue = obj.Kind == Value.Kinds.Integer;
+            obj.boolValue = obj.Kind == Value.Kinds.Integer;
             obj.Kind = Value.Kinds.Bool;
         }
 
         internal static void IsCallable (VmApi api, ref Value obj)
         {
-            obj.BoolValue = obj.Kind == Value.Kinds.Callable;
+            obj.boolValue = obj.Kind == Value.Kinds.Callable;
             obj.Kind = Value.Kinds.Bool;
         }
 
         internal static void IsStruct (VmApi api, ref Value obj)
         {
-            obj.BoolValue = obj.Kind == Value.Kinds.Struct;
+            obj.boolValue = obj.Kind == Value.Kinds.Struct;
             obj.Kind = Value.Kinds.Bool;
         }
 
@@ -1300,7 +1300,7 @@ namespace Shovel.Vm
                 api.RaiseShovelError ("Second argument must be a struct.");
             }
             var result = obj.Kind == Value.Kinds.StructInstance && obj.StructInstanceValue.Struct == str.StructValue;
-            obj.BoolValue = result;
+            obj.boolValue = result;
             obj.Kind = Value.Kinds.Bool;
         }
 
@@ -1314,13 +1314,13 @@ namespace Shovel.Vm
         static string ShovelStringImpl (VmApi api, Value obj)
         {
             if (obj.Kind == Value.Kinds.String) {
-                return obj.StringValue;
+                return obj.stringValue;
             } else if (obj.Kind == Value.Kinds.Array) {
                 return "[...array...]";
             } else if (obj.Kind == Value.Kinds.Integer) {
-                return obj.IntegerValue.ToString (CultureInfo.InvariantCulture);
+                return obj.integerValue.ToString (CultureInfo.InvariantCulture);
             } else if (obj.Kind == Value.Kinds.Double) {
-                return obj.DoubleValue.ToString (CultureInfo.InvariantCulture);
+                return obj.doubleValue.ToString (CultureInfo.InvariantCulture);
             } else if (obj.Kind == Value.Kinds.Hash) {
                 return "[...hash...]";
             } else if (obj.Kind == Value.Kinds.Callable) {
@@ -1330,7 +1330,7 @@ namespace Shovel.Vm
             } else if (obj.Kind == Value.Kinds.StructInstance) {
                 return "[...struct instance...]";
             } else if (obj.Kind == Value.Kinds.Bool) {
-                return obj.BoolValue.ToString ().ToLower ();
+                return obj.boolValue.ToString ().ToLower ();
             } else if (obj.Kind == Value.Kinds.Null) {
                 return "null";
             } else {
@@ -1347,7 +1347,7 @@ namespace Shovel.Vm
         internal static Value ShovelStringRepresentation (VmApi api, Value obj)
         {
             var result = Value.Make (ShovelStringRepresentationImpl (api, obj, new HashSet<object> ()));
-            api.CellsIncrementer (result.StringValue.Length);
+            api.CellsIncrementer (result.stringValue.Length);
             return result;
         }
 
@@ -1370,18 +1370,18 @@ namespace Shovel.Vm
             if (visited.Contains (obj)) {
                 return "[...loop...]";
             } else if (obj.Kind == Value.Kinds.String) {
-                return String.Format ("\"{0}\"", obj.StringValue.Replace ("\"", "\\\""));
+                return String.Format ("\"{0}\"", obj.stringValue.Replace ("\"", "\\\""));
             } else if (obj.Kind == Value.Kinds.Array) {
                 visited.Add (obj);
-                var stringReps = obj.ArrayValue
+                var stringReps = obj.arrayValue
                     .Select (elem => ShovelStringRepresentationImpl (api, elem, visited));
                 return String.Format ("array({0})", String.Join (", ", stringReps));
             } else if (obj.Kind == Value.Kinds.Hash) {
                 visited.Add (obj);
                 var stringReps = new List<string> ();
-                foreach (var key in obj.HashValue.Keys) {
+                foreach (var key in obj.hashValue.Keys) {
                     stringReps.Add ((string)ShovelStringRepresentationImpl (api, key, visited));
-                    stringReps.Add ((string)ShovelStringRepresentationImpl (api, obj.HashValue [key], visited));
+                    stringReps.Add ((string)ShovelStringRepresentationImpl (api, obj.hashValue [key], visited));
                 }
                 return String.Format ("hash({0})", String.Join (", ", stringReps));
             } else if (obj.Kind == Value.Kinds.Struct) {
@@ -1415,19 +1415,19 @@ namespace Shovel.Vm
         static Value ParseInt (VmApi api, Value str)
         {
             CheckString (api, str);
-            return Value.MakeInt (long.Parse (str.StringValue));
+            return Value.MakeInt (long.Parse (str.stringValue));
         }
 
         static Value ParseFloat (VmApi api, Value str)
         {
             CheckString (api, str);
-            return Value.MakeFloat (double.Parse (str.StringValue));
+            return Value.MakeFloat (double.Parse (str.stringValue));
         }
 
         static Value Panic (VmApi api, Value str)
         {
             CheckString (api, str);
-            api.RaiseShovelError (str.StringValue);
+            api.RaiseShovelError (str.stringValue);
             throw new InvalidOperationException ();
         }
 
