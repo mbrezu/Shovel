@@ -37,7 +37,6 @@ namespace Shovel.Vm
         #region Private Storage
         Instruction[] bytecode = null;
         object[] cache = null;
-        int[] executionCount = null;
         int programCounter = 0;
         VmEnvironment currentEnvironment = null;
         Stack stack = new Stack ();
@@ -52,7 +51,6 @@ namespace Shovel.Vm
         int? cellsQuota = null;
         long? totalTicksQuota = null;
         long? untilNextNapTicksQuota = null;
-        Action<Vm>[] runs = null;
         VmApi api = null;
         #endregion
 
@@ -104,13 +102,11 @@ namespace Shovel.Vm
                 vm = new Vm ();
                 vm.bytecode = bytecode;
                 vm.cache = new object[bytecode.Length];
-                vm.executionCount = new int[bytecode.Length];
                 vm.programCounter = 0;
                 vm.currentEnvironment = null;
                 vm.stack = new Stack ();
                 vm.sources = sources;
                 vm.userPrimitives = new Dictionary<string, Callable> ();
-                vm.runs = new Action<Vm>[bytecode.Length];
             }
             vm.cellsQuota = cellsQuota;
             vm.totalTicksQuota = totalTicksQuota;
@@ -207,133 +203,6 @@ namespace Shovel.Vm
             }
         }
 
-        Action<Vm> GenRun ()
-        {
-            Instruction.Opcodes? lastOpcode = null;
-            string lastPrim0 = null;
-            var iter = this.programCounter;
-            var lgets = new Dictionary<Tuple<int, int>, int> ();
-            while (true) {
-                var instruction = this.bytecode [iter];
-                var op = instruction.Opcode;
-                if (op == Instruction.Opcodes.Prim0) {
-                    lastPrim0 = (string)instruction.Arguments;
-                }
-                if ((op == Instruction.Opcodes.Call) && lastOpcode != Instruction.Opcodes.Prim0) {
-                    break;
-                }
-                if ((op == Instruction.Opcodes.Lset) 
-                    || (op == Instruction.Opcodes.Jump)
-                    || (op == Instruction.Opcodes.Fjump)
-                    || (op == Instruction.Opcodes.Tjump)
-                    || (op == Instruction.Opcodes.DropFrame)
-                    || (op == Instruction.Opcodes.Args)
-                    || (op == Instruction.Opcodes.Return)
-                    || (op == Instruction.Opcodes.CallJ)
-                    || (op == Instruction.Opcodes.Apply)
-                    || (op == Instruction.Opcodes.BlockReturn))
-                {
-                    break;
-                }
-                if ((op == Instruction.Opcodes.NewFrame) 
-                    && (this.bytecode [iter + 1].Opcode != Instruction.Opcodes.Args)) {
-                    break;
-                }
-                if ((op == Instruction.Opcodes.Call) 
-                    && (lastOpcode == Instruction.Opcodes.Prim0)
-                    && this.IsRunStopper (lastPrim0)) {
-                    break;
-                }
-                if (iter == this.bytecode.Length - 1) {
-                    break;
-                }
-                lastOpcode = op;
-                if (op == Instruction.Opcodes.Lget) {
-                    var args = (int[])instruction.Arguments;
-                    var key = Tuple.Create (args [0], args [1]);
-                    if (!lgets.ContainsKey (key)) {
-                        lgets [key] = 0;
-                    }
-                    lgets [key]++;
-                }
-                iter++;
-            }
-            var runActions = new Action<Vm>[iter - this.programCounter + 1];
-            var optimizableLgetCount = lgets.Keys.Select (key => lgets [key] > 1).Count ();
-            var values = new Value[optimizableLgetCount];
-            var lgetValueIndexes = new Dictionary<Tuple<int, int>, int> ();
-            var runningIndex = 0;
-            for (var i = this.programCounter; i <= iter; i++) {
-                var instruction = this.bytecode [i];
-                var alreadyCompiled = false;
-                if (instruction.Opcode == Instruction.Opcodes.Lget) {
-                    var args = (int[])instruction.Arguments;
-                    var key = Tuple.Create (args [0], args [1]);
-                    var count = lgets [key];
-                    if (count > 1) {
-                        if (lgetValueIndexes.ContainsKey (key)) {
-                            var index = lgetValueIndexes [key];
-                            runActions [i - this.programCounter] = vm => {
-                                vm.stack.Push (values [index]);
-                                vm.IncrementCells (1);
-                                vm.programCounter++;
-                            };
-                            alreadyCompiled = true;
-                        } else {
-                            var index = runningIndex;
-                            runningIndex ++;
-                            lgetValueIndexes [key] = index;
-                            runActions [i - this.programCounter] = vm => {
-                                var result = GetFromEnvironment (vm.currentEnvironment, args [0], args [1]);
-                                values [index] = result;
-                                vm.stack.Push (result);
-                                vm.IncrementCells (1);
-                                vm.programCounter++;
-                            };
-                            alreadyCompiled = true;
-                        }
-                    }
-                } else if (instruction.Opcode == Instruction.Opcodes.Args) {
-                    var args = (int)instruction.Arguments;
-                    if (args == 1) {
-                        runActions [i - this.programCounter] = HandleArgs1;
-                        alreadyCompiled = true;
-                    } else if (args == 2) {
-                        runActions [i - this.programCounter] = HandleArgs2;
-                        alreadyCompiled = true;
-                    } else if (args == 3) {
-                        runActions [i - this.programCounter] = HandleArgs3;
-                        alreadyCompiled = true;
-                    }
-                } else if (instruction.Opcode == Instruction.Opcodes.Const) {
-                    var args = (Value)instruction.Arguments;
-                    alreadyCompiled = true;
-                    runActions [i - this.programCounter] = vm => {
-                        vm.stack.Push (args);
-                        vm.programCounter++;
-                        vm.IncrementCells (1);
-                    };
-                }
-                if (!alreadyCompiled) {
-                    runActions [i - this.programCounter] = Vm.handlers [instruction.NumericOpcode];
-                }
-            }
-            return vm => {
-                foreach (var action in runActions) {
-                    action (vm);
-                }
-                vm.executedTicks += runActions.Length;
-                vm.executedTicksSinceLastNap += runActions.Length;
-            };
-        }
-
-        bool IsRunStopper (string lastPrim0)
-        {
-            return lastPrim0 == "arrayN" 
-                || lastPrim0 == "stringRepresentation"
-                || lastPrim0 == "svm_set_indexed";
-        }
-
         static string DumpShovelValue (VmApi api, Value obj)
         {
             if (obj.Kind == Value.Kinds.String) {
@@ -380,22 +249,11 @@ namespace Shovel.Vm
                 this.CheckVmWithoutError ();
                 this.CheckQuotas ();
                 try {
-                    if (this.runs [this.programCounter] == null) {
-                        if (this.executionCount [this.programCounter] > 10 && !safe) {
-                            this.runs [this.programCounter] = this.GenRun ();
-                            this.runs [this.programCounter] (this);
-                        } else {
-                            this.executionCount [this.programCounter] ++;
-                            var instruction = this.CurrentInstruction ();
-                            //TraceInstruction(instruction);
-                            Vm.handlers [instruction.NumericOpcode] (this);
-                            this.executedTicks ++;
-                            this.executedTicksSinceLastNap ++;
-                        }
-                    } else {
-                        this.runs [this.programCounter] (this);
-                    }
-
+                    var instruction = this.CurrentInstruction();
+                    //TraceInstruction(instruction);
+                    Vm.handlers[instruction.NumericOpcode](this);
+                    this.executedTicks++;
+                    this.executedTicksSinceLastNap++;
                     return true;
                 } catch (ShovelException ex) {
                     this.programmingError = ex;
