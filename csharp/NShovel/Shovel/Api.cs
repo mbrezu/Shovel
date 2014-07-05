@@ -184,12 +184,11 @@ namespace Shovel
             byte[] state = null,
             int? totalTicksQuota = null,
             int? ticksUntilNextNapQuota = null,
-            int? usedCellsQuota = null,
-            bool safe = false)
+            int? usedCellsQuota = null)
         {
             return Vm.Vm.RunVm (
                 bytecode, sources, userPrimitives, state, 
-                null, usedCellsQuota, totalTicksQuota, ticksUntilNextNapQuota, safe);
+                null, usedCellsQuota, totalTicksQuota, ticksUntilNextNapQuota);
         }
 
         public static Vm.Vm RunVm (
@@ -198,8 +197,7 @@ namespace Shovel
             IEnumerable<Callable> userPrimitives = null,
             int? totalTicksQuota = null,
             int? ticksUntilNextNapQuota = null,
-            int? usedCellsQuota = null,
-            bool safe = false)
+            int? usedCellsQuota = null)
         {
             return Vm.Vm.RunVm (
                 null, 
@@ -208,8 +206,7 @@ namespace Shovel
                 vm: vm,
                 cellsQuota: usedCellsQuota,
                 totalTicksQuota: totalTicksQuota,
-                untilNextNapTicksQuota: ticksUntilNextNapQuota,
-                safe: safe);
+                untilNextNapTicksQuota: ticksUntilNextNapQuota);
         }
 
         public static Value CheckStackTop (Vm.Vm vm)
