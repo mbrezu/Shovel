@@ -1410,10 +1410,10 @@ namespace Shovel.Vm
         void CheckVmWithoutError ()
         {
             if (this.userDefinedPrimitiveError != null) {
-                throw this.userDefinedPrimitiveError;
+                throw new ShovelException( "An exception has been thrown in a user-defined primitive.", this.userDefinedPrimitiveError );
             }
             if (this.programmingError != null) {
-                throw this.programmingError;
+                throw new ShovelException( "An exception has occurred in the Shovel program.", this.programmingError );
             }
         }
 
