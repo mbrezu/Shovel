@@ -49,7 +49,7 @@ namespace Client
             };
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> setTransactionDeadline = (api, args, result) =>
             {
-                Console.WriteLine (String.Format ("The bank promised to do it by {0}.", args [0].StringValue));
+                Console.WriteLine (String.Format ("The bank promised to do it by {0}.", args [0].String));
             };
             return new Shovel.Callable[] {
                 Shovel.Callable.MakeUdp ("getSourceAccountNo", getSourceAccountNo, 0),

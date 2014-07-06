@@ -122,7 +122,7 @@ namespace Shovel.Vm
                 api.RaiseShovelError ("First argument must be a struct instance.");
             }
             var result = new HashInstance ();
-            var structInstance = args [start].StructInstanceValue;
+            var structInstance = args [start].structInstanceValue;
             var ztruct = structInstance.Struct;
             var sizeIncrease = 1 + 2 * ztruct.Fields.Length;
             api.CellsIncrementHerald (sizeIncrease);
@@ -913,7 +913,7 @@ namespace Shovel.Vm
             }
             if (obj.Kind == Value.Kinds.StructInstance) {
                 var cache = vm.GetCurrentCache ();
-                var structInstance = obj.StructInstanceValue;
+                var structInstance = obj.structInstanceValue;
                 var ztruct = structInstance.Struct;
                 if (cache != null) {
                     var info = (Tuple<Struct, int>)cache;
@@ -946,7 +946,7 @@ namespace Shovel.Vm
         {
             if (obj.Kind == Value.Kinds.StructInstance) {
                 var cache = vm.GetCurrentCache ();
-                var structInstance = obj.StructInstanceValue;
+                var structInstance = obj.structInstanceValue;
                 var ztruct = structInstance.Struct;
                 if (cache != null) {
                     var info = (Tuple<Struct, int>)cache;
@@ -1299,7 +1299,7 @@ namespace Shovel.Vm
             if (str.Kind != Value.Kinds.Struct) {
                 api.RaiseShovelError ("Second argument must be a struct.");
             }
-            var result = obj.Kind == Value.Kinds.StructInstance && obj.StructInstanceValue.Struct == str.StructValue;
+            var result = obj.Kind == Value.Kinds.StructInstance && obj.structInstanceValue.Struct == str.StructValue;
             obj.boolValue = result;
             obj.Kind = Value.Kinds.Bool;
         }
@@ -1391,7 +1391,7 @@ namespace Shovel.Vm
                 var sb = new StringBuilder ();
                 sb.Append ("make(");
                 var pieces = new List<string> ();
-                var structInstance = obj.StructInstanceValue;
+                var structInstance = obj.structInstanceValue;
                 var ztruct = structInstance.Struct;
                 pieces.Add (StructAsString (ztruct));
                 for (var i = 0; i < structInstance.Values.Length; i++) {

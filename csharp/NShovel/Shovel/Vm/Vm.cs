@@ -1352,7 +1352,7 @@ namespace Shovel.Vm
                 case Value.Kinds.Struct:
                     return 1 + CountCellsStringArray (sv.StructValue.Fields, visited);
                 case Value.Kinds.StructInstance:
-                    return 1 + CountCellsSvArray (sv.StructInstanceValue.Values, visited);
+                    return 1 + CountCellsSvArray (sv.structInstanceValue.Values, visited);
                 default:
                     Utils.Panic ();
                     return 0;

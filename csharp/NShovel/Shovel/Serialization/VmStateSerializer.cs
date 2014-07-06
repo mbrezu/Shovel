@@ -725,7 +725,7 @@ namespace Shovel.Serialization
             case Value.Kinds.Struct:
                 return SerializeStruct (sv.StructValue, obj);
             case Value.Kinds.StructInstance:
-                return SerializeStructInstance (sv.StructInstanceValue, obj);
+                return SerializeStructInstance (sv.structInstanceValue, obj);
             default:
                 Shovel.Utils.Panic ();
                 throw new InvalidOperationException ();

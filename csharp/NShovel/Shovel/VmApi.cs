@@ -45,6 +45,24 @@ namespace Shovel
 			this.CellsIncrementer = cellsIncrementer;
 			this.CellsIncrementHerald = cellsIncrementHerald;
 		}
+
+        internal static VmApi dummyApi;
+        internal static VmApi DummyApi
+        {
+            get
+            {
+                if (dummyApi == null)
+                {
+                    dummyApi = new VmApi(
+                        raiseShovelError: str => { },
+                        ticksIncrementer: ticks => { },
+                        cellsIncrementer: cells => { },
+                        cellsIncrementHerald: cells => { }
+                    );
+                }
+                return dummyApi;
+            }
+        }
 	}
 }
 

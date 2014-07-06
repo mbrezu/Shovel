@@ -94,7 +94,7 @@ game()
             {
                 if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
                     pageContent.Append ("<span>");
-                    pageContent.Append (HttpUtility.HtmlEncode (args [0].StringValue));
+                    pageContent.Append (HttpUtility.HtmlEncode (args [0].String));
                     pageContent.Append ("</span>");
                 }
             };
@@ -102,7 +102,7 @@ game()
             {
                 if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
                     pageContent.Append ("<span>");
-                    pageContent.Append (HttpUtility.HtmlEncode (args [0].StringValue));
+                    pageContent.Append (HttpUtility.HtmlEncode (args [0].String));
                     pageContent.Append ("</span><br/>");
                 }
             };

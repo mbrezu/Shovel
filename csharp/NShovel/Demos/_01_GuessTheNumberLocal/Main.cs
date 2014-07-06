@@ -70,12 +70,12 @@ game()
             var rng = new Random();
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) => {
                 if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
-                    Console.Write (args [0].StringValue);
+                    Console.Write (args [0].String);
                 }
             };
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> printLn = (api, args, result) => {
                 if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
-                    Console.WriteLine (args [0].StringValue);
+                    Console.WriteLine (args [0].String);
                 }
             };
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> readInt = (api, args, result) => {
