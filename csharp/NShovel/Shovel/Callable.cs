@@ -41,7 +41,7 @@ namespace Shovel
         // The next two fields are only used if this is a ShovelScript closure.
         internal int? ProgramCounter { get; set; }
 
-        internal Vm.Types.VmEnvironment Environment { get; set; }
+        public Vm.VmEnvironment Environment { get; internal set; }
 
         internal Func<VmApi, Value[], int, int, Value> RequiredPrimitive { get; set; }
 
@@ -96,7 +96,5 @@ namespace Shovel
         {
             return (vmapi, args, start, length) => callable (vmapi, args [start], args [start + 1], args [start + 2]);
         }
-
     }
 }
-

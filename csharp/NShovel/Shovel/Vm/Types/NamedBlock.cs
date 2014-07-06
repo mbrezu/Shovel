@@ -24,14 +24,13 @@ using System.Collections.Generic;
 
 namespace Shovel.Vm.Types
 {
-	internal class NamedBlock
-	{
-		internal string Name { get; set; }
+    public class NamedBlock
+    {
+        internal string Name { get; set; }
 
-		internal int BlockEnd { get; set; }
+        internal int BlockEnd { get; set; }
 
-		internal VmEnvironment Environment { get; set; }
-	}
-
+        public VmEnvironment Environment { get; internal set; }
+    }
 }
 

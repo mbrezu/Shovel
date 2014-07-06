@@ -22,13 +22,12 @@
 using System;
 using System.Linq;
 
-namespace Shovel.Vm.Types
+namespace Shovel.Vm
 {
-    internal class VmEnvironment
+    public class VmEnvironment
     {
-        internal VmEnvFrame Frame { get; set; }
-
-        internal VmEnvironment Next { get; set; }
+        public VmEnvFrame Frame { get; internal set; }
+        public VmEnvironment Next { get; internal set; }
     }
 }
 

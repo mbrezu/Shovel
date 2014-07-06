@@ -226,15 +226,63 @@ namespace Shovel
         }
 
         [FieldOffset(8)]
-        internal Callable CallableValue;
+        internal Callable callableValue;
+
+        public Either<Callable> CallableValue {
+            get {
+                if ( Kind == Kinds.Callable ) {
+                    return new Either<Callable>( this.callableValue );
+                }
+                else {
+                    return new Either<Callable>( new ShovelException( "Value is not a callable.", null ) );
+                }
+            }
+        }
+
         [FieldOffset(8)]
-        internal ReturnAddress ReturnAddressValue;
+        internal StructInstance structInstanceValue;
+
+        public Either<StructInstance> StructInstanceValue {
+            get {
+                if ( Kind == Kinds.StructInstance ) {
+                    return new Either<StructInstance>( this.structInstanceValue );
+                }
+                else {
+                    return new Either<StructInstance>( new ShovelException( "Value is not a struct instance.", null ) );
+                }
+            }
+        }
+
+        [FieldOffset( 8 )]
+        internal NamedBlock namedBlockValue;
+
+        public Either<NamedBlock> NamedBlockValue {
+            get {
+                if ( Kind == Kinds.NamedBlock ) {
+                    return new Either<NamedBlock>( this.namedBlockValue );
+                }
+                else {
+                    return new Either<NamedBlock>( new ShovelException( "Value is not a named block.", null ) );
+                }
+            }
+        }
+
         [FieldOffset(8)]
-        internal NamedBlock NamedBlockValue;
+        internal ReturnAddress returnAddressValue;
+
+        public Either<ReturnAddress> ReturnAddressValue {
+            get {
+                if ( Kind == Kinds.ReturnAddress ) {
+                    return new Either<ReturnAddress>( this.returnAddressValue );
+                }
+                else {
+                    return new Either<ReturnAddress>( new ShovelException( "Value is not a return address.", null ) );
+                }
+            }
+        }
+
         [FieldOffset(8)]
         internal Struct StructValue;
-        [FieldOffset(8)]
-        public StructInstance StructInstanceValue;
 
         static Value value;
 
@@ -255,7 +303,7 @@ namespace Shovel
         {
             Value result = value;
             result.Kind = Kinds.StructInstance;
-            result.StructInstanceValue = structInstance;
+            result.structInstanceValue = structInstance;
             return result;
         }
 
@@ -320,7 +368,7 @@ namespace Shovel
         {
             Value result = value;
             result.Kind = Kinds.Callable;
-            result.CallableValue = c;
+            result.callableValue = c;
             return result;
         }
 
@@ -328,7 +376,7 @@ namespace Shovel
         {
             Value result = value;
             result.Kind = Kinds.ReturnAddress;
-            result.ReturnAddressValue = ra;
+            result.returnAddressValue = ra;
             return result;
         }
 
@@ -336,7 +384,7 @@ namespace Shovel
         {
             Value result = value;
             result.Kind = Kinds.NamedBlock;
-            result.NamedBlockValue = nb;
+            result.namedBlockValue = nb;
             return result;
         }
 
@@ -362,15 +410,15 @@ namespace Shovel
             case Kinds.Hash:
                 return sv.Kind == Kinds.Hash && this.hashValue == sv.hashValue;
             case Kinds.Callable:
-                return sv.Kind == Kinds.Callable && this.CallableValue == sv.CallableValue;
+                return sv.Kind == Kinds.Callable && Equals( this.callableValue, sv.callableValue );
             case Kinds.ReturnAddress:
-                return sv.Kind == Kinds.ReturnAddress && this.ReturnAddressValue == sv.ReturnAddressValue;
+                return sv.Kind == Kinds.ReturnAddress && Equals( this.returnAddressValue, sv.returnAddressValue );
             case Kinds.NamedBlock:
-                return sv.Kind == Kinds.NamedBlock && this.NamedBlockValue == sv.NamedBlockValue;
+                return sv.Kind == Kinds.NamedBlock && Equals( this.namedBlockValue, sv.namedBlockValue );
             case Kinds.Struct:
-                return sv.Kind == Kinds.Struct && this.StructValue == sv.StructValue;
+                return sv.Kind == Kinds.Struct && Equals( this.StructValue, sv.StructValue );
             case Kinds.StructInstance:
-                return sv.Kind == Kinds.StructInstance && this.StructInstanceValue == sv.StructInstanceValue;
+                return sv.Kind == Kinds.StructInstance && Equals( this.structInstanceValue, sv.structInstanceValue );
             default:
                 Utils.Panic ();
                 throw new InvalidOperationException ();
@@ -395,15 +443,15 @@ namespace Shovel
             case Kinds.Hash:
                 return this.hashValue.GetHashCode ();
             case Kinds.Callable:
-                return this.CallableValue.GetHashCode ();
+                return this.callableValue.GetHashCode ();
             case Kinds.ReturnAddress:
-                return this.ReturnAddressValue.GetHashCode ();
+                return this.returnAddressValue.GetHashCode ();
             case Kinds.NamedBlock:
-                return this.NamedBlockValue.GetHashCode ();
+                return this.namedBlockValue.GetHashCode ();
             case Kinds.Struct:
                 return this.StructValue.GetHashCode();
             case Kinds.StructInstance:
-                return this.StructInstanceValue.GetHashCode();
+                return this.structInstanceValue.GetHashCode();
             default:
                 Utils.Panic ();
                 throw new InvalidOperationException ();
