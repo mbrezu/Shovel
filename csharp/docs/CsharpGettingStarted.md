@@ -221,7 +221,7 @@ Let's add the `Udps` method to the `MainClass` in project
     {
         Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) => {
             if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
-                Console.WriteLine (args [0].StringValue);
+                Console.WriteLine (args [0].String.Value);
             }
         };
         return new Shovel.Callable[] {
@@ -260,14 +260,14 @@ function that checks if a string starts with a given prefix:
     {
         Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) => {
             if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
-                Console.WriteLine (args [0].StringValue);
+                Console.WriteLine (args [0].String.Value);
             }
         };
         Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> startsWith = (api, args, result) => {
             if (args.Length == 2
                 && args [0].Kind == Shovel.Value.Kinds.String
                 && args [1].Kind == Shovel.Value.Kinds.String) {
-                result.Result = Shovel.Value.Make (args [0].StringValue.StartsWith (args [1].StringValue));
+                result.Result = Shovel.Value.Make (args [0].String.Value.StartsWith (args [1].String.Value));
             } else {
                 result.Result = Shovel.Value.Make (false);
             }
@@ -297,16 +297,16 @@ parameter. Let's change `print` to accept more kinds of
     Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) => {
         switch (args[0].Kind) {
         case Shovel.Value.Kinds.String:
-            Console.WriteLine (args [0].StringValue);
+            Console.WriteLine (args [0].String.Value);
             break;
         case Shovel.Value.Kinds.Integer:
-            Console.WriteLine (args [0].IntegerValue);
+            Console.WriteLine (args [0].Integer.Value);
             break;
         case Shovel.Value.Kinds.Double:
-            Console.WriteLine (args [0].DoubleValue);
+            Console.WriteLine (args [0].Double.Value);
             break;
         case Shovel.Value.Kinds.Bool:
-            Console.WriteLine (args [0].BoolValue);
+            Console.WriteLine (args [0].Bool.Value);
             break;
         default:
             Console.WriteLine ("Don't know how to print the argument.");
@@ -329,6 +329,19 @@ basic types (numbers, strings, bools). `Shovel.Value` can also hold:
  * other values that you shouldn't be handling directly (such as
    return addresses, callables etc.)
    
+`Shovel.Value.String` returns a value similar to a `Nullable`,
+`Shovel.Either<T>`. `Either` wraps a value and an exception in the
+same data structure. The point is we cannot extract a string from an
+integer. If we try to, the `Either` instance will have `HasValue ==
+false`, `Error != null` and if we try to extract the actual string by
+calling `Value`, then `Error` will be thrown. On the other hand, if
+the `Shovel.Value` really holds a string, `String.Value` will give us
+that string. The same scheme holds  for the other types.
+
+In these examples we call `Value` on the `Either` instances without any
+worries because we already checked the type - this is the recommended
+pattern.
+
 Note about Shovel hashes: the keys must be strings wrapped as
 `Shovel.Value`s.
    
