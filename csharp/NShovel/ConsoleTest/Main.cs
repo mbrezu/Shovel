@@ -347,7 +347,7 @@ var b = @readLine()
             );
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) => {
                 if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
-                    Console.WriteLine (args [0].StringValue);
+                    Console.WriteLine (args [0].String);
                 } else {
                     Console.WriteLine ("do be doo");
                 }
@@ -387,7 +387,7 @@ main()
             );
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) => {
                 if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
-                    Console.WriteLine (args [0].StringValue);
+                    Console.WriteLine (args [0].String);
                 }
             };
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> stop = (api, args, result) => {
@@ -421,7 +421,7 @@ main()
         {
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) => {
                 if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
-                    Console.WriteLine (args [0].StringValue);
+                    Console.WriteLine (args [0].String);
                 } else {
                     throw new InvalidOperationException ();
                 }
@@ -488,11 +488,11 @@ pt2.y
             for (var i = 0; i < 20; i++) {
                 result = MasterMindRun (bytecode, sources);
             }
-            foreach (var k in result.ArrayValue.Value) {
+            foreach (var k in result.Array.Value) {
                 if (k.Kind == Shovel.Value.Kinds.Array) {
-                    foreach (var kk in k.ArrayValue.Value)
+                    foreach (var kk in k.Array.Value)
                     {
-                        Console.Write (kk.IntegerValue);
+                        Console.Write (kk.Integer);
                         Console.Write (" ");
                     }
                     Console.WriteLine ();

@@ -34,7 +34,7 @@ namespace ShovelTests
 		{
 			TestBytecodeSerialization (
 				"1", 
-				obj => obj.Kind == Shovel.Value.Kinds.Integer && obj.IntegerValue.Value == 1);
+				obj => obj.Kind == Shovel.Value.Kinds.Integer && obj.Integer.Value == 1);
 		}
 
 		[Test]
@@ -42,14 +42,14 @@ namespace ShovelTests
 		{
 			TestBytecodeSerialization (
 				"true || false", 
-				obj => obj.Kind == Shovel.Value.Kinds.Bool && obj.BoolValue.Value);
+				obj => obj.Kind == Shovel.Value.Kinds.Bool && obj.Bool.Value);
 		}
 
 		[Test]
 		public void ConstDouble ()
 		{
 			TestBytecodeSerialization (
-				"1.4", obj => obj.Kind == Shovel.Value.Kinds.Double && 1.4 == obj.DoubleValue.Value);
+				"1.4", obj => obj.Kind == Shovel.Value.Kinds.Double && 1.4 == obj.Double.Value);
 		}
 
 		[Test]
@@ -57,7 +57,7 @@ namespace ShovelTests
 		{
 			TestBytecodeSerialization (
 				"'test'", 
-				obj => obj.Kind == Shovel.Value.Kinds.String && "test" == obj.StringValue.Value);
+				obj => obj.Kind == Shovel.Value.Kinds.String && "test" == obj.String.Value);
 		}
 
 		[Test]
@@ -73,7 +73,7 @@ namespace ShovelTests
 		{
 			TestBytecodeSerialization (
 				Utils.FactorialOfTenProgram (), 
-				obj => obj.Kind == Shovel.Value.Kinds.Integer && (long)3628800 == obj.IntegerValue.Value);
+				obj => obj.Kind == Shovel.Value.Kinds.Integer && (long)3628800 == obj.Integer.Value);
 		}
 
 		[Test]
@@ -81,7 +81,7 @@ namespace ShovelTests
 		{
 			TestBytecodeSerialization (
 				Utils.FibonacciOfTenProgram (), 
-				obj => obj.Kind == Shovel.Value.Kinds.Integer && (long)89 == obj.IntegerValue.Value);
+				obj => obj.Kind == Shovel.Value.Kinds.Integer && (long)89 == obj.Integer.Value);
 		}
 
 		void TestBytecodeSerialization (

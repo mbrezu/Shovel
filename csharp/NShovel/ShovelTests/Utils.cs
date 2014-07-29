@@ -82,16 +82,16 @@ fib(10)
                 Assert.AreEqual (Shovel.Value.Kinds.Null, result.Kind);
                 break;
             case Shovel.Value.Kinds.Integer:
-                Assert.AreEqual ((long)expectedResult, result.IntegerValue.Value);
+                Assert.AreEqual ((long)expectedResult, result.Integer.Value);
                 break;
             case Shovel.Value.Kinds.String:
-                Assert.AreEqual ((string)expectedResult, result.StringValue.Value);
+                Assert.AreEqual ((string)expectedResult, result.String.Value);
                 break;
             case Shovel.Value.Kinds.Double:
-                Assert.AreEqual ((double)expectedResult, result.DoubleValue.Value);
+                Assert.AreEqual ((double)expectedResult, result.Double.Value);
                 break;
             case Shovel.Value.Kinds.Bool:
-                Assert.AreEqual ((bool)expectedResult, result.BoolValue.Value);
+                Assert.AreEqual ((bool)expectedResult, result.Bool.Value);
                 break;
             case Shovel.Value.Kinds.Array:
                 Assert.Fail();
@@ -115,7 +115,7 @@ fib(10)
         {
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) => {
                 if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
-                    log.Add (args [0].StringValue.Value);
+                    log.Add (args [0].String.Value);
                 } else {
                     throw new InvalidOperationException ();
                 }

@@ -51,7 +51,7 @@ namespace _04_GuessTheNumberTurnTheTables
             {
                 if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
                     session.PageContent.Append ("<span>");
-                    session.PageContent.Append (HttpUtility.HtmlEncode (args [0].StringValue));
+                    session.PageContent.Append (HttpUtility.HtmlEncode (args [0].String));
                     session.PageContent.Append ("</span>");
                 } else {
                     session.PageContent.Append ("PRINT call failed!");
@@ -61,7 +61,7 @@ namespace _04_GuessTheNumberTurnTheTables
             {
                 if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
                     session.PageContent.Append ("<span>");
-                    session.PageContent.Append (HttpUtility.HtmlEncode (args [0].StringValue));
+                    session.PageContent.Append (HttpUtility.HtmlEncode (args [0].String));
                     session.PageContent.Append ("</span><br/>");
                 } else {
                     session.PageContent.Append ("PRINT call failed!");

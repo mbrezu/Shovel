@@ -42,9 +42,9 @@ f(3)
             );
             var result = Shovel.Api.TestRunVm (sources);
             Assert.IsTrue (result.Kind == Shovel.Value.Kinds.Hash);
-            Assert.AreEqual (2, result.HashValue.Value.Keys.Count);
-            Assert.IsTrue(result.HashValue.Value.ContainsKey(Shovel.Value.Make("stack")));
-            Assert.IsTrue(result.HashValue.Value.ContainsKey(Shovel.Value.Make("environment")));
+            Assert.AreEqual (2, result.Hash.Value.Keys.Count);
+            Assert.IsTrue(result.Hash.Value.ContainsKey(Shovel.Value.Make("stack")));
+            Assert.IsTrue(result.Hash.Value.ContainsKey(Shovel.Value.Make("environment")));
             Assert.AreEqual (@"Frame starts at:
 file 'test.sho' line 3: var h = fn (x) context
 file 'test.sho' line 3:             ^
@@ -60,7 +60,7 @@ h = [...callable...]
 g = [...callable...]
 f = [...callable...]
 
-", result.HashValue.Value[Shovel.Value.Make("environment")].StringValue.Value.TrimCarriageReturn());
+", result.Hash.Value[Shovel.Value.Make("environment")].String.Value.TrimCarriageReturn());
             Assert.AreEqual (@"file 'test.sho' line 3: var h = fn (x) context
 file 'test.sho' line 3:                ^^^^^^^
 file 'test.sho' line 4: var g = fn (x) id(h(x))
@@ -69,7 +69,7 @@ file 'test.sho' line 5: var f = fn (x) id(g(x))
 file 'test.sho' line 5:                   ^^^^
 file 'test.sho' line 6: f(3)
 file 'test.sho' line 6: ^^^^
-", result.HashValue.Value[Shovel.Value.Make("stack")].StringValue.Value.TrimCarriageReturn());
+", result.Hash.Value[Shovel.Value.Make("stack")].String.Value.TrimCarriageReturn());
         }
 
         [Test]
@@ -84,9 +84,9 @@ f(3)
             );
             var result = Shovel.Api.TestRunVm (sources);
             Assert.IsTrue (result.Kind == Shovel.Value.Kinds.Hash);
-            Assert.AreEqual(2, result.HashValue.Value.Keys.Count);
-            Assert.IsTrue(result.HashValue.Value.ContainsKey(Shovel.Value.Make("stack")));
-            Assert.IsTrue(result.HashValue.Value.ContainsKey(Shovel.Value.Make("environment")));
+            Assert.AreEqual(2, result.Hash.Value.Keys.Count);
+            Assert.IsTrue(result.Hash.Value.ContainsKey(Shovel.Value.Make("stack")));
+            Assert.IsTrue(result.Hash.Value.ContainsKey(Shovel.Value.Make("environment")));
             Assert.AreEqual (@"Frame starts at:
 file 'test.sho' line 2: var h = fn (x) context
 file 'test.sho' line 2:             ^
@@ -101,12 +101,12 @@ h = [...callable...]
 g = [...callable...]
 f = [...callable...]
 
-", result.HashValue.Value[Shovel.Value.Make("environment")].StringValue.Value.TrimCarriageReturn());
+", result.Hash.Value[Shovel.Value.Make("environment")].String.Value.TrimCarriageReturn());
             Assert.AreEqual (@"file 'test.sho' line 2: var h = fn (x) context
 file 'test.sho' line 2:                ^^^^^^^
 file 'test.sho' line 5: f(3)
 file 'test.sho' line 5: ^^^^
-", result.HashValue.Value[Shovel.Value.Make("stack")].StringValue.Value.TrimCarriageReturn());
+", result.Hash.Value[Shovel.Value.Make("stack")].String.Value.TrimCarriageReturn());
         }
 
         [Test]
@@ -127,12 +127,12 @@ file 'test.sho' line 5: ^^^^
             var sources = Shovel.Api.MakeSourcesWithStdlib ("qsort.sho", Utils.QsortProgram ());
             var result = Shovel.Api.TestRunVm (sources);
             Assert.IsTrue (result.Kind == Shovel.Value.Kinds.Array);
-            Assert.AreEqual(5, result.ArrayValue.Value.Count);
-            Assert.AreEqual(1, result.ArrayValue.Value[0].IntegerValue.Value);
-            Assert.AreEqual(2, result.ArrayValue.Value[1].IntegerValue.Value);
-            Assert.AreEqual(3, result.ArrayValue.Value[2].IntegerValue.Value);
-            Assert.AreEqual(4, result.ArrayValue.Value[3].IntegerValue.Value);
-            Assert.AreEqual(5, result.ArrayValue.Value[4].IntegerValue.Value);
+            Assert.AreEqual(5, result.Array.Value.Count);
+            Assert.AreEqual(1, result.Array.Value[0].Integer.Value);
+            Assert.AreEqual(2, result.Array.Value[1].Integer.Value);
+            Assert.AreEqual(3, result.Array.Value[2].Integer.Value);
+            Assert.AreEqual(4, result.Array.Value[3].Integer.Value);
+            Assert.AreEqual(5, result.Array.Value[4].Integer.Value);
         }
 
         [Test]
@@ -199,7 +199,7 @@ f(1, 2, 3, 5)
             List<string> log = new List<string> ();
             Action<Shovel.VmApi, Shovel.Value[], Shovel.UdpResult> print = (api, args, result) => {
                 if (args.Length > 0 && args [0].Kind == Shovel.Value.Kinds.String) {
-                    log.Add (args [0].StringValue.Value);
+                    log.Add (args [0].String.Value);
                 } else {
                     throw new InvalidOperationException ();
                 }

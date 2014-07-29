@@ -54,6 +54,11 @@ namespace Shovel
         {
             this.Error = error;
         }
+
+        public override string ToString()
+        {
+            return this.Value.ToString();
+        }
     }
 
     public class ArrayInstance : List<Value>
@@ -120,7 +125,7 @@ namespace Shovel
         [FieldOffset(0)]
         internal long integerValue;
 
-        public Either<long> IntegerValue
+        public Either<long> Integer
         {
             get
             {
@@ -138,7 +143,7 @@ namespace Shovel
         [FieldOffset(0)]
         internal double doubleValue;
 
-        public Either<double> DoubleValue
+        public Either<double> Double
         {
             get
             {
@@ -156,7 +161,7 @@ namespace Shovel
         [FieldOffset(0)]
         internal bool boolValue;
 
-        public Either<bool> BoolValue
+        public Either<bool> Bool
         {
             get
             {
@@ -174,7 +179,7 @@ namespace Shovel
         [FieldOffset(8)]
         internal string stringValue;
 
-        public Either<string> StringValue
+        public Either<string> String
         {
             get
             {
@@ -192,7 +197,7 @@ namespace Shovel
         [FieldOffset(8)]
         internal ArrayInstance arrayValue;
 
-        public Either<List<Value>> ArrayValue
+        public Either<List<Value>> Array
         {
             get
             {
@@ -210,7 +215,7 @@ namespace Shovel
         [FieldOffset(8)]
         internal HashInstance hashValue;
 
-        public Either<Dictionary<Value, Value>> HashValue
+        public Either<Dictionary<Value, Value>> Hash
         {
             get
             {
@@ -284,6 +289,24 @@ namespace Shovel
         [FieldOffset(8)]
         internal Struct StructValue;
 
+        [FieldOffset(8)]
+        internal StructInstance structInstanceValue;
+
+        public Either<StructInstance> StructInstance
+        {
+            get
+            {
+                if (Kind == Kinds.StructInstance)
+                {
+                    return new Either<StructInstance>(this.structInstanceValue);
+                }
+                else
+                {
+                    return new Either<StructInstance>(new ShovelException("Value is not a struct instance.", null));
+                }
+            }
+        }
+
         static Value value;
 
         public static Value Make ()
@@ -291,7 +314,7 @@ namespace Shovel
             return value;
         }
 
-        public static Value Make(Struct structFields)
+        internal static Value Make(Struct structFields)
         {
             Value result = value;
             result.Kind = Kinds.Struct;
@@ -458,19 +481,9 @@ namespace Shovel
             }
         }
 
-        static VmApi dummyVmApi = null;
-
         public override string ToString ()
         {
-            if (dummyVmApi == null) {
-                dummyVmApi = new VmApi (
-                    raiseShovelError: str => {},
-                ticksIncrementer: ticks => {},
-                cellsIncrementer: cells => {},
-                cellsIncrementHerald: cells => {}
-                );
-            }
-            return Vm.Prim0.ShovelString (dummyVmApi, this).stringValue;
+            return Vm.Prim0.ShovelString (VmApi.DummyApi, this).stringValue;
         }
 
     }
