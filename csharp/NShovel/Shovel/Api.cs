@@ -26,6 +26,8 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using Shovel.Exceptions;
+using Shovel.Vm.Types;
+using Shovel.Vm;
 
 namespace Shovel
 {
@@ -214,6 +216,14 @@ namespace Shovel
             return vm.CheckStackTop ();
         }
 
+        public static IEnumerable<Value> GetUsedStack( Vm.Vm vm ) {
+            return vm.GetUsedStack();
+        }
+
+        public static VmEnvironment GetCurrentEnvironment( Vm.Vm vm ) { 
+            return vm.GetCurrentEnvironment(); 
+        }
+
         public static void WakeUpVm (Vm.Vm vm)
         {
             vm.WakeUp ();
@@ -253,7 +263,7 @@ namespace Shovel
         {
             for (int i = 0; i < str.Struct.Fields.Length; i++) {
                 if (str.Struct.Fields[i] == key) {
-                    return str.Values[i];
+                    return str.values[i];
                 }
             }
             return defaultValue;
@@ -263,7 +273,7 @@ namespace Shovel
         {
             for (int i = 0; i < str.Struct.Fields.Length; i++) {
                 if (str.Struct.Fields[i] == key) {
-                    str.Values[i] = newValue;
+                    str.values[i] = newValue;
                     return true;
                 }
             }

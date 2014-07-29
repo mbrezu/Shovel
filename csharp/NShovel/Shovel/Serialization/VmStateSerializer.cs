@@ -25,6 +25,7 @@ using System.IO;
 using Shovel.Vm.Types;
 using System.Text;
 using System.Linq;
+using Shovel.Vm;
 
 namespace Shovel.Serialization
 {
@@ -433,8 +434,8 @@ namespace Shovel.Serialization
             var result = new VmEnvFrame ();
             objects [index] = result;
 
-            result.VarNames = (string[])reader (composite.Elements [0]);
-            result.Values = (Value[])reader (composite.Elements [1]);
+            result.VarNamesInternal = (string[])reader (composite.Elements [0]);
+            result.ValuesInernal = (Value[])reader (composite.Elements [1]);
             result.IntroducedAtProgramCounter = (int)(long)reader (composite.Elements [2]);
 
             return result;
@@ -457,7 +458,7 @@ namespace Shovel.Serialization
             objects [index] = result;
 
             result.Struct = (Struct)reader (composite.Elements [0]);
-            result.Values = (Value[])reader (composite.Elements [1]);
+            result.values = (Value[])reader (composite.Elements [1]);
 
             return result;
         }
@@ -670,8 +671,8 @@ namespace Shovel.Serialization
                 Elements = new int[3] 
             };
             var result = SerializeOneHashed (composite, obj);
-            composite.Elements [0] = Serialize (frame.VarNames);
-            composite.Elements [1] = Serialize (frame.Values);
+            composite.Elements [0] = Serialize (frame.VarNamesInternal);
+            composite.Elements [1] = Serialize (frame.ValuesInernal);
             composite.Elements [2] = SerializeOne (frame.IntroducedAtProgramCounter);
             return result;
         }
@@ -695,7 +696,7 @@ namespace Shovel.Serialization
             };
             var result = SerializeOneHashed (composite, obj);
             composite.Elements [0] = Serialize (structInstance.Struct);
-            composite.Elements [1] = SerializeShovelValueArray (structInstance.Values);
+            composite.Elements [1] = SerializeShovelValueArray (structInstance.values);
             return result;
         }
 
@@ -717,11 +718,11 @@ namespace Shovel.Serialization
             case Value.Kinds.Hash:
                 return SerializeHash (sv.hashValue, obj);
             case Value.Kinds.Callable:
-                return SerializeCallable (sv.CallableValue, obj);
+                return SerializeCallable (sv.callableValue, obj);
             case Value.Kinds.ReturnAddress:
-                return SerializeReturnAddress (sv.ReturnAddressValue, obj);
+                return SerializeReturnAddress (sv.returnAddressValue, obj);
             case Value.Kinds.NamedBlock:
-                return SerializeNamedBlock (sv.NamedBlockValue, obj);
+                return SerializeNamedBlock (sv.namedBlockValue, obj);
             case Value.Kinds.Struct:
                 return SerializeStruct (sv.StructValue, obj);
             case Value.Kinds.StructInstance:

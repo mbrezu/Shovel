@@ -22,15 +22,18 @@
 using System;
 using System.Collections.Generic;
 
-namespace Shovel.Vm.Types
+namespace Shovel.Vm
 {
-	internal class VmEnvFrame
-	{
-		internal string[] VarNames { get; set; }
+    public class VmEnvFrame
+    {
+        public IEnumerable<string> Names { get { return VarNamesInternal; } }
+        public IEnumerable<Value> Values { get { return ValuesInernal; } }
 
-		internal Value[] Values { get; set; }
+        internal string[] VarNamesInternal { get; set; }
 
-		internal int? IntroducedAtProgramCounter;
-	}
+        internal Value[] ValuesInernal { get; set; }
+
+        internal int? IntroducedAtProgramCounter;
+    }
 }
 
